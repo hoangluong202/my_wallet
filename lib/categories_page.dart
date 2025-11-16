@@ -1,7 +1,220 @@
 import 'package:flutter/material.dart';
 
-class CategoriesPage extends StatelessWidget {
+import 'add_category_page.dart';
+import 'edit_category_page.dart';
+import 'category_history_page.dart';
+
+enum CategoryType { expense, income, debt, loan }
+
+String categoryTypeLabel(CategoryType t) {
+  switch (t) {
+    case CategoryType.expense:
+      return 'Expense';
+    case CategoryType.income:
+      return 'Income';
+    case CategoryType.debt:
+      return 'Debt';
+    case CategoryType.loan:
+      return 'Loan';
+  }
+}
+
+class CategoryItem {
+  final int id;
+  final String name;
+  final IconData icon;
+  final Color color;
+  final int transactionCount;
+  final double amount;
+  final CategoryType type;
+
+  CategoryItem({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.transactionCount,
+    required this.amount,
+    required this.type,
+  });
+
+  CategoryItem copyWith({
+    int? id,
+    String? name,
+    IconData? icon,
+    Color? color,
+    int? transactionCount,
+    double? amount,
+    CategoryType? type,
+  }) {
+    return CategoryItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      transactionCount: transactionCount ?? this.transactionCount,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+    );
+  }
+}
+
+class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
+
+  @override
+  State<CategoriesPage> createState() => _CategoriesPageState();
+}
+
+class _CategoriesPageState extends State<CategoriesPage> {
+  final Map<CategoryType, List<CategoryItem>> _categories = {};
+  int _nextId = 100;
+
+  @override
+  void initState() {
+    super.initState();
+    _initMockData();
+  }
+
+  void _initMockData() {
+    _categories[CategoryType.expense] = [
+      CategoryItem(
+        id: 1,
+        name: 'Food',
+        icon: Icons.restaurant,
+        color: Colors.orange,
+        transactionCount: 12,
+        amount: 245.50,
+        type: CategoryType.expense,
+      ),
+      CategoryItem(
+        id: 2,
+        name: 'Transport',
+        icon: Icons.directions_car,
+        color: Colors.blue,
+        transactionCount: 8,
+        amount: 180.00,
+        type: CategoryType.expense,
+      ),
+    ];
+
+    _categories[CategoryType.income] = [
+      CategoryItem(
+        id: 3,
+        name: 'Salary',
+        icon: Icons.account_balance,
+        color: Colors.green,
+        transactionCount: 1,
+        amount: 3500.00,
+        type: CategoryType.income,
+      ),
+    ];
+
+    _categories[CategoryType.debt] = [
+      CategoryItem(
+        id: 4,
+        name: 'Credit Card',
+        icon: Icons.credit_card,
+        color: Colors.red,
+        transactionCount: 15,
+        amount: 2500.00,
+        type: CategoryType.debt,
+      ),
+    ];
+
+    _categories[CategoryType.loan] = [
+      CategoryItem(
+        id: 5,
+        name: 'Home Loan',
+        icon: Icons.home,
+        color: Colors.brown,
+        transactionCount: 60,
+        amount: 150000.00,
+        type: CategoryType.loan,
+      ),
+    ];
+
+    _nextId = 10;
+  }
+
+  Future<void> _onAddCategory(CategoryType type) async {
+    final result = await Navigator.push<CategoryItem?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddCategoryPage(preselectedType: type),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        final newCategory = result.copyWith(id: _nextId++);
+        final list = _categories[type] ?? [];
+        _categories[type] = [...list, newCategory];
+      });
+    }
+  }
+
+  Future<void> _onEditCategory(CategoryItem category) async {
+    final result = await Navigator.push<CategoryItem?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditCategoryPage(category: category),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        final list = _categories[category.type]!;
+        final idx = list.indexWhere((c) => c.id == category.id);
+        if (idx != -1) list[idx] = result;
+      });
+    }
+  }
+
+  void _onViewHistory(CategoryItem category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryHistoryPage(category: category),
+      ),
+    );
+  }
+
+  void _onDeleteCategory(CategoryItem category) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category?'),
+        content: const Text(
+          'Are you sure you want to delete this category? '
+          'All transactions related to this category will also be deleted. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                final list = _categories[category.type]!;
+                list.removeWhere((c) => c.id == category.id);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Category "${category.name}" deleted'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,12 +225,9 @@ class CategoriesPage extends StatelessWidget {
           title: const Text('Categories'),
           centerTitle: true,
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          elevation: 0,
-          bottom: TabBar(
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            tabs: const [
+          bottom: const TabBar(
+            isScrollable: false,
+            tabs: [
               Tab(text: 'Expense'),
               Tab(text: 'Income'),
               Tab(text: 'Debt'),
@@ -27,249 +237,135 @@ class CategoriesPage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildTabContent(
-              context,
-              categories: _getExpenseCategories(),
-              tabType: 'Expense',
-            ),
-            _buildTabContent(
-              context,
-              categories: _getIncomeCategories(),
-              tabType: 'Income',
-            ),
-            _buildTabContent(
-              context,
-              categories: _getDebtCategories(),
-              tabType: 'Debt',
-            ),
-            _buildTabContent(
-              context,
-              categories: _getLoanCategories(),
-              tabType: 'Loan',
-            ),
+            _buildTabContent(CategoryType.expense),
+            _buildTabContent(CategoryType.income),
+            _buildTabContent(CategoryType.debt),
+            _buildTabContent(CategoryType.loan),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTabContent(
-    BuildContext context, {
-    required List<CategoryItem> categories,
-    required String tabType,
-  }) {
-    return Stack(
-      children: [
-        // Category list
-        ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: categories.length,
-          itemBuilder: (context, index) {
-            final category = categories[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: _buildCategoryCard(context, category),
-            );
-          },
-        ),
-        // Floating Add Button
-        Positioned(
-          bottom: 24,
-          right: 16,
-          child: FloatingActionButton.extended(
-            onPressed: () => _handleAddCategory(context, tabType),
-            icon: const Icon(Icons.add),
-            label: const Text('Add'),
-            tooltip: 'Add $tabType category',
+  Widget _buildTabContent(CategoryType type) {
+    final items = _categories[type] ?? [];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${categoryTypeLabel(type)} Categories',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _onAddCategory(type),
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+            ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryCard(BuildContext context, CategoryItem category) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: ListTile(
-        leading: Container(
-          decoration: BoxDecoration(
-            color: category.color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
+          const SizedBox(height: 12),
+          Expanded(
+            child: items.isEmpty
+                ? Center(
+                    child: Text(
+                      'No ${categoryTypeLabel(type).toLowerCase()} categories yet',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final category = items[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          child: ListTile(
+                            leading: Container(
+                              decoration: BoxDecoration(
+                                color: category.color.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(category.icon, color: category.color),
+                            ),
+                            title: Text(
+                              category.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${category.transactionCount} transactions • \$${category.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'view') _onViewHistory(category);
+                                if (value == 'edit') _onEditCategory(category);
+                                if (value == 'delete')
+                                  _onDeleteCategory(category);
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'view',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.history, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('View History'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Edit Category'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        size: 18,
+                                        color: Colors.red,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Delete Category',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
-          padding: const EdgeInsets.all(8),
-          child: Icon(category.icon, color: category.color, size: 24),
-        ),
-        title: Text(
-          category.name,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${category.transactionCount} transactions • \$${category.amount.toStringAsFixed(2)}',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        trailing: Icon(Icons.more_vert, color: Colors.grey.shade400),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Tapped ${category.name}'),
-              duration: const Duration(milliseconds: 500),
-            ),
-          );
-        },
+        ],
       ),
     );
   }
-
-  void _handleAddCategory(BuildContext context, String categoryType) {
-    debugPrint('Create new $categoryType category');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Create new $categoryType category'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-  }
-
-  // Dummy data methods
-  List<CategoryItem> _getExpenseCategories() {
-    return [
-      CategoryItem(
-        name: 'Food',
-        icon: Icons.restaurant,
-        color: Colors.orange,
-        transactionCount: 12,
-        amount: 245.50,
-      ),
-      CategoryItem(
-        name: 'Transport',
-        icon: Icons.directions_car,
-        color: Colors.blue,
-        transactionCount: 8,
-        amount: 180.00,
-      ),
-      CategoryItem(
-        name: 'Shopping',
-        icon: Icons.shopping_cart,
-        color: Colors.pink,
-        transactionCount: 5,
-        amount: 320.75,
-      ),
-      CategoryItem(
-        name: 'Entertainment',
-        icon: Icons.movie,
-        color: Colors.purple,
-        transactionCount: 6,
-        amount: 120.00,
-      ),
-      CategoryItem(
-        name: 'Utilities',
-        icon: Icons.electric_bolt,
-        color: Colors.amber,
-        transactionCount: 3,
-        amount: 150.50,
-      ),
-    ];
-  }
-
-  List<CategoryItem> _getIncomeCategories() {
-    return [
-      CategoryItem(
-        name: 'Salary',
-        icon: Icons.account_balance,
-        color: Colors.green,
-        transactionCount: 1,
-        amount: 3500.00,
-      ),
-      CategoryItem(
-        name: 'Freelance',
-        icon: Icons.work,
-        color: Colors.teal,
-        transactionCount: 4,
-        amount: 750.00,
-      ),
-      CategoryItem(
-        name: 'Bonus',
-        icon: Icons.card_giftcard,
-        color: Colors.indigo,
-        transactionCount: 1,
-        amount: 500.00,
-      ),
-      CategoryItem(
-        name: 'Interest',
-        icon: Icons.trending_up,
-        color: Colors.lightGreen,
-        transactionCount: 12,
-        amount: 45.30,
-      ),
-    ];
-  }
-
-  List<CategoryItem> _getDebtCategories() {
-    return [
-      CategoryItem(
-        name: 'Credit Card',
-        icon: Icons.credit_card,
-        color: Colors.red,
-        transactionCount: 15,
-        amount: 2500.00,
-      ),
-      CategoryItem(
-        name: 'Personal Loan',
-        icon: Icons.money,
-        color: Colors.deepOrange,
-        transactionCount: 24,
-        amount: 5000.00,
-      ),
-      CategoryItem(
-        name: 'Owed to Friends',
-        icon: Icons.people,
-        color: Colors.orange,
-        transactionCount: 2,
-        amount: 150.00,
-      ),
-    ];
-  }
-
-  List<CategoryItem> _getLoanCategories() {
-    return [
-      CategoryItem(
-        name: 'Home Loan',
-        icon: Icons.home,
-        color: Colors.brown,
-        transactionCount: 60,
-        amount: 150000.00,
-      ),
-      CategoryItem(
-        name: 'Auto Loan',
-        icon: Icons.directions_car,
-        color: Colors.grey,
-        transactionCount: 48,
-        amount: 25000.00,
-      ),
-      CategoryItem(
-        name: 'Education Loan',
-        icon: Icons.school,
-        color: Colors.blueGrey,
-        transactionCount: 36,
-        amount: 35000.00,
-      ),
-    ];
-  }
-}
-
-class CategoryItem {
-  final String name;
-  final IconData icon;
-  final Color color;
-  final int transactionCount;
-  final double amount;
-
-  CategoryItem({
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.transactionCount,
-    required this.amount,
-  });
 }

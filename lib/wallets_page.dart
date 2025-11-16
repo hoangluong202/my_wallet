@@ -4,38 +4,57 @@ import 'add_wallet_page.dart';
 import 'edit_wallet_page.dart';
 import 'wallet_history_page.dart';
 
-class WalletsPage extends StatelessWidget {
+class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final wallets = [
+  State<WalletsPage> createState() => _WalletsPageState();
+}
+
+class _WalletsPageState extends State<WalletsPage> {
+  late List<WalletModel> _wallets;
+
+  @override
+  void initState() {
+    super.initState();
+    _wallets = [
       WalletModel(
         name: 'Main Bank Account',
         balance: 5230.75,
         createdOn: DateTime(2024, 10, 12),
         lastUpdated: const Duration(hours: 2),
+        icon: Icons.account_balance,
+        iconColor: Colors.blue,
       ),
       WalletModel(
         name: 'Momo Wallet',
         balance: 120.50,
         createdOn: DateTime(2025, 3, 2),
         lastUpdated: const Duration(days: 1, hours: 5),
+        icon: Icons.mobile_friendly,
+        iconColor: Colors.pink,
       ),
       WalletModel(
         name: 'Savings',
         balance: 15000.00,
         createdOn: DateTime(2023, 7, 18),
         lastUpdated: const Duration(days: 7),
+        icon: Icons.savings,
+        iconColor: Colors.green,
       ),
       WalletModel(
         name: 'Crypto',
         balance: 980.42,
         createdOn: DateTime(2024, 1, 8),
         lastUpdated: const Duration(minutes: 45),
+        icon: Icons.currency_bitcoin,
+        iconColor: Colors.orange,
       ),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Wallets'),
@@ -68,10 +87,10 @@ class WalletsPage extends StatelessWidget {
             const SizedBox(height: 12),
             Expanded(
               child: ListView.builder(
-                itemCount: wallets.length,
+                itemCount: _wallets.length,
                 padding: const EdgeInsets.only(bottom: 24),
                 itemBuilder: (context, index) {
-                  final wallet = wallets[index];
+                  final wallet = _wallets[index];
                   return _buildWalletCard(context, wallet);
                 },
               ),
@@ -98,13 +117,10 @@ class WalletsPage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: const Icon(Icons.account_balance_wallet, size: 28),
+            CircleAvatar(
+              radius: 32,
+              backgroundColor: wallet.iconColor.withOpacity(0.2),
+              child: Icon(wallet.icon, size: 32, color: wallet.iconColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -168,12 +184,27 @@ class WalletsPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text(
+                            'Delete Wallet',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                   onSelected: (value) {
                     if (value == 'edit') {
                       _onEditWallet(context, wallet);
                     } else if (value == 'view') {
                       _onViewHistory(context, wallet);
+                    } else if (value == 'delete') {
+                      _onDeleteWallet(wallet);
                     }
                   },
                   child: const Icon(Icons.more_vert),
@@ -204,6 +235,41 @@ class WalletsPage extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => WalletHistoryPage(walletName: wallet.name),
+      ),
+    );
+  }
+
+  void _onDeleteWallet(WalletModel wallet) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Wallet?'),
+        content: const Text(
+          'Are you sure you want to delete this wallet? '
+          'All transactions associated with this wallet will also be deleted. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _wallets.removeWhere((w) => w.name == wallet.name);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Wallet "${wallet.name}" deleted'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -240,11 +306,15 @@ class WalletModel {
   final double balance;
   final DateTime createdOn;
   final Duration lastUpdated;
+  final IconData icon;
+  final Color iconColor;
 
   WalletModel({
     required this.name,
     required this.balance,
     required this.createdOn,
     required this.lastUpdated,
+    this.icon = Icons.account_balance_wallet,
+    this.iconColor = Colors.blue,
   });
 }

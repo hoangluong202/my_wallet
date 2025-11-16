@@ -17,6 +17,26 @@ class _AddWalletPageState extends State<AddWalletPage> {
   // Selected currency
   String _selectedCurrency = 'VND (₫)';
 
+  // Selected icon and color
+  IconData _selectedIcon = Icons.account_balance_wallet;
+  Color _selectedIconColor = Colors.blue;
+
+  // Available wallet icons
+  final List<Map<String, dynamic>> _walletIcons = [
+    {'icon': Icons.account_balance, 'color': Colors.blue, 'label': 'Bank'},
+    {
+      'icon': Icons.account_balance_wallet,
+      'color': Colors.indigo,
+      'label': 'Wallet',
+    },
+    {'icon': Icons.savings, 'color': Colors.green, 'label': 'Savings'},
+    {'icon': Icons.mobile_friendly, 'color': Colors.pink, 'label': 'Mobile'},
+    {'icon': Icons.currency_bitcoin, 'color': Colors.orange, 'label': 'Crypto'},
+    {'icon': Icons.attach_money, 'color': Colors.amber, 'label': 'Cash'},
+    {'icon': Icons.credit_card, 'color': Colors.purple, 'label': 'Card'},
+    {'icon': Icons.card_giftcard, 'color': Colors.red, 'label': 'Gift'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +58,8 @@ class _AddWalletPageState extends State<AddWalletPage> {
         'name': _walletNameController.text,
         'currency': _selectedCurrency,
         'balance': double.parse(_initialBalanceController.text),
+        'icon': _selectedIcon,
+        'iconColor': _selectedIconColor,
       };
 
       debugPrint('Wallet verified: $walletData');
@@ -75,112 +97,110 @@ class _AddWalletPageState extends State<AddWalletPage> {
         ),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Wallet Name
-                _buildSectionTitle('Wallet Name'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _walletNameController,
-                  keyboardType: TextInputType.text,
-                  decoration: _buildInputDecoration(
-                    'e.g., Savings, Momo, Main Account',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a wallet name';
-                    }
-                    if (value.length < 2) {
-                      return 'Wallet name must be at least 2 characters';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Scrollable content area
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icon Preview and Selector Section
+                      _buildSectionTitle('Select Wallet Icon'),
+                      const SizedBox(height: 12),
+                      _buildIconPreviewAndSelector(),
+                      const SizedBox(height: 20),
 
-                // Currency Selector
-                _buildSectionTitle('Currency'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedCurrency,
-                  items: const [
-                    DropdownMenuItem(value: 'VND (₫)', child: Text('VND (₫)')),
-                    DropdownMenuItem(
-                      value: 'USD (\$)',
-                      child: Text('USD (\$)'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCurrency = value ?? 'VND (₫)';
-                    });
-                  },
-                  decoration: _buildInputDecoration('Select a currency'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please select a currency';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Initial Balance
-                _buildSectionTitle('Initial Balance'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _initialBalanceController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: _buildInputDecoration(
-                    'Enter the starting balance (e.g., 1000.50)',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter an initial balance';
-                    }
-                    final balance = double.tryParse(value);
-                    if (balance == null) {
-                      return 'Please enter a valid number';
-                    }
-                    if (balance < 0) {
-                      return 'Balance cannot be negative';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-
-                // Verify Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _submitForm,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      // Wallet Name
+                      _buildSectionTitle('Wallet Name'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _walletNameController,
+                        keyboardType: TextInputType.text,
+                        decoration: _buildInputDecoration(
+                          'e.g., Savings, Momo, Main Account',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a wallet name';
+                          }
+                          if (value.length < 2) {
+                            return 'Wallet name must be at least 2 characters';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
-                    child: const Text(
-                      'Verify',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 16),
+
+                      // Initial Balance
+                      _buildSectionTitle('Initial Balance'),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _initialBalanceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: _buildInputDecoration(
+                          'e.g., 1000.50',
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(left: 12.0),
+                            child: Text(
+                              '₫',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(minWidth: 0),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter an initial balance';
+                          }
+                          final balance = double.tryParse(value);
+                          if (balance == null) {
+                            return 'Please enter a valid number';
+                          }
+                          if (balance < 0) {
+                            return 'Balance cannot be negative';
+                          }
+                          return null;
+                        },
                       ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Fixed Submit Button at bottom
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Create Wallet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -196,9 +216,80 @@ class _AddWalletPageState extends State<AddWalletPage> {
     );
   }
 
-  InputDecoration _buildInputDecoration(String hintText) {
+  Widget _buildIconPreviewAndSelector() {
+    return Column(
+      children: [
+        // Icon Preview
+        CircleAvatar(
+          radius: 32,
+          backgroundColor: _selectedIconColor.withOpacity(0.2),
+          child: Icon(
+            _selectedIcon,
+            size: 40,
+            color: _selectedIconColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Icon Selector Horizontal List
+        SizedBox(
+          height: 70,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _walletIcons.length,
+            itemBuilder: (context, index) {
+              final iconData = _walletIcons[index];
+              final isSelected =
+                  iconData['icon'] == _selectedIcon &&
+                  iconData['color'] == _selectedIconColor;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedIcon = iconData['icon'];
+                    _selectedIconColor = iconData['color'];
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    border: isSelected
+                        ? Border.all(
+                            color: _selectedIconColor,
+                            width: 2,
+                          )
+                        : Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: iconData['color'].withOpacity(0.2),
+                    child: Icon(
+                      iconData['icon'],
+                      size: 22,
+                      color: iconData['color'],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    String hintText, {
+    Widget? prefixIcon,
+    BoxConstraints? prefixIconConstraints,
+  }) {
     return InputDecoration(
       hintText: hintText,
+      prefixIcon: prefixIcon,
+      prefixIconConstraints: prefixIconConstraints,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       filled: true,

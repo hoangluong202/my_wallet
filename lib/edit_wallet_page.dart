@@ -4,12 +4,16 @@ class EditWalletPage extends StatefulWidget {
   final String walletName;
   final double balance;
   final String currency;
+  final IconData? icon;
+  final Color? iconColor;
 
   const EditWalletPage({
     super.key,
     required this.walletName,
     required this.balance,
     required this.currency,
+    this.icon,
+    this.iconColor,
   });
 
   @override
@@ -23,11 +27,33 @@ class _EditWalletPageState extends State<EditWalletPage> {
   late TextEditingController _walletNameController;
   late TextEditingController _balanceController;
 
+  // Selected icon and color
+  late IconData _selectedIcon;
+  late Color _selectedIconColor;
+
+  // Available wallet icons
+  final List<Map<String, dynamic>> _walletIcons = [
+    {'icon': Icons.account_balance, 'color': Colors.blue, 'label': 'Bank'},
+    {
+      'icon': Icons.account_balance_wallet,
+      'color': Colors.indigo,
+      'label': 'Wallet',
+    },
+    {'icon': Icons.savings, 'color': Colors.green, 'label': 'Savings'},
+    {'icon': Icons.mobile_friendly, 'color': Colors.pink, 'label': 'Mobile'},
+    {'icon': Icons.currency_bitcoin, 'color': Colors.orange, 'label': 'Crypto'},
+    {'icon': Icons.attach_money, 'color': Colors.amber, 'label': 'Cash'},
+    {'icon': Icons.credit_card, 'color': Colors.purple, 'label': 'Card'},
+    {'icon': Icons.card_giftcard, 'color': Colors.red, 'label': 'Gift'},
+  ];
+
   @override
   void initState() {
     super.initState();
     _walletNameController = TextEditingController(text: widget.walletName);
     _balanceController = TextEditingController(text: widget.balance.toString());
+    _selectedIcon = widget.icon ?? Icons.account_balance_wallet;
+    _selectedIconColor = widget.iconColor ?? Colors.blue;
   }
 
   @override
@@ -43,6 +69,8 @@ class _EditWalletPageState extends State<EditWalletPage> {
       final walletData = {
         'name': _walletNameController.text,
         'balance': double.parse(_balanceController.text),
+        'icon': _selectedIcon,
+        'iconColor': _selectedIconColor,
       };
 
       debugPrint('Wallet updated: $walletData');
@@ -86,8 +114,74 @@ class _EditWalletPageState extends State<EditWalletPage> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Icon Preview Section
+                const SizedBox(height: 20),
+                Text(
+                  'Wallet Icon',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: _selectedIconColor.withOpacity(0.2),
+                  child: Icon(
+                    _selectedIcon,
+                    size: 48,
+                    color: _selectedIconColor,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Icon Grid Selector
+                SizedBox(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _walletIcons.length,
+                    itemBuilder: (context, index) {
+                      final iconData = _walletIcons[index];
+                      final isSelected =
+                          iconData['icon'] == _selectedIcon &&
+                          iconData['color'] == _selectedIconColor;
+
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedIcon = iconData['icon'];
+                            _selectedIconColor = iconData['color'];
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            border: isSelected
+                                ? Border.all(
+                                    color: _selectedIconColor,
+                                    width: 3,
+                                  )
+                                : null,
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: iconData['color'].withOpacity(0.2),
+                            child: Icon(
+                              iconData['icon'],
+                              size: 28,
+                              color: iconData['color'],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 28),
+
                 // Wallet Name
                 _buildSectionTitle('Wallet Name'),
                 const SizedBox(height: 8),

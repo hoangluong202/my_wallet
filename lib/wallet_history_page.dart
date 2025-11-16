@@ -2,8 +2,19 @@ import 'package:flutter/material.dart';
 
 class WalletHistoryPage extends StatelessWidget {
   final String walletName;
+  final double balance;
+  final String currency;
+  final IconData? icon;
+  final Color? iconColor;
 
-  const WalletHistoryPage({super.key, required this.walletName});
+  const WalletHistoryPage({
+    super.key,
+    required this.walletName,
+    this.balance = 0.0,
+    this.currency = 'VND (₫)',
+    this.icon,
+    this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +36,50 @@ class WalletHistoryPage extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
+              
+              // Wallet Icon and Info Header
+              CircleAvatar(
+                radius: 45,
+                backgroundColor: (iconColor ?? Colors.blue).withOpacity(0.2),
+                child: Icon(
+                  icon ?? Icons.account_balance_wallet,
+                  size: 56,
+                  color: iconColor ?? Colors.blue,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Wallet Name
+              Text(
+                walletName,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Balance and Currency
+              Text(
+                '\$${balance.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                currency,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 28),
+              
+              // Change Log Title
               Text(
                 'Change Log',
                 style: Theme.of(

@@ -72,6 +72,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 6.0,
+      padding: EdgeInsets.zero,
       child: SizedBox(
         height: 60,
         child: Row(
