@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'add_wallet_page.dart';
 import 'edit_wallet_page.dart';
 import 'wallet_history_page.dart';
+import 'notification_widget.dart';
 
 class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});
@@ -122,13 +123,11 @@ class _WalletsPageState extends State<WalletsPage> {
                 color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                '${_wallets.length} wallets',
-              ),
+              Text('${_wallets.length} wallets'),
             ],
           ),
           Text(
-            '${total.toInt().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}đ',
+            '${_formatVND(total.toInt())} đ',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: total < 0 ? Colors.red : Colors.green.shade700,
@@ -143,7 +142,15 @@ class _WalletsPageState extends State<WalletsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddWalletPage()),
-    );
+    ).then((result) {
+      if (result == true) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallet created successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    });
   }
 
   Widget _buildWalletCard(BuildContext context, WalletModel wallet) {
@@ -156,11 +163,11 @@ class _WalletsPageState extends State<WalletsPage> {
         child: Row(
           children: [
             CircleAvatar(
-              radius: 32,
+              radius: 20,
               backgroundColor: wallet.iconColor.withOpacity(0.2),
-              child: Icon(wallet.icon, size: 32, color: wallet.iconColor),
+              child: Icon(wallet.icon, size: 20, color: wallet.iconColor),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,38 +175,44 @@ class _WalletsPageState extends State<WalletsPage> {
                   Text(
                     wallet.name,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     'Created on ${_formatDate(wallet.createdOn)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     'Last updated ${_formatDuration(wallet.lastUpdated)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${wallet.balance.toInt().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}đ',
+                  '${_formatVND(wallet.balance.toInt())} đ',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: wallet.balance < 0
                         ? Colors.red
                         : Colors.green.shade700,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 PopupMenuButton<String>(
                   itemBuilder: (BuildContext context) => [
                     const PopupMenuItem(
@@ -265,7 +278,15 @@ class _WalletsPageState extends State<WalletsPage> {
           currency: 'VND (₫)',
         ),
       ),
-    );
+    ).then((result) {
+      if (result == true) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallet "${wallet.name}" updated successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    });
   }
 
   void _onViewHistory(BuildContext context, WalletModel wallet) {
@@ -298,11 +319,10 @@ class _WalletsPageState extends State<WalletsPage> {
               setState(() {
                 _wallets.removeWhere((w) => w.name == wallet.name);
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Wallet "${wallet.name}" deleted'),
-                  duration: const Duration(seconds: 2),
-                ),
+              SuccessNotification.show(
+                context: context,
+                message: 'Wallet "${wallet.name}" deleted successfully!',
+                duration: const Duration(seconds: 2),
               );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -336,6 +356,12 @@ class _WalletsPageState extends State<WalletsPage> {
     if (d.inHours < 24) return '${d.inHours} hours ago';
     if (d.inDays < 7) return '${d.inDays} days ago';
     return '${d.inDays ~/ 7} weeks ago';
+  }
+
+  static String _formatVND(int amount) {
+    final s = amount.toString();
+    final re = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return s.replaceAllMapped(re, (m) => '.');
   }
 }
 

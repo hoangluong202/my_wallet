@@ -5,6 +5,7 @@ import 'wallets_page.dart';
 import 'transactions_page.dart';
 import 'categories_page.dart';
 import 'add_transaction_page.dart';
+import 'notification_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const MainScaffold(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -50,10 +52,17 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   void _onFabPressed() {
-    // Navigate to Add Transaction page for all tabs
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+    );
+  }
+
+  void _showSuccessNotification(String message) {
+    SuccessNotification.show(
+      context: context,
+      message: message,
+      duration: const Duration(seconds: 3),
     );
   }
 
@@ -164,6 +173,7 @@ class _BottomBarItem {
   final String label;
   final IconData icon;
   final int index;
+
   _BottomBarItem({
     required this.label,
     required this.icon,
@@ -171,7 +181,7 @@ class _BottomBarItem {
   });
 }
 
-class _BottomNavItem extends StatefulWidget {
+class _BottomNavItem extends StatelessWidget {
   final _BottomBarItem item;
   final bool selected;
   final VoidCallback onTap;
@@ -183,34 +193,23 @@ class _BottomNavItem extends StatefulWidget {
   });
 
   @override
-  State<_BottomNavItem> createState() => _BottomNavItemState();
-}
-
-class _BottomNavItemState extends State<_BottomNavItem> {
-  @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final primaryColor = colorScheme.primary;
-    final unselectedColor = Colors.grey.shade500;
-
-    final iconColor = widget.selected ? primaryColor : unselectedColor;
-    final textColor = widget.selected ? primaryColor : unselectedColor;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final textColor = selected ? primaryColor : Colors.grey.shade500;
+    final iconColor = selected ? primaryColor : Colors.grey.shade500;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.onTap,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        onTap: onTap,
         child: SizedBox.expand(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedScale(
                 duration: const Duration(milliseconds: 200),
-                scale: widget.selected ? 1.15 : 1.0,
-                child: Icon(widget.item.icon, color: iconColor, size: 22),
+                scale: selected ? 1.15 : 1.0,
+                child: Icon(item.icon, color: iconColor, size: 22),
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
@@ -219,12 +218,10 @@ class _BottomNavItemState extends State<_BottomNavItem> {
                 style: TextStyle(
                   color: textColor,
                   fontSize: 11,
-                  fontWeight: widget.selected
-                      ? FontWeight.w600
-                      : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 ),
                 child: Text(
-                  widget.item.label,
+                  item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -234,7 +231,7 @@ class _BottomNavItemState extends State<_BottomNavItem> {
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
                 height: 3,
-                width: widget.selected ? 22 : 0,
+                width: selected ? 22 : 0,
                 decoration: BoxDecoration(
                   color: primaryColor,
                   borderRadius: BorderRadius.circular(2),

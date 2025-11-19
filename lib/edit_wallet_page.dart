@@ -53,7 +53,7 @@ class _EditWalletPageState extends State<EditWalletPage> {
     super.initState();
     _walletNameController = TextEditingController(text: widget.walletName);
     _balanceController = TextEditingController(
-      text: widget.balance.toInt().toString(),
+      text: _formatVND(widget.balance.toInt()),
     );
     _selectedIcon = widget.icon ?? Icons.account_balance_wallet;
     _selectedIconColor = widget.iconColor ?? Colors.blue;
@@ -71,29 +71,17 @@ class _EditWalletPageState extends State<EditWalletPage> {
       // Form is valid
       final walletData = {
         'name': _walletNameController.text,
-        'balance': int.parse(_balanceController.text).toDouble(),
+        'balance': int.parse(
+          _balanceController.text.replaceAll('.', ''),
+        ).toDouble(),
         'icon': _selectedIcon,
         'iconColor': _selectedIconColor,
       };
 
       debugPrint('Wallet updated: $walletData');
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Wallet "${_walletNameController.text}" updated successfully!',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // Pop back to previous page after a short delay
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      });
+      // Pop back to previous page immediately
+      Navigator.pop(context, true);
     }
   }
 
@@ -220,8 +208,19 @@ class _EditWalletPageState extends State<EditWalletPage> {
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            final cleanValue = int.tryParse(value) ?? 0;
+                            _balanceController.value = TextEditingValue(
+                              text: _formatVND(cleanValue),
+                              selection: TextSelection.collapsed(
+                                offset: _formatVND(cleanValue).length,
+                              ),
+                            );
+                          }
+                        },
                         decoration: _buildInputDecoration(
-                          '1000',
+                          '1.000.000',
                           suffixText: 'đ',
                           suffixStyle: TextStyle(
                             fontSize: 14,
@@ -233,15 +232,33 @@ class _EditWalletPageState extends State<EditWalletPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter a balance';
                           }
-                          final balance = int.tryParse(value);
-                          if (balance == null) {
+                          final cleanValue = int.tryParse(
+                            value.replaceAll('.', ''),
+                          );
+                          if (cleanValue == null) {
                             return 'Please enter a valid integer';
                           }
-                          if (balance < 0) {
+                          if (cleanValue < 0) {
                             return 'Balance cannot be negative';
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 12),
+                      // Quick suggestion buttons
+                      _buildSectionTitle('Quick Add'),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildQuickAddButton(10000, '10.000'),
+                            const SizedBox(width: 8),
+                            _buildQuickAddButton(35000, '35.000'),
+                            const SizedBox(width: 8),
+                            _buildQuickAddButton(50000, '50.000'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -295,5 +312,51 @@ class _EditWalletPageState extends State<EditWalletPage> {
       filled: true,
       fillColor: Colors.grey.shade50,
     );
+  }
+
+  Widget _buildQuickAddButton(int amount, String displayText) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          int currentBalance =
+              int.tryParse(_balanceController.text.replaceAll('.', '')) ?? 0;
+          int newBalance = currentBalance + amount;
+          _balanceController.text = _formatVND(newBalance);
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blue.shade300, width: 1),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.blue.shade50,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.add_circle_outline,
+              size: 18,
+              color: Colors.blue.shade600,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              displayText,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatVND(int amount) {
+    final s = amount.toString();
+    final re = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return s.replaceAllMapped(re, (m) => '.');
   }
 }

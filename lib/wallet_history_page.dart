@@ -33,7 +33,7 @@ class WalletHistoryPage extends StatelessWidget {
         elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,18 +74,18 @@ class WalletHistoryPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               'History',
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Expanded(
               child: ListView.separated(
                 itemCount: historyEntries.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
                 itemBuilder: (context, index) =>
                     _buildHistoryTile(context, historyEntries[index]),
               ),
@@ -125,7 +125,9 @@ class WalletHistoryPage extends StatelessWidget {
       leadingColor = Colors.purple;
     }
 
-    final newBalanceText = newInt != null ? _formatVND(newInt) : entry.newValue;
+    final newBalanceText = newInt != null
+        ? '${_formatVND(newInt)} đ'
+        : entry.newValue;
     final deltaText = delta != null
         ? '${delta >= 0 ? '+' : '-'}${_formatVND(delta.abs())}'
         : null;
@@ -133,67 +135,82 @@ class WalletHistoryPage extends StatelessWidget {
         ? (delta >= 0 ? Colors.green : Colors.red)
         : Colors.grey;
 
+    // Format date and time
+    final dateTime = entry.dateTime;
+    final today = DateTime.now();
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+
+    String dateLabel;
+    if (dateTime.year == today.year &&
+        dateTime.month == today.month &&
+        dateTime.day == today.day) {
+      dateLabel = 'Today';
+    } else if (dateTime.year == yesterday.year &&
+        dateTime.month == yesterday.month &&
+        dateTime.day == yesterday.day) {
+      dateLabel = 'Yesterday';
+    } else {
+      dateLabel = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    }
+
+    final timeStr =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: leadingColor.withOpacity(0.15),
-            child: Icon(leadingIcon, size: 18, color: leadingColor),
+          // Icon
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: leadingColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(leadingIcon, size: 14, color: leadingColor),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+          // Info text
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
+                Text(
+                  entry.type,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        entry.type,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      dateLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(
-                          entry.type,
-                        ).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        entry.status,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _getStatusColor(entry.type),
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(width: 6),
+                    Text(
+                      timeStr,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${entry.dateTime.toString().split('.')[0]}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 if (entry.notes != null && entry.notes!.trim().isNotEmpty)
                   Padding(
@@ -201,8 +218,8 @@ class WalletHistoryPage extends StatelessWidget {
                     child: Text(
                       entry.notes!,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -211,14 +228,16 @@ class WalletHistoryPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+          // Balance info
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 newBalanceText,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -226,7 +245,7 @@ class WalletHistoryPage extends StatelessWidget {
                 Text(
                   deltaText,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: deltaColor,
                     fontWeight: FontWeight.w600,
                   ),
@@ -238,19 +257,6 @@ class WalletHistoryPage extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String type) {
-    switch (type) {
-      case 'Balance Updated':
-        return Colors.blue;
-      case 'Name Changed':
-        return Colors.orange;
-      case 'Currency Changed':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
-  }
-
   List<HistoryEntry> _getHistoryData() {
     final now = DateTime.now();
     return [
@@ -258,16 +264,16 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(hours: 2)),
-        oldValue: '5,200,000đ',
-        newValue: '5,230,000đ',
+        oldValue: '5200000',
+        newValue: '5230000',
         notes: 'Deposit from salary',
       ),
       HistoryEntry(
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 1)),
-        oldValue: '5,450,000đ',
-        newValue: '5,200,000đ',
+        oldValue: '5450000',
+        newValue: '5200000',
         notes: 'Withdrawal for bills',
       ),
       HistoryEntry(
@@ -282,16 +288,16 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 5)),
-        oldValue: '3,200,000đ',
-        newValue: '5,450,000đ',
+        oldValue: '3200000',
+        newValue: '5450000',
         notes: 'Transfer from savings',
       ),
       HistoryEntry(
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 7)),
-        oldValue: '5,000,000đ',
-        newValue: '3,200,000đ',
+        oldValue: '5000000',
+        newValue: '3200000',
         notes: 'Shopping expenses',
       ),
     ];
@@ -307,8 +313,7 @@ class WalletHistoryPage extends StatelessWidget {
   String _formatVND(int amount) {
     final s = amount.toString();
     final re = RegExp(r'\B(?=(\d{3})+(?!\d))');
-    final withSep = s.replaceAllMapped(re, (m) => ',');
-    return '${withSep}đ';
+    return s.replaceAllMapped(re, (m) => '.');
   }
 }
 

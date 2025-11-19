@@ -58,29 +58,17 @@ class _AddWalletPageState extends State<AddWalletPage> {
       final walletData = {
         'name': _walletNameController.text,
         'currency': _selectedCurrency,
-        'balance': int.parse(_initialBalanceController.text).toDouble(),
+        'balance': int.parse(
+          _initialBalanceController.text.replaceAll('.', ''),
+        ).toDouble(),
         'icon': _selectedIcon,
         'iconColor': _selectedIconColor,
       };
 
       debugPrint('Wallet verified: $walletData');
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Wallet "${_walletNameController.text}" created successfully!',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      // Pop back to previous page after a short delay
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      });
+      // Pop back to previous page immediately
+      Navigator.pop(context, true);
     }
   }
 
@@ -147,8 +135,19 @@ class _AddWalletPageState extends State<AddWalletPage> {
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            final cleanValue = int.tryParse(value) ?? 0;
+                            _initialBalanceController.value = TextEditingValue(
+                              text: _formatVND(cleanValue),
+                              selection: TextSelection.collapsed(
+                                offset: _formatVND(cleanValue).length,
+                              ),
+                            );
+                          }
+                        },
                         decoration: _buildInputDecoration(
-                          '1000',
+                          '1.000.000',
                           suffixText: 'đ',
                           suffixStyle: TextStyle(
                             fontSize: 14,
@@ -160,11 +159,13 @@ class _AddWalletPageState extends State<AddWalletPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter an initial balance';
                           }
-                          final balance = int.tryParse(value);
-                          if (balance == null) {
+                          final cleanValue = int.tryParse(
+                            value.replaceAll('.', ''),
+                          );
+                          if (cleanValue == null) {
                             return 'Please enter a valid integer';
                           }
-                          if (balance < 0) {
+                          if (cleanValue < 0) {
                             return 'Balance cannot be negative';
                           }
                           return null;
@@ -282,5 +283,11 @@ class _AddWalletPageState extends State<AddWalletPage> {
       filled: true,
       fillColor: Colors.grey.shade50,
     );
+  }
+
+  String _formatVND(int amount) {
+    final s = amount.toString();
+    final re = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    return s.replaceAllMapped(re, (m) => '.');
   }
 }
