@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'categories_page.dart';
+import 'notification_widget.dart';
 
 class AddCategoryPage extends StatefulWidget {
   final CategoryType preselectedType;
@@ -58,7 +59,18 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
       );
 
       debugPrint('New category: ${_nameController.text}');
-      Navigator.pop(context, newCategory);
+
+      SuccessNotification.show(
+        context: context,
+        message: '${_nameController.text} category created successfully!',
+        duration: const Duration(seconds: 2),
+      );
+
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          Navigator.pop(context, newCategory);
+        }
+      });
     }
   }
 
@@ -77,158 +89,175 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add New Category'),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon Picker
-                _buildSectionTitle('Select Icon'),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _getColorForIcon(
-                            _selectedIcon,
-                          ).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        child: Icon(
-                          _selectedIcon,
-                          size: 40,
-                          color: _getColorForIcon(_selectedIcon),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _availableIcons
-                            .map(
-                              (icon) => GestureDetector(
-                                onTap: () =>
-                                    setState(() => _selectedIcon = icon),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: _selectedIcon == icon
-                                        ? Colors.blue.shade100
-                                        : Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: _selectedIcon == icon
-                                          ? Colors.blue
-                                          : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(8),
-                                  child: Icon(icon, size: 24),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Category Name
-                _buildSectionTitle('Category Name'),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: _buildInputDecoration('e.g., Food, Transport'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a category name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Category Type
-                _buildSectionTitle('Category Type'),
-                const SizedBox(height: 8),
-                Container(
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey.shade50,
-                  ),
-                  child: Text(
-                    categoryTypeLabel(_selectedType),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Icon Picker
+                        Text(
+                          'Select Icon',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _getColorForIcon(
+                              _selectedIcon,
+                            ).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            _selectedIcon,
+                            size: 32,
+                            color: _getColorForIcon(_selectedIcon),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: _availableIcons
+                                .map(
+                                  (icon) => Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: GestureDetector(
+                                      onTap: () =>
+                                          setState(() => _selectedIcon = icon),
+                                      child: Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          color: _selectedIcon == icon
+                                              ? _getColorForIcon(
+                                                  icon,
+                                                ).withOpacity(0.25)
+                                              : Colors.grey.shade100,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: _selectedIcon == icon
+                                                ? _getColorForIcon(icon)
+                                                : Colors.transparent,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          icon,
+                                          size: 20,
+                                          color: _getColorForIcon(icon),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Category Name
+                        Text(
+                          'Category Name',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: 'e.g., Food, Transport',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a category name';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
-
-                // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _submitForm,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text('Add Category'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            // Save Button (Fixed at bottom)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _submitForm,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Save Category'),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-    );
-  }
-
-  InputDecoration _buildInputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      filled: true,
-      fillColor: Colors.grey.shade50,
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Add ${categoryTypeLabel(_selectedType)} Category',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

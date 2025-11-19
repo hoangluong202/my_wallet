@@ -75,128 +75,153 @@ class _AddWalletPageState extends State<AddWalletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Wallet'),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Back',
-        ),
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Scrollable content area
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Icon Preview and Selector Section
-                      _buildSectionTitle('Select Wallet Icon'),
-                      const SizedBox(height: 12),
-                      _buildIconPreviewAndSelector(),
-                      const SizedBox(height: 20),
-
-                      // Wallet Name
-                      _buildSectionTitle('Wallet Name'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _walletNameController,
-                        keyboardType: TextInputType.text,
-                        decoration: _buildInputDecoration(
-                          'e.g., Savings, Momo, Main Account',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a wallet name';
-                          }
-                          if (value.length < 2) {
-                            return 'Wallet name must be at least 2 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Initial Balance
-                      _buildSectionTitle('Initial Balance'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _initialBalanceController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        onChanged: (value) {
-                          if (value.isNotEmpty) {
-                            final cleanValue = int.tryParse(value) ?? 0;
-                            _initialBalanceController.value = TextEditingValue(
-                              text: _formatVND(cleanValue),
-                              selection: TextSelection.collapsed(
-                                offset: _formatVND(cleanValue).length,
-                              ),
-                            );
-                          }
-                        },
-                        decoration: _buildInputDecoration(
-                          '1.000.000',
-                          suffixText: 'đ',
-                          suffixStyle: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an initial balance';
-                          }
-                          final cleanValue = int.tryParse(
-                            value.replaceAll('.', ''),
-                          );
-                          if (cleanValue == null) {
-                            return 'Please enter a valid integer';
-                          }
-                          if (cleanValue < 0) {
-                            return 'Balance cannot be negative';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                ),
-              ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Icon Preview and Selector Section
+                        _buildSectionTitle('Select Wallet Icon'),
+                        const SizedBox(height: 12),
+                        _buildIconPreviewAndSelector(),
+                        const SizedBox(height: 20),
 
-              // Fixed Submit Button at bottom
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        // Wallet Name
+                        _buildSectionTitle('Wallet Name'),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _walletNameController,
+                          keyboardType: TextInputType.text,
+                          decoration: _buildInputDecoration(
+                            'e.g., Savings, Momo, Main Account',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a wallet name';
+                            }
+                            if (value.length < 2) {
+                              return 'Wallet name must be at least 2 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Initial Balance
+                        _buildSectionTitle('Initial Balance'),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _initialBalanceController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (value) {
+                            if (value.isNotEmpty) {
+                              final cleanValue = int.tryParse(value) ?? 0;
+                              _initialBalanceController.value =
+                                  TextEditingValue(
+                                text: _formatVND(cleanValue),
+                                selection: TextSelection.collapsed(
+                                  offset: _formatVND(cleanValue).length,
+                                ),
+                              );
+                            }
+                          },
+                          decoration: _buildInputDecoration(
+                            '1.000.000',
+                            suffixText: 'đ',
+                            suffixStyle: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter an initial balance';
+                            }
+                            final cleanValue = int.tryParse(
+                              value.replaceAll('.', ''),
+                            );
+                            if (cleanValue == null) {
+                              return 'Please enter a valid integer';
+                            }
+                            if (cleanValue < 0) {
+                              return 'Balance cannot be negative';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
-                  child: const Text(
-                    'Create Wallet',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            // Fixed Submit Button at bottom
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _submitForm,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Create Wallet'),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Add Wallet',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }

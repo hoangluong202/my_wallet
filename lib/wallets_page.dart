@@ -214,36 +214,43 @@ class _WalletsPageState extends State<WalletsPage> {
                 ),
                 const SizedBox(height: 6),
                 PopupMenuButton<String>(
+                  offset: const Offset(0, 30),
                   itemBuilder: (BuildContext context) => [
                     const PopupMenuItem(
-                      value: 'edit',
+                      value: 'view',
+                      height: 40,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.edit, size: 18),
+                          Icon(Icons.history, size: 16),
                           SizedBox(width: 8),
-                          Text('Edit'),
+                          Text('History', style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'view',
+                      value: 'edit',
+                      height: 40,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.history, size: 18),
+                          Icon(Icons.edit, size: 16),
                           SizedBox(width: 8),
-                          Text('View History'),
+                          Text('Edit', style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
                     const PopupMenuItem(
                       value: 'delete',
+                      height: 40,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          Icon(Icons.delete, size: 16, color: Colors.red),
                           SizedBox(width: 8),
                           Text(
-                            'Delete Wallet',
-                            style: TextStyle(color: Colors.red),
+                            'Delete',
+                            style: TextStyle(fontSize: 13, color: Colors.red),
                           ),
                         ],
                       ),

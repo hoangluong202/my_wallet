@@ -67,23 +67,14 @@ class CategoryHistoryPage extends StatelessWidget {
     } else if (dateOnly == yesterday) {
       return 'Yesterday';
     } else {
-      const months = [
-        '',
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${months[date.month]} ${date.day}, ${date.year}';
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
     }
+  }
+
+  String _formatVND(double amount) {
+    return amount
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.');
   }
 
   @override
@@ -98,96 +89,161 @@ class CategoryHistoryPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${category.name} History'),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              Text(
-                'Transaction History',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
               ),
-              const SizedBox(height: 16),
-              ...grouped.entries.map((entry) {
-                final dateLabel = entry.key;
-                final txns = entry.value;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        dateLabel,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${category.transactionCount} transactions',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: Colors.grey.shade600),
+                        ),
+                      ],
                     ),
-                    ...txns.map((txn) {
-                      final isIncome = txn.type == 'income';
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              decoration: BoxDecoration(
-                                color: isIncome
-                                    ? Colors.green.shade100
-                                    : Colors.red.shade100,
-                                borderRadius: BorderRadius.circular(8),
+                  ),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: category.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(category.icon, size: 18, color: category.color),
+                  ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...grouped.entries.map((entry) {
+                        final dateLabel = entry.key;
+                        final txns = entry.value;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 12.0,
+                                bottom: 8.0,
                               ),
-                              padding: const EdgeInsets.all(8),
-                              child: Icon(
-                                isIncome
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                                color: isIncome ? Colors.green : Colors.red,
+                              child: Text(
+                                dateLabel,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                             ),
-                            title: Text(txn.description),
-                            subtitle: Text(
-                              '${txn.date.hour}:${txn.date.minute.toString().padLeft(2, '0')}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            trailing: Text(
-                              '${isIncome ? '+' : '-'}\$${txn.amount.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isIncome ? Colors.green : Colors.red,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              }).toList(),
-              const SizedBox(height: 16),
-            ],
-          ),
+                            ...txns.map((txn) {
+                              final isIncome = txn.type == 'income';
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 4.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: isIncome
+                                            ? Colors.green.shade100
+                                            : Colors.red.shade100,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(
+                                        isIncome
+                                            ? Icons.trending_up
+                                            : Icons.trending_down,
+                                        size: 16,
+                                        color: isIncome
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            txn.description,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            '${txn.date.hour.toString().padLeft(2, '0')}:${txn.date.minute.toString().padLeft(2, '0')}',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '${isIncome ? '+' : '-'}${_formatVND(txn.amount)}đ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: isIncome
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
