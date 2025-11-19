@@ -23,7 +23,7 @@ class WalletHistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('$walletName History'),
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -32,186 +32,208 @@ class WalletHistoryPage extends StatelessWidget {
         ),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              
-              // Wallet Icon and Info Header
-              CircleAvatar(
-                radius: 45,
-                backgroundColor: (iconColor ?? Colors.blue).withOpacity(0.2),
-                child: Icon(
-                  icon ?? Icons.account_balance_wallet,
-                  size: 56,
-                  color: iconColor ?? Colors.blue,
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Wallet Name
-              Text(
-                walletName,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Balance and Currency
-              Text(
-                '\$${balance.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                currency,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(height: 28),
-              
-              // Change Log Title
-              Text(
-                'Change Log',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Column(
-                children: historyEntries
-                    .map((entry) => _buildHistoryCard(context, entry))
-                    .toList(),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryCard(BuildContext context, HistoryEntry entry) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: Padding(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Compact header with icon, name, and current balance (VND only)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  entry.type,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: (iconColor ?? Colors.blue).withOpacity(0.15),
+                  child: Icon(
+                    icon ?? Icons.account_balance_wallet,
+                    size: 20,
+                    color: iconColor ?? Colors.blue,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(entry.type).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    entry.status,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _getStatusColor(entry.type),
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        walletName,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatVND(balance.toInt()),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              '${entry.dateTime.toString().split('.')[0]}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              'History',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Old Value:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        entry.oldValue,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'New Value:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Text(
-                        entry.newValue,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            Expanded(
+              child: ListView.separated(
+                itemCount: historyEntries.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                itemBuilder: (context, index) =>
+                    _buildHistoryTile(context, historyEntries[index]),
               ),
             ),
-            if (entry.notes != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Notes: ${entry.notes}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryTile(BuildContext context, HistoryEntry entry) {
+    final isBalanceUpdate = entry.type == 'Balance Updated';
+    final oldInt = _parseVND(entry.oldValue);
+    final newInt = _parseVND(entry.newValue);
+    final int? delta = (isBalanceUpdate && oldInt != null && newInt != null)
+        ? newInt - oldInt
+        : null;
+
+    IconData leadingIcon;
+    Color leadingColor;
+    if (isBalanceUpdate) {
+      if (delta == null || delta == 0) {
+        leadingIcon = Icons.swap_horiz;
+        leadingColor = Colors.blueGrey;
+      } else if (delta > 0) {
+        leadingIcon = Icons.arrow_upward;
+        leadingColor = Colors.green;
+      } else {
+        leadingIcon = Icons.arrow_downward;
+        leadingColor = Colors.red;
+      }
+    } else if (entry.type == 'Name Changed') {
+      leadingIcon = Icons.edit;
+      leadingColor = Colors.orange;
+    } else {
+      leadingIcon = Icons.tune;
+      leadingColor = Colors.purple;
+    }
+
+    final newBalanceText = newInt != null ? _formatVND(newInt) : entry.newValue;
+    final deltaText = delta != null
+        ? '${delta >= 0 ? '+' : '-'}${_formatVND(delta.abs())}'
+        : null;
+    final deltaColor = delta != null
+        ? (delta >= 0 ? Colors.green : Colors.red)
+        : Colors.grey;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: leadingColor.withOpacity(0.15),
+            child: Icon(leadingIcon, size: 18, color: leadingColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.type,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          entry.type,
+                        ).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        entry.status,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _getStatusColor(entry.type),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${entry.dateTime.toString().split('.')[0]}',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (entry.notes != null && entry.notes!.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      entry.notes!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                newBalanceText,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (deltaText != null)
+                Text(
+                  deltaText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: deltaColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -236,16 +258,16 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(hours: 2)),
-        oldValue: '\$5,200.00',
-        newValue: '\$5,230.75',
+        oldValue: '5,200,000đ',
+        newValue: '5,230,000đ',
         notes: 'Deposit from salary',
       ),
       HistoryEntry(
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 1)),
-        oldValue: '\$5,450.50',
-        newValue: '\$5,200.00',
+        oldValue: '5,450,000đ',
+        newValue: '5,200,000đ',
         notes: 'Withdrawal for bills',
       ),
       HistoryEntry(
@@ -260,27 +282,33 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 5)),
-        oldValue: '\$3,200.00',
-        newValue: '\$5,450.50',
+        oldValue: '3,200,000đ',
+        newValue: '5,450,000đ',
         notes: 'Transfer from savings',
       ),
       HistoryEntry(
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 7)),
-        oldValue: '\$5,000.00',
-        newValue: '\$3,200.00',
+        oldValue: '5,000,000đ',
+        newValue: '3,200,000đ',
         notes: 'Shopping expenses',
       ),
-      HistoryEntry(
-        type: 'Currency Changed',
-        status: 'Change',
-        dateTime: now.subtract(const Duration(days: 10)),
-        oldValue: 'USD (\$)',
-        newValue: 'VND (₫)',
-        notes: null,
-      ),
     ];
+  }
+
+  // Helpers
+  int? _parseVND(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return null;
+    return int.tryParse(digits);
+  }
+
+  String _formatVND(int amount) {
+    final s = amount.toString();
+    final re = RegExp(r'\B(?=(\d{3})+(?!\d))');
+    final withSep = s.replaceAllMapped(re, (m) => ',');
+    return '${withSep}đ';
   }
 }
 

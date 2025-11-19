@@ -64,8 +64,6 @@ class _WalletsPageState extends State<WalletsPage> {
               const SizedBox(height: 12),
               _buildTopBar(context),
               const SizedBox(height: 12),
-              _buildSearchField(context),
-              const SizedBox(height: 12),
               _buildSummaryCard(context),
               const SizedBox(height: 12),
               Expanded(
@@ -105,21 +103,6 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
-  Widget _buildSearchField(BuildContext context) {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: 'Search wallets',
-        prefixIcon: const Icon(Icons.search),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 12,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
   Widget _buildSummaryCard(BuildContext context) {
     final total = _wallets.fold<double>(0, (sum, w) => sum + w.balance);
     return Container(
@@ -141,12 +124,11 @@ class _WalletsPageState extends State<WalletsPage> {
               const SizedBox(width: 8),
               Text(
                 '${_wallets.length} wallets',
-                style: TextStyle(color: Colors.grey.shade700),
               ),
             ],
           ),
           Text(
-            '\$${total.toStringAsFixed(2)}',
+            '${total.toInt().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}đ',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: total < 0 ? Colors.red : Colors.green.shade700,
@@ -208,7 +190,7 @@ class _WalletsPageState extends State<WalletsPage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '\$${wallet.balance.toStringAsFixed(2)}',
+                  '${wallet.balance.toInt().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}đ',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

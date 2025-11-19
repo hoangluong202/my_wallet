@@ -131,6 +131,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(child: _pages[_selectedIndex]),
       floatingActionButton: FloatingActionButton(
         onPressed: _onFabPressed,
@@ -195,33 +196,53 @@ class _BottomNavItemState extends State<_BottomNavItem> {
     final iconColor = widget.selected ? primaryColor : unselectedColor;
     final textColor = widget.selected ? primaryColor : unselectedColor;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedScale(
-            duration: const Duration(milliseconds: 200),
-            scale: widget.selected ? 1.15 : 1.0,
-            child: Icon(widget.item.icon, color: iconColor, size: 22),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        child: SizedBox.expand(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                duration: const Duration(milliseconds: 200),
+                scale: widget.selected ? 1.15 : 1.0,
+                child: Icon(widget.item.icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(height: 3),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 11,
+                  fontWeight: widget.selected
+                      ? FontWeight.w600
+                      : FontWeight.w500,
+                ),
+                child: Text(
+                  widget.item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 6),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                height: 3,
+                width: widget.selected ? 22 : 0,
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 11,
-              fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
-            ),
-            child: Text(
-              widget.item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

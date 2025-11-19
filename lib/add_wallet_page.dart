@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AddWalletPage extends StatefulWidget {
   const AddWalletPage({super.key});
@@ -57,7 +58,7 @@ class _AddWalletPageState extends State<AddWalletPage> {
       final walletData = {
         'name': _walletNameController.text,
         'currency': _selectedCurrency,
-        'balance': double.parse(_initialBalanceController.text),
+        'balance': int.parse(_initialBalanceController.text).toDouble(),
         'icon': _selectedIcon,
         'iconColor': _selectedIconColor,
       };
@@ -87,8 +88,8 @@ class _AddWalletPageState extends State<AddWalletPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('+ Add New Wallet'),
-        centerTitle: true,
+        title: const Text('Add Wallet'),
+        centerTitle: false,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -142,31 +143,26 @@ class _AddWalletPageState extends State<AddWalletPage> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _initialBalanceController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         decoration: _buildInputDecoration(
-                          'e.g., 1000.50',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.only(left: 12.0),
-                            child: Text(
-                              '₫',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
+                          '1000',
+                          suffixText: 'đ',
+                          suffixStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
                           ),
-                          prefixIconConstraints: const BoxConstraints(minWidth: 0),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter an initial balance';
                           }
-                          final balance = double.tryParse(value);
+                          final balance = int.tryParse(value);
                           if (balance == null) {
-                            return 'Please enter a valid number';
+                            return 'Please enter a valid integer';
                           }
                           if (balance < 0) {
                             return 'Balance cannot be negative';
@@ -193,10 +189,7 @@ class _AddWalletPageState extends State<AddWalletPage> {
                   ),
                   child: const Text(
                     'Create Wallet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -223,11 +216,7 @@ class _AddWalletPageState extends State<AddWalletPage> {
         CircleAvatar(
           radius: 32,
           backgroundColor: _selectedIconColor.withOpacity(0.2),
-          child: Icon(
-            _selectedIcon,
-            size: 40,
-            color: _selectedIconColor,
-          ),
+          child: Icon(_selectedIcon, size: 40, color: _selectedIconColor),
         ),
         const SizedBox(height: 16),
         // Icon Selector Horizontal List
@@ -253,14 +242,8 @@ class _AddWalletPageState extends State<AddWalletPage> {
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(
                     border: isSelected
-                        ? Border.all(
-                            color: _selectedIconColor,
-                            width: 2,
-                          )
-                        : Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
+                        ? Border.all(color: _selectedIconColor, width: 2)
+                        : Border.all(color: Colors.grey.shade300, width: 1),
                     shape: BoxShape.circle,
                   ),
                   child: CircleAvatar(
@@ -285,11 +268,15 @@ class _AddWalletPageState extends State<AddWalletPage> {
     String hintText, {
     Widget? prefixIcon,
     BoxConstraints? prefixIconConstraints,
+    String? suffixText,
+    TextStyle? suffixStyle,
   }) {
     return InputDecoration(
       hintText: hintText,
       prefixIcon: prefixIcon,
       prefixIconConstraints: prefixIconConstraints,
+      suffixText: suffixText,
+      suffixStyle: suffixStyle,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       filled: true,
