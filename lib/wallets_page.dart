@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'add_wallet_page.dart';
 import 'edit_wallet_page.dart';
 import 'wallet_history_page.dart';
+import 'wallet_detail_page.dart';
 import 'notification_widget.dart';
 
 class WalletsPage extends StatefulWidget {
@@ -154,122 +155,83 @@ class _WalletsPageState extends State<WalletsPage> {
   }
 
   Widget _buildWalletCard(BuildContext context, WalletModel wallet) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: wallet.iconColor.withOpacity(0.2),
-              child: Icon(wallet.icon, size: 20, color: wallet.iconColor),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WalletDetailPage(
+              wallet: wallet,
+              onEdit: () => _onEditWallet(context, wallet),
+              onDelete: () => _onDeleteWallet(wallet),
+              onHistory: () => _onViewHistory(context, wallet),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: wallet.iconColor.withOpacity(0.2),
+                child: Icon(wallet.icon, size: 20, color: wallet.iconColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      wallet.name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Created on ${_formatDate(wallet.createdOn)}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Last updated ${_formatDuration(wallet.lastUpdated)}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    wallet.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+                    '${_formatVND(wallet.balance.toInt())} đ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: wallet.balance < 0
+                          ? Colors.red
+                          : Colors.green.shade700,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Created on ${_formatDate(wallet.createdOn)}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Last updated ${_formatDuration(wallet.lastUpdated)}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${_formatVND(wallet.balance.toInt())} đ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: wallet.balance < 0
-                        ? Colors.red
-                        : Colors.green.shade700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                PopupMenuButton<String>(
-                  offset: const Offset(0, 30),
-                  itemBuilder: (BuildContext context) => [
-                    const PopupMenuItem(
-                      value: 'view',
-                      height: 40,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.history, size: 16),
-                          SizedBox(width: 8),
-                          Text('History', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'edit',
-                      height: 40,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.edit, size: 16),
-                          SizedBox(width: 8),
-                          Text('Edit', style: TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      height: 40,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.delete, size: 16, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text(
-                            'Delete',
-                            style: TextStyle(fontSize: 13, color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      _onEditWallet(context, wallet);
-                    } else if (value == 'view') {
-                      _onViewHistory(context, wallet);
-                    } else if (value == 'delete') {
-                      _onDeleteWallet(wallet);
-                    }
-                  },
-                  child: const Icon(Icons.more_vert),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

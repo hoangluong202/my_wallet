@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'notification_widget.dart';
 
 class EditWalletPage extends StatefulWidget {
   final String walletName;
@@ -68,7 +69,6 @@ class _EditWalletPageState extends State<EditWalletPage> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      // Form is valid
       final walletData = {
         'name': _walletNameController.text,
         'balance': int.parse(
@@ -80,210 +80,246 @@ class _EditWalletPageState extends State<EditWalletPage> {
 
       debugPrint('Wallet updated: $walletData');
 
-      // Pop back to previous page immediately
-      Navigator.pop(context, true);
+      SuccessNotification.show(
+        context: context,
+        message: 'Changes saved successfully!',
+        duration: const Duration(seconds: 2),
+      );
+
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      });
     }
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Edit Wallet',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Wallet'),
-        centerTitle: false,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Back',
-        ),
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle('Select Wallet Icon'),
-                      const SizedBox(height: 12),
-                      // Icon preview and selector (aligned with Add Wallet)
-                      Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 32,
-                            backgroundColor: _selectedIconColor.withOpacity(
-                              0.2,
-                            ),
-                            child: Icon(
-                              _selectedIcon,
-                              size: 40,
-                              color: _selectedIconColor,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            height: 70,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _walletIcons.length,
-                              itemBuilder: (context, index) {
-                                final iconData = _walletIcons[index];
-                                final isSelected =
-                                    iconData['icon'] == _selectedIcon &&
-                                    iconData['color'] == _selectedIconColor;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedIcon = iconData['icon'];
-                                      _selectedIconColor = iconData['color'];
-                                    });
-                                  },
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: _selectedIconColor,
-                                              width: 2,
-                                            )
-                                          : Border.all(
-                                              color: Colors.grey.shade300,
-                                              width: 1,
-                                            ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: iconData['color']
-                                          .withOpacity(0.2),
-                                      child: Icon(
-                                        iconData['icon'],
-                                        size: 22,
-                                        color: iconData['color'],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      // Wallet Name
-                      _buildSectionTitle('Wallet Name'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _walletNameController,
-                        keyboardType: TextInputType.text,
-                        decoration: _buildInputDecoration(
-                          'e.g., Savings, Momo, Main Account',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a wallet name';
-                          }
-                          if (value.length < 2) {
-                            return 'Wallet name must be at least 2 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Current Balance
-                      _buildSectionTitle('Current Balance'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _balanceController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        onChanged: (value) {
-                          if (value.isNotEmpty) {
-                            final cleanValue = int.tryParse(value) ?? 0;
-                            _balanceController.value = TextEditingValue(
-                              text: _formatVND(cleanValue),
-                              selection: TextSelection.collapsed(
-                                offset: _formatVND(cleanValue).length,
-                              ),
-                            );
-                          }
-                        },
-                        decoration: _buildInputDecoration(
-                          '1.000.000',
-                          suffixText: 'đ',
-                          suffixStyle: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a balance';
-                          }
-                          final cleanValue = int.tryParse(
-                            value.replaceAll('.', ''),
-                          );
-                          if (cleanValue == null) {
-                            return 'Please enter a valid integer';
-                          }
-                          if (cleanValue < 0) {
-                            return 'Balance cannot be negative';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      // Quick suggestion buttons
-                      _buildSectionTitle('Quick Add'),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(context),
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle('Select Wallet Icon'),
+                        const SizedBox(height: 12),
+                        Column(
                           children: [
-                            _buildQuickAddButton(10000, '10.000'),
-                            const SizedBox(width: 8),
-                            _buildQuickAddButton(35000, '35.000'),
-                            const SizedBox(width: 8),
-                            _buildQuickAddButton(50000, '50.000'),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: _selectedIconColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _selectedIcon,
+                                size: 32,
+                                color: _selectedIconColor,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: _walletIcons
+                                    .map(
+                                      (iconData) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 6),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _selectedIcon =
+                                                  iconData['icon'];
+                                              _selectedIconColor =
+                                                  iconData['color'];
+                                            });
+                                          },
+                                          child: Container(
+                                            width: 42,
+                                            height: 42,
+                                            decoration: BoxDecoration(
+                                              color: _selectedIcon ==
+                                                          iconData['icon'] &&
+                                                      _selectedIconColor ==
+                                                          iconData['color']
+                                                  ? iconData['color']
+                                                      .withOpacity(0.25)
+                                                  : Colors.grey.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: _selectedIcon ==
+                                                            iconData['icon'] &&
+                                                        _selectedIconColor ==
+                                                            iconData['color']
+                                                    ? iconData['color']
+                                                    : Colors.transparent,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              iconData['icon'],
+                                              size: 20,
+                                              color: iconData['color'],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Fixed Save Button at bottom
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 20),
+                        _buildSectionTitle('Wallet Name'),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _walletNameController,
+                          keyboardType: TextInputType.text,
+                          decoration: _buildInputDecoration(
+                            'e.g., Savings, Momo, Main Account',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a wallet name';
+                            }
+                            if (value.length < 2) {
+                              return 'Wallet name must be at least 2 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSectionTitle('Current Balance'),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _balanceController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          onChanged: (value) {
+                            if (value.isNotEmpty) {
+                              final cleanValue = int.tryParse(value) ?? 0;
+                              _balanceController.value = TextEditingValue(
+                                text: _formatVND(cleanValue),
+                                selection: TextSelection.collapsed(
+                                  offset: _formatVND(cleanValue).length,
+                                ),
+                              );
+                            }
+                          },
+                          decoration: _buildInputDecoration(
+                            '1.000.000',
+                            suffixText: 'đ',
+                            suffixStyle: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a balance';
+                            }
+                            final cleanValue = int.tryParse(
+                              value.replaceAll('.', ''),
+                            );
+                            if (cleanValue == null) {
+                              return 'Please enter a valid integer';
+                            }
+                            if (cleanValue < 0) {
+                              return 'Balance cannot be negative';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSectionTitle('Quick Add'),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildQuickAddButton(10000, '10.000'),
+                              const SizedBox(width: 8),
+                              _buildQuickAddButton(35000, '35.000'),
+                              const SizedBox(width: 8),
+                              _buildQuickAddButton(50000, '50.000'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            // Fixed Save Button at bottom
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _submitForm,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Save Changes'),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -292,9 +328,10 @@ class _EditWalletPageState extends State<EditWalletPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 
