@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'notification_widget.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 class EditWalletPage extends StatefulWidget {
   final String walletName;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'wallets_page.dart';
-import 'notification_widget.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 String _formatVND(int amount) {
   final s = amount.toString();

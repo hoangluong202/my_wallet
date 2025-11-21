@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'categories_page.dart';
-import 'notification_widget.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
-class EditCategoryPage extends StatefulWidget {
-  final CategoryItem category;
+class AddCategoryPage extends StatefulWidget {
+  final CategoryType preselectedType;
 
-  const EditCategoryPage({super.key, required this.category});
+  const AddCategoryPage({super.key, required this.preselectedType});
 
   @override
-  State<EditCategoryPage> createState() => _EditCategoryPageState();
+  State<AddCategoryPage> createState() => _AddCategoryPageState();
 }
 
-class _EditCategoryPageState extends State<EditCategoryPage> {
+class _AddCategoryPageState extends State<AddCategoryPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late IconData _selectedIcon;
+  late CategoryType _selectedType;
 
   final List<IconData> _availableIcons = [
     Icons.restaurant,
@@ -34,8 +35,9 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.category.name);
-    _selectedIcon = widget.category.icon;
+    _nameController = TextEditingController();
+    _selectedIcon = Icons.category;
+    _selectedType = widget.preselectedType;
   }
 
   @override
@@ -46,22 +48,27 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final updated = widget.category.copyWith(
+      final newCategory = CategoryItem(
+        id: 0,
         name: _nameController.text,
         icon: _selectedIcon,
+        color: _getColorForIcon(_selectedIcon),
+        transactionCount: 0,
+        amount: 0.0,
+        type: _selectedType,
       );
 
-      debugPrint('Category updated: ${_nameController.text}');
+      debugPrint('New category: ${_nameController.text}');
 
       SuccessNotification.show(
         context: context,
-        message: '${_nameController.text} updated successfully!',
+        message: '${_nameController.text} category created successfully!',
         duration: const Duration(seconds: 2),
       );
 
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
-          Navigator.pop(context, updated);
+          Navigator.pop(context, newCategory);
         }
       });
     }
@@ -175,7 +182,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
                         TextFormField(
                           controller: _nameController,
                           decoration: InputDecoration(
-                            hintText: 'Enter category name',
+                            hintText: 'e.g., Food, Transport',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -212,7 +219,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Save Changes'),
+                    child: const Text('Save Category'),
                   ),
                 ),
               ),
@@ -229,20 +236,25 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Edit ${widget.category.name}',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Add ${categoryTypeLabel(_selectedType)} Category',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ],
       ),

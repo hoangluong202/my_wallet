@@ -4,7 +4,7 @@ import 'add_wallet_page.dart';
 import 'edit_wallet_page.dart';
 import 'wallet_history_page.dart';
 import 'wallet_detail_page.dart';
-import 'notification_widget.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'add_category_page.dart';
 import 'edit_category_page.dart';
 import 'category_history_page.dart';
-import 'notification_widget.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 enum CategoryType { expense, income, debt, loan }
 
