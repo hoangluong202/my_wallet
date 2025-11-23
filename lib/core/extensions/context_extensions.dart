@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 extension ContextExtensions on BuildContext {
   ThemeData get theme => Theme.of(this);
-  
+
   ColorScheme get colorScheme => theme.colorScheme;
-  
+
   TextTheme get textTheme => theme.textTheme;
 
   void showSuccessMessage(String message) {
@@ -14,6 +14,17 @@ extension ContextExtensions on BuildContext {
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void showErrorMessage(String message) {
+    ScaffoldMessenger.of(this).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -39,9 +50,7 @@ extension ContextExtensions on BuildContext {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               confirmText,
-              style: TextStyle(
-                color: isDangerous ? Colors.red : null,
-              ),
+              style: TextStyle(color: isDangerous ? Colors.red : null),
             ),
           ),
         ],

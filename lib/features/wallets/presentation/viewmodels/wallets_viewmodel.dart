@@ -1,73 +1,89 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
+import '../../domain/repositories/wallet_repository.dart';
 
 class WalletsViewModel extends ChangeNotifier {
+  final WalletRepository _walletRepository;
+
   List<Wallet> _wallets = [];
+  bool _isLoading = false;
+  String? _error;
+  double _totalBalance = 0.0;
+
+  WalletsViewModel(this._walletRepository) {
+    loadWallets();
+  }
 
   List<Wallet> get wallets => _wallets;
-
-  double get totalBalance =>
-      _wallets.fold<double>(0, (sum, w) => sum + w.balance);
-
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  double get totalBalance => _totalBalance;
   int get walletsCount => _wallets.length;
 
-  void initializeWallets() {
-    _wallets = [
-      Wallet(
-        id: '1',
-        name: 'Main Bank Account',
-        balance: 5230.75,
-        createdOn: DateTime(2024, 10, 12),
-        lastUpdated: DateTime.now().subtract(const Duration(hours: 2)),
-        icon: Icons.account_balance,
-        iconColor: Colors.blue,
-      ),
-      Wallet(
-        id: '2',
-        name: 'Momo Wallet',
-        balance: 120.50,
-        createdOn: DateTime(2025, 3, 2),
-        lastUpdated: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
-        icon: Icons.mobile_friendly,
-        iconColor: Colors.pink,
-      ),
-      Wallet(
-        id: '3',
-        name: 'Savings',
-        balance: 15000.00,
-        createdOn: DateTime(2023, 7, 18),
-        lastUpdated: DateTime.now().subtract(const Duration(days: 7)),
-        icon: Icons.savings,
-        iconColor: Colors.green,
-      ),
-      Wallet(
-        id: '4',
-        name: 'Crypto',
-        balance: 980.42,
-        createdOn: DateTime(2024, 1, 8),
-        lastUpdated: DateTime.now().subtract(const Duration(minutes: 45)),
-        icon: Icons.currency_bitcoin,
-        iconColor: Colors.orange,
-      ),
-    ];
+  Future<void> loadWallets() async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
-  }
 
-  void deleteWallet(String walletId) {
-    _wallets.removeWhere((w) => w.id == walletId);
-    notifyListeners();
-  }
-
-  void updateWallet(Wallet updatedWallet) {
-    final index = _wallets.indexWhere((w) => w.id == updatedWallet.id);
-    if (index != -1) {
-      _wallets[index] = updatedWallet;
+    try {
+      _wallets = await _walletRepository.getAllWallets();
+      _calculateTotalBalance();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  void addWallet(Wallet wallet) {
-    _wallets.add(wallet);
-    notifyListeners();
+  Future<void> addWallet(Wallet wallet) async {
+    try {
+      await _walletRepository.createWallet(wallet);
+      await loadWallets(); // Refresh after creation
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> updateWallet(Wallet oldWallet, Wallet updatedWallet) async {
+    try {
+      await _walletRepository.updateWallet(updatedWallet);
+      await loadWallets(); // Refresh after update
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> deleteWallet(String walletId) async {
+    try {
+      await _walletRepository.deleteWallet(walletId);
+      await loadWallets(); // Refresh after deletion
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<List<Wallet>> searchWallets(String query) async {
+    try {
+      return await _walletRepository.searchWallets(query);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return [];
+    }
+  }
+
+  void _calculateTotalBalance() {
+    _totalBalance = _wallets.fold<double>(0, (sum, w) => sum + w.balance);
+  }
+
+  void dispose() {
+    super.dispose();
   }
 }

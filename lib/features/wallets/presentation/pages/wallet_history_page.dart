@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../domain/entities/wallet.dart';
 
 class WalletHistoryPage extends StatelessWidget {
-  final String walletName;
-  final double balance;
-  final String currency;
-  final IconData? icon;
-  final Color? iconColor;
+  final Wallet wallet;
 
-  const WalletHistoryPage({
-    super.key,
-    required this.walletName,
-    this.balance = 0.0,
-    this.currency = 'VND (₫)',
-    this.icon,
-    this.iconColor,
-  });
+  const WalletHistoryPage({super.key, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +34,7 @@ class WalletHistoryPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          walletName,
+                          '${wallet.name} History',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
@@ -52,7 +42,7 @@ class WalletHistoryPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _formatVND(balance.toInt()),
+                          _formatVND(wallet.balance.toInt()),
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 color: Colors.green.shade700,
@@ -66,14 +56,10 @@ class WalletHistoryPage extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: (iconColor ?? Colors.blue).withOpacity(0.15),
+                      color: wallet.iconColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
-                      icon ?? Icons.account_balance_wallet,
-                      size: 18,
-                      color: iconColor ?? Colors.blue,
-                    ),
+                    child: Icon(wallet.icon, size: 18, color: wallet.iconColor),
                   ),
                 ],
               ),
@@ -142,15 +128,18 @@ class WalletHistoryPage extends StatelessWidget {
     final dateTime = entry.dateTime;
     final today = DateTime.now();
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final yesterdayDate = DateTime(
+      yesterday.year,
+      yesterday.month,
+      yesterday.day,
+    );
+    final entryDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
 
     String dateLabel;
-    if (dateTime.year == today.year &&
-        dateTime.month == today.month &&
-        dateTime.day == today.day) {
+    if (entryDate == todayDate) {
       dateLabel = 'Today';
-    } else if (dateTime.year == yesterday.year &&
-        dateTime.month == yesterday.month &&
-        dateTime.day == yesterday.day) {
+    } else if (entryDate == yesterdayDate) {
       dateLabel = 'Yesterday';
     } else {
       dateLabel = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
@@ -267,16 +256,16 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(hours: 2)),
-        oldValue: '5200000',
-        newValue: '5230000',
+        oldValue: '5.200.000',
+        newValue: '5.230.000',
         notes: 'Deposit from salary',
       ),
       HistoryEntry(
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 1)),
-        oldValue: '5450000',
-        newValue: '5200000',
+        oldValue: '5.450.000',
+        newValue: '5.200.000',
         notes: 'Withdrawal for bills',
       ),
       HistoryEntry(
@@ -291,17 +280,17 @@ class WalletHistoryPage extends StatelessWidget {
         type: 'Balance Updated',
         status: 'Update',
         dateTime: now.subtract(const Duration(days: 5)),
-        oldValue: '3200000',
-        newValue: '5450000',
+        oldValue: '3.200.000',
+        newValue: '5.450.000',
         notes: 'Transfer from savings',
       ),
       HistoryEntry(
-        type: 'Balance Updated',
-        status: 'Update',
+        type: 'Wallet Created',
+        status: 'Create',
         dateTime: now.subtract(const Duration(days: 7)),
-        oldValue: '5000000',
-        newValue: '3200000',
-        notes: 'Shopping expenses',
+        oldValue: '0',
+        newValue: '3.200.000',
+        notes: 'Initial deposit',
       ),
     ];
   }

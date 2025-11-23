@@ -44,9 +44,9 @@ class AppRouter {
         );
 
       case walletHistory:
-        final walletName = settings.arguments as String;
+        final args = settings.arguments as WalletHistoryArguments;
         return MaterialPageRoute(
-          builder: (_) => WalletHistoryPage(walletName: walletName),
+          builder: (_) => WalletHistoryPage(wallet: args.wallet),
         );
 
       default:
@@ -82,5 +82,15 @@ class WalletDetailArguments {
     required this.onEdit,
     required this.onDelete,
     required this.onHistory,
+  });
+}
+
+class WalletHistoryArguments {
+  final Wallet wallet;
+  final String walletName;
+
+  const WalletHistoryArguments({
+    required this.wallet,
+    required this.walletName,
   });
 }

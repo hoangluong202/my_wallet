@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
-import '../../domain/models/wallet_icon_data.dart';
 import '../../../../core/constants/wallet_constants.dart';
 
 class WalletFormViewModel extends ChangeNotifier {
@@ -22,8 +21,8 @@ class WalletFormViewModel extends ChangeNotifier {
             : '',
       ) {
     if (existingWallet != null) {
-      _selectedIcon = existingWallet?.icon ?? Icons.account_balance_wallet;
-      _selectedIconColor = existingWallet?.iconColor ?? Colors.blue; 
+      _selectedIcon = existingWallet!.icon ;
+      _selectedIconColor = existingWallet!.iconColor;
     }
   }
 

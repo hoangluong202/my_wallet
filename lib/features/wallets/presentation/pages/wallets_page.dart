@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../../../app/di/injector.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/wallet.dart';
+import '../../domain/repositories/wallet_repository.dart';
 import '../viewmodels/wallets_viewmodel.dart';
 import '../widgets/wallets_app_bar.dart';
 import '../widgets/wallet_summary_card.dart';
 import '../widgets/wallet_card.dart';
-import 'wallet_detail_page.dart';
 import 'add_wallet_page.dart';
-import 'edit_wallet_page.dart';
+import 'wallet_form_page.dart';
+import 'wallet_detail_page.dart';
+import 'wallet_history_page.dart';
 
 class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});
@@ -23,8 +27,8 @@ class _WalletsPageState extends State<WalletsPage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = WalletsViewModel();
-    _viewModel.initializeWallets();
+    _viewModel = WalletsViewModel(getIt<WalletRepository>());
+    _viewModel.loadWallets();
   }
 
   @override
@@ -47,6 +51,28 @@ class _WalletsPageState extends State<WalletsPage> {
               ListenableBuilder(
                 listenable: _viewModel,
                 builder: (context, _) {
+                  if (_viewModel.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (_viewModel.error != null) {
+                    return Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Error: ${_viewModel.error}',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _viewModel.loadWallets,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return WalletSummaryCard(
                     walletsCount: _viewModel.walletsCount,
                     totalBalance: _viewModel.totalBalance,
@@ -58,16 +84,27 @@ class _WalletsPageState extends State<WalletsPage> {
                 child: ListenableBuilder(
                   listenable: _viewModel,
                   builder: (context, _) {
-                    return ListView.builder(
-                      itemCount: _viewModel.wallets.length,
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemBuilder: (context, index) {
-                        final wallet = _viewModel.wallets[index];
-                        return WalletCard(
-                          wallet: wallet,
-                          onTap: () => _onWalletTap(wallet),
-                        );
-                      },
+                    if (_viewModel.isLoading) {
+                      return const SizedBox.shrink();
+                    }
+
+                    if (_viewModel.wallets.isEmpty) {
+                      return _buildEmptyState();
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: _viewModel.loadWallets,
+                      child: ListView.builder(
+                        itemCount: _viewModel.wallets.length,
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemBuilder: (context, index) {
+                          final wallet = _viewModel.wallets[index];
+                          return WalletCard(
+                            wallet: wallet,
+                            onTap: () => _onWalletTap(wallet),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -79,6 +116,35 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No wallets yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to add your first wallet',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _onAddWallet() async {
     final result = await Navigator.push(
       context,
@@ -86,9 +152,8 @@ class _WalletsPageState extends State<WalletsPage> {
     );
 
     if (result != null && mounted) {
-      // Create wallet from result data
       final wallet = Wallet(
-        id: result['id'],
+        id: UuidGenerator.generate(),
         name: result['name'],
         balance: result['balance'],
         createdOn: result['createdOn'],
@@ -97,8 +162,10 @@ class _WalletsPageState extends State<WalletsPage> {
         iconColor: result['iconColor'],
       );
 
-      _viewModel.addWallet(wallet);
-      context.showSuccessMessage('Wallet created successfully!');
+      await _viewModel.addWallet(wallet);
+      if (mounted) {
+        context.showSuccessMessage('Wallet created successfully!');
+      }
     }
   }
 
@@ -108,15 +175,9 @@ class _WalletsPageState extends State<WalletsPage> {
       MaterialPageRoute(
         builder: (context) => WalletDetailPage(
           wallet: wallet,
-          onEdit: () {
-            Navigator.pop(context); // Close detail page first
-            _onEditWallet(wallet);
-          },
-          onDelete: () => _viewModel.deleteWallet(wallet.id),
-          onHistory: () {
-            Navigator.pop(context); // Close detail page first
-            _onViewHistory(wallet);
-          },
+          onEdit: () => _onEditWallet(wallet),
+          onDelete: () => _onDeleteWallet(wallet),
+          onHistory: () => _onViewHistory(wallet),
         ),
       ),
     );
@@ -125,34 +186,28 @@ class _WalletsPageState extends State<WalletsPage> {
   void _onEditWallet(Wallet wallet) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => EditWalletPage(wallet: wallet)),
+      MaterialPageRoute(
+        builder: (context) => WalletFormPage(wallet: wallet, isEditMode: true),
+      ),
     );
 
     if (result != null && mounted) {
-      // Update wallet from result data
       final updatedWallet = Wallet(
-        id: result['id'],
+        id: wallet.id,
         name: result['name'],
         balance: result['balance'],
-        createdOn: result['createdOn'],
+        createdOn: wallet.createdOn,
         lastUpdated: result['lastUpdated'],
         icon: result['icon'],
         iconColor: result['iconColor'],
       );
 
-      _viewModel.updateWallet(updatedWallet);
-      context.showSuccessMessage(
-        'Wallet "${wallet.name}" updated successfully!',
-      );
+      await _viewModel.updateWallet(wallet, updatedWallet);
+      if (mounted) {
+        Navigator.pop(context); // Close detail page
+        context.showSuccessMessage('Wallet updated successfully!');
+      }
     }
-  }
-
-  void _onViewHistory(Wallet wallet) {
-    Navigator.pushNamed(
-      context,
-      AppRouter.walletHistory,
-      arguments: wallet.name,
-    );
   }
 
   Future<void> _onDeleteWallet(Wallet wallet) async {
@@ -168,11 +223,22 @@ class _WalletsPageState extends State<WalletsPage> {
     );
 
     if (confirmed == true && mounted) {
-      _viewModel.deleteWallet(wallet.id);
-      Navigator.pop(context); // Close detail page
-      context.showSuccessMessage(
-        'Wallet "${wallet.name}" deleted successfully!',
-      );
+      await _viewModel.deleteWallet(wallet.id);
+      if (mounted) {
+        Navigator.pop(context); // Close detail page
+        context.showSuccessMessage(
+          'Wallet "${wallet.name}" deleted successfully!',
+        );
+      }
     }
+  }
+
+  void _onViewHistory(Wallet wallet) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WalletHistoryPage(wallet: wallet),
+      ),
+    );
   }
 }
