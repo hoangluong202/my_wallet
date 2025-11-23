@@ -27,13 +27,9 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AddWalletPage());
 
       case editWallet:
-        final args = settings.arguments as EditWalletArguments;
+        final wallet = settings.arguments as Wallet;
         return MaterialPageRoute(
-          builder: (_) => EditWalletPage(
-            walletName: args.walletName,
-            balance: args.balance,
-            currency: args.currency,
-          ),
+          builder: (_) => EditWalletPage(wallet: wallet),
         );
 
       case walletDetail:

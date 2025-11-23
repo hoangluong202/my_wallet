@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-class WalletDetailHeader extends StatelessWidget {
+class DetailHeader extends StatelessWidget {
   final VoidCallback onBack;
+  final String title;
 
-  const WalletDetailHeader({super.key, required this.onBack});
+  const DetailHeader({super.key, required this.title, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class WalletDetailHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Wallet Details',
+            title,
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),

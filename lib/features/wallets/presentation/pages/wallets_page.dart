@@ -7,6 +7,8 @@ import '../widgets/wallets_app_bar.dart';
 import '../widgets/wallet_summary_card.dart';
 import '../widgets/wallet_card.dart';
 import 'wallet_detail_page.dart';
+import 'add_wallet_page.dart';
+import 'edit_wallet_page.dart';
 
 class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});
@@ -77,15 +79,30 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
-  void _onAddWallet() {
-    Navigator.pushNamed(context, AppRouter.addWallet).then((result) {
-      if (result == true) {
-        context.showSuccessMessage('Wallet created successfully!');
-      }
-    });
+  void _onAddWallet() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddWalletPage()),
+    );
+
+    if (result != null && mounted) {
+      // Create wallet from result data
+      final wallet = Wallet(
+        id: result['id'],
+        name: result['name'],
+        balance: result['balance'],
+        createdOn: result['createdOn'],
+        lastUpdated: result['lastUpdated'],
+        icon: result['icon'],
+        iconColor: result['iconColor'],
+      );
+
+      _viewModel.addWallet(wallet);
+      context.showSuccessMessage('Wallet created successfully!');
+    }
   }
 
-void _onWalletTap(Wallet wallet) {
+  void _onWalletTap(Wallet wallet) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -105,22 +122,29 @@ void _onWalletTap(Wallet wallet) {
     );
   }
 
-  void _onEditWallet(Wallet wallet) {
-    Navigator.pushNamed(
+  void _onEditWallet(Wallet wallet) async {
+    final result = await Navigator.push(
       context,
-      AppRouter.editWallet,
-      arguments: EditWalletArguments(
-        walletName: wallet.name,
-        balance: wallet.balance,
-        currency: 'VND (₫)',
-      ),
-    ).then((result) {
-      if (result == true) {
-        context.showSuccessMessage(
-          'Wallet "${wallet.name}" updated successfully!',
-        );
-      }
-    });
+      MaterialPageRoute(builder: (context) => EditWalletPage(wallet: wallet)),
+    );
+
+    if (result != null && mounted) {
+      // Update wallet from result data
+      final updatedWallet = Wallet(
+        id: result['id'],
+        name: result['name'],
+        balance: result['balance'],
+        createdOn: result['createdOn'],
+        lastUpdated: result['lastUpdated'],
+        icon: result['icon'],
+        iconColor: result['iconColor'],
+      );
+
+      _viewModel.updateWallet(updatedWallet);
+      context.showSuccessMessage(
+        'Wallet "${wallet.name}" updated successfully!',
+      );
+    }
   }
 
   void _onViewHistory(Wallet wallet) {

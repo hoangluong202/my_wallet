@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../domain/entities/wallet.dart';
-import '../widgets/wallet_detail_header.dart';
+import '../../../../shared/widgets/header/detail_header.dart';
 import '../widgets/wallet_icon_section.dart';
 import '../widgets/wallet_info_card.dart';
 import '../widgets/wallet_action_buttons.dart';
@@ -26,7 +26,10 @@ class WalletDetailPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            WalletDetailHeader(onBack: () => Navigator.pop(context)),
+            DetailHeader(
+              title: 'Wallet Details',
+              onBack: () => Navigator.pop(context),
+            ),
             _buildContent(context),
             const Expanded(child: SizedBox.expand()),
             WalletActionButtons(
