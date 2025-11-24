@@ -9,4 +9,5 @@ abstract class WalletRepository {
   Future<double> getTotalBalance();
   Future<int> getWalletsCount();
   Future<List<Wallet>> searchWallets(String query);
+  Future<void> syncToCloud(String userId);
 }

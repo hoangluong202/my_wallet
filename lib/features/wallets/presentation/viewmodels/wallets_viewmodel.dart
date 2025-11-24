@@ -79,6 +79,16 @@ class WalletsViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> syncToCloud(String userId) async {
+    try {
+      await _walletRepository.syncToCloud(userId);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   void _calculateTotalBalance() {
     _totalBalance = _wallets.fold<double>(0, (sum, w) => sum + w.balance);
   }

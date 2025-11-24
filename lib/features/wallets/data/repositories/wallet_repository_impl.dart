@@ -1,11 +1,13 @@
 import '../../domain/entities/wallet.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_local_datasource.dart';
+import '../datasources/firebase_service.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
   final WalletLocalDataSource _localDataSource;
+  final FirebaseService _firebaseService;
 
-  WalletRepositoryImpl(this._localDataSource);
+  WalletRepositoryImpl(this._localDataSource, this._firebaseService);
 
   @override
   Future<List<Wallet>> getAllWallets() async {
@@ -83,11 +85,18 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
+  Future<void> syncToCloud(String userId) async {
+    try {
+      await _firebaseService.syncWalletsToCloud(userId);
+    } catch (e) {
+      throw Exception('Failed to sync to cloud: $e');
+    }
+  }
+
   Stream<List<Wallet>> watchAllWallets() {
     return _localDataSource.watchAllWallets();
   }
 
-  @override
   Stream<Wallet?> watchWalletById(String id) {
     return _localDataSource.watchWalletById(id);
   }

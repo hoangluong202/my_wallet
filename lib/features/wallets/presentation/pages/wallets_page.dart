@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_wallet/shared/widgets/notification_widget.dart';
 import '../../../../app/di/injector.dart';
-import '../../../../app/router/app_router.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/wallet.dart';
@@ -47,7 +46,10 @@ class _WalletsPageState extends State<WalletsPage> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              WalletsAppBar(onAddPressed: _onAddWallet),
+              WalletsAppBar(
+                onAddPressed: _onAddWallet,
+                onSyncPressed: _onSyncToCloud,
+              ),
               const SizedBox(height: 12),
               ListenableBuilder(
                 listenable: _viewModel,
@@ -237,5 +239,22 @@ class _WalletsPageState extends State<WalletsPage> {
         builder: (context) => WalletHistoryPage(wallet: wallet),
       ),
     );
+  }
+
+  Future<void> _onSyncToCloud() async {
+    try {
+      await _viewModel.syncToCloud('101'); // Replace with actual user ID
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallets synced to cloud successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        context.showErrorMessage('Failed to sync: $e');
+      }
+    }
   }
 }
