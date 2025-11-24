@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../app/di/injector.dart';
+import '../../../../app/router/app_router.dart';
+import '../../../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../viewmodels/wallets_viewmodel.dart';
 
 class WalletsAppBar extends StatelessWidget {
@@ -64,6 +67,36 @@ class WalletsAppBar extends StatelessWidget {
               foregroundColor: Theme.of(context).colorScheme.primary,
             ),
           ),
+        const SizedBox(width: 8),
+        // Sign Out Menu
+        PopupMenuButton<String>(
+          onSelected: (value) async {
+            if (value == 'signout') {
+              final authViewModel = getIt.get<AuthViewModel>();
+              await authViewModel.signOut();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, AppRouter.login);
+              }
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem<String>(
+              value: 'signout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout),
+                  SizedBox(width: 8),
+                  Text('Sign Out'),
+                ],
+              ),
+            ),
+          ],
+          icon: const Icon(Icons.more_vert),
+          tooltip: 'Menu',
+          style: IconButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        ),
         const SizedBox(width: 8),
         FilledButton.icon(
           onPressed: onAddPressed,

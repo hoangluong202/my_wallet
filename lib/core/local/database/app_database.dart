@@ -3,17 +3,13 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:flutter/foundation.dart';
 
 import 'tables/wallets_table.dart';
 import 'daos/wallet_dao.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
-  tables: [Wallets],
-  daos: [WalletDao],
-)
+@DriftDatabase(tables: [Wallets], daos: [WalletDao])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
