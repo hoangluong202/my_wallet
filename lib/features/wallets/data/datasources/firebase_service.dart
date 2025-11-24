@@ -6,6 +6,7 @@ import '../../../../core/local/database/daos/wallet_dao.dart';
 abstract class FirebaseService {
   Future<void> syncWalletsToCloud(String userId);
   Future<void> syncWalletsFromCloud(String userId);
+  Future<List<WalletData>> getWalletsFromCloud(String userId);
   Stream<List<WalletData>> watchWalletsFromCloud(String userId);
 }
 
@@ -56,6 +57,31 @@ class FirebaseServiceImpl implements FirebaseService {
     }).toList();
 
     await _walletDao.insertWallets(wallets);
+  }
+
+  @override
+  Future<List<WalletData>> getWalletsFromCloud(String userId) async {
+    try {
+      final snapshot = await _getUserWalletsCollection(userId).get();
+
+      if (snapshot.docs.isEmpty) return [];
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return WalletData(
+          id: data['id'] as String,
+          name: data['name'] as String,
+          balance: (data['balance'] as num).toDouble(),
+          currency: data['currency'] as String? ?? 'VND (₫)',
+          iconCode: data['iconCode'] as int,
+          iconColor: data['iconColor'] as int,
+          createdAt: DateTime.parse(data['createdAt'] as String),
+          updatedAt: DateTime.parse(data['updatedAt'] as String),
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to get wallets from cloud: $e');
+    }
   }
 
   @override

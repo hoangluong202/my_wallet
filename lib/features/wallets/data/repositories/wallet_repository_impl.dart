@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_local_datasource.dart';
@@ -90,6 +91,55 @@ class WalletRepositoryImpl implements WalletRepository {
       await _firebaseService.syncWalletsToCloud(userId);
     } catch (e) {
       throw Exception('Failed to sync to cloud: $e');
+    }
+  }
+
+  @override
+  Future<void> pullFromCloud(String userId) async {
+    try {
+      final cloudWallets = await _firebaseService.getWalletsFromCloud(userId);
+
+      // Convert WalletData to Wallet entities
+      final cloudWalletEntities = cloudWallets.map((cloudData) {
+        return Wallet(
+          id: cloudData.id,
+          name: cloudData.name,
+          balance: cloudData.balance,
+          createdOn: cloudData.createdAt,
+          lastUpdated: cloudData.updatedAt,
+          icon: _getIconFromCode(cloudData.iconCode),
+          iconColor: Color(cloudData.iconColor),
+        );
+      }).toList();
+
+      // For each cloud wallet, check if it exists locally
+      for (final cloudWallet in cloudWalletEntities) {
+        final localWallet = await _localDataSource.getWalletById(
+          cloudWallet.id,
+        );
+
+        if (localWallet == null) {
+          // If not exist locally, insert from cloud
+          await _localDataSource.insertWallet(cloudWallet);
+        } else {
+          // If exists, only update if cloud version is newer
+          if (cloudWallet.lastUpdated.isAfter(localWallet.lastUpdated)) {
+            await _localDataSource.updateWallet(cloudWallet);
+          }
+          // If local is newer or same, do nothing (local data takes priority)
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to pull from cloud: $e');
+    }
+  }
+
+  // Helper method to convert icon code to IconData
+  IconData _getIconFromCode(int code) {
+    try {
+      return IconData(code, fontFamily: 'MaterialIcons');
+    } catch (e) {
+      return Icons.account_balance_wallet;
     }
   }
 

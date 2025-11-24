@@ -49,6 +49,7 @@ class _WalletsPageState extends State<WalletsPage> {
               WalletsAppBar(
                 onAddPressed: _onAddWallet,
                 onSyncPressed: _onSyncToCloud,
+                viewModel: _viewModel,
               ),
               const SizedBox(height: 12),
               ListenableBuilder(
@@ -243,17 +244,20 @@ class _WalletsPageState extends State<WalletsPage> {
 
   Future<void> _onSyncToCloud() async {
     try {
-      await _viewModel.syncToCloud('101'); // Replace with actual user ID
+      const userId = '101'; // Replace with actual user ID from authentication
+
+      await _viewModel.bidirectionalSync(userId);
+
       if (mounted) {
         SuccessNotification.show(
           context: context,
-          message: 'Wallets synced to cloud successfully!',
+          message: 'Sync completed: Local → Cloud → Local',
           duration: const Duration(seconds: 2),
         );
       }
     } catch (e) {
       if (mounted) {
-        context.showErrorMessage('Failed to sync: $e');
+        context.showErrorMessage('Sync failed: $e');
       }
     }
   }
