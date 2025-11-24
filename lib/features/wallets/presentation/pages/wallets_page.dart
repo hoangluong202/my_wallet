@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_wallet/shared/widgets/notification_widget.dart';
 import '../../../../app/di/injector.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../../core/extensions/context_extensions.dart';
@@ -164,7 +165,11 @@ class _WalletsPageState extends State<WalletsPage> {
 
       await _viewModel.addWallet(wallet);
       if (mounted) {
-        context.showSuccessMessage('Wallet created successfully!');
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallet "${wallet.name}" added successfully!',
+          duration: const Duration(seconds: 2),
+        );
       }
     }
   }
@@ -205,31 +210,23 @@ class _WalletsPageState extends State<WalletsPage> {
       await _viewModel.updateWallet(wallet, updatedWallet);
       if (mounted) {
         Navigator.pop(context); // Close detail page
-        context.showSuccessMessage('Wallet updated successfully!');
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallet "${updatedWallet.name}" updated successfully!',
+          duration: const Duration(seconds: 2),
+        );
       }
     }
   }
 
   Future<void> _onDeleteWallet(Wallet wallet) async {
-    final confirmed = await context.showConfirmDialog(
-      title: 'Delete Wallet?',
-      content:
-          'Are you sure you want to delete this wallet? '
-          'All transactions associated with this wallet will also be deleted. '
-          'This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      isDangerous: true,
-    );
-
-    if (confirmed == true && mounted) {
-      await _viewModel.deleteWallet(wallet.id);
-      if (mounted) {
-        Navigator.pop(context); // Close detail page
-        context.showSuccessMessage(
-          'Wallet "${wallet.name}" deleted successfully!',
-        );
-      }
+    await _viewModel.deleteWallet(wallet.id);
+    if (mounted) {
+      SuccessNotification.show(
+        context: context,
+        message: 'Wallet "${wallet.name}" deleted successfully!',
+        duration: const Duration(seconds: 2),
+      );
     }
   }
 

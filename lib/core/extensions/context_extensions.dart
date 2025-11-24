@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/dialogs/confirm_dialog.dart';
 
 extension ContextExtensions on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -35,26 +36,16 @@ extension ContextExtensions on BuildContext {
     String confirmText = 'Confirm',
     String cancelText = 'Cancel',
     bool isDangerous = false,
+    IconData? icon,
   }) {
-    return showDialog<bool>(
+    return ConfirmDialog.show(
       context: this,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(cancelText),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              confirmText,
-              style: TextStyle(color: isDangerous ? Colors.red : null),
-            ),
-          ),
-        ],
-      ),
+      title: title,
+      content: content,
+      confirmText: confirmText,
+      cancelText: cancelText,
+      isDangerous: isDangerous,
+      icon: icon,
     );
   }
 }

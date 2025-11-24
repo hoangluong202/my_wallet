@@ -5,6 +5,7 @@ import '../../../../shared/widgets/header/detail_header.dart';
 import '../widgets/wallet_icon_section.dart';
 import '../widgets/wallet_info_card.dart';
 import '../widgets/wallet_action_buttons.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 class WalletDetailPage extends StatelessWidget {
   final Wallet wallet;
@@ -73,9 +74,6 @@ class WalletDetailPage extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       Navigator.pop(context); // Close detail page
-      context.showSuccessMessage(
-        'Wallet "${wallet.name}" deleted successfully!',
-      );
       onDelete();
     }
   }
