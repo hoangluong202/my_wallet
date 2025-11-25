@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "992157855862-kg7uebcv046jkpr2a5a4qsdsv54fc78n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.my_wallet",
+            "certificate_hash": "fad16353e002cf7f9eda8dab221b56712b6f2fc8"
+          }
+        },
+        {
           "client_id": "992157855862-sfvlk99k6d2vrmfg8rj9i8qi6j74bb92.apps.googleusercontent.com",
           "client_type": 3
         }

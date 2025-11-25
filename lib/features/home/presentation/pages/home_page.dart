@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../../app/di/injector.dart';
+import '../../../../app/router/app_router.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -7,26 +10,17 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Modern Header
-            _buildHeader(context),
-
-            // Total Balance Section
-            _buildBalanceSection(context),
-            const SizedBox(height: 24),
-
-            // Wallets Horizontal Scroll
-            _buildWalletsSection(context),
-            const SizedBox(height: 24),
-
-            // Income vs Expense Chart
-            _buildChartSection(context),
-            const SizedBox(height: 24),
-
-            // Recent Transactions
-            _buildRecentTransactionsSection(context),
+            _buildUserHeader(context),
+            const SizedBox(height: 16),
+            _buildBalanceCards(context),
+            const SizedBox(height: 20),
+            _buildIncomeExpenseChart(context),
+            const SizedBox(height: 20),
+            _buildCategoryPieChart(context),
             const SizedBox(height: 24),
           ],
         ),
@@ -34,49 +28,96 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildUserHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            Theme.of(context).colorScheme.primary.withOpacity(0.7),
           ],
         ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Row(
             children: [
-              Text(
-                'My Wallet',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white,
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Text(
+                    'HL',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Welcome back!',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                  fontSize: 16,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back,',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Hoàng Lương',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) async {
+                  if (value == 'signout') {
+                    final authViewModel = getIt.get<AuthViewModel>();
+                    await authViewModel.signOut();
+                    if (context.mounted) {
+                      Navigator.pushReplacementNamed(context, AppRouter.login);
+                    }
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem<String>(
+                    height: 10,
+                    value: 'signout',
+                    padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 4),
+                        Text('Sign Out'),
+                      ],
+                    ),
+                  ),
+                ],
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                iconSize: 20,
+                tooltip: 'Menu',
+                padding: EdgeInsets.zero,
+                offset: const Offset(0, 60),
               ),
             ],
           ),
@@ -85,332 +126,42 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceSection(BuildContext context) {
-    const totalBalance = 12845.50;
-
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '\$$totalBalance',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletsSection(BuildContext context) {
+  Widget _buildBalanceCards(BuildContext context) {
     final wallets = [
-      _Wallet(name: 'Checking', balance: 5320.00, icon: Icons.account_balance),
-      _Wallet(name: 'Savings', balance: 7525.50, icon: Icons.savings),
-      _Wallet(name: 'Credit Card', balance: -500.00, icon: Icons.credit_card),
+      {'name': 'Main Bank', 'balance': 5230000, 'color': Colors.blue},
+      {'name': 'Momo', 'balance': 120000, 'color': Colors.pink},
+      {'name': 'Savings', 'balance': 15000000, 'color': Colors.green},
     ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            'My Wallets',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            children:
-                wallets
-                    .map((wallet) => _buildWalletCard(context, wallet))
-                    .toList()
-                    .expand((widget) => [widget, const SizedBox(width: 12)])
-                    .toList()
-                  ..removeLast(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWalletCard(BuildContext context, _Wallet wallet) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.blue.shade50,
-        border: Border.all(color: Colors.blue.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.shade100,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(wallet.icon, size: 32, color: Colors.blue),
-          const SizedBox(height: 12),
-          Text(
-            wallet.name,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '\$${wallet.balance.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: wallet.balance < 0 ? Colors.red : Colors.green.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChartSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Income vs Expense',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 250,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
-            ),
-            child: BarChart(
-              BarChartData(
-                barGroups: _getBarChartData(),
-                borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: true, drawVerticalLine: false),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        const months = [
-                          'Jan',
-                          'Feb',
-                          'Mar',
-                          'Apr',
-                          'May',
-                          'Jun',
-                        ];
-                        return Text(
-                          months[value.toInt() % months.length],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '\$${value.toInt()}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<BarChartGroupData> _getBarChartData() {
-    return [
-      BarChartGroupData(
-        x: 0,
-        barRods: [
-          BarChartRodData(toY: 3000, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2200, color: Colors.red, width: 8),
-        ],
-      ),
-      BarChartGroupData(
-        x: 1,
-        barRods: [
-          BarChartRodData(toY: 2800, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2400, color: Colors.red, width: 8),
-        ],
-      ),
-      BarChartGroupData(
-        x: 2,
-        barRods: [
-          BarChartRodData(toY: 3500, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2100, color: Colors.red, width: 8),
-        ],
-      ),
-      BarChartGroupData(
-        x: 3,
-        barRods: [
-          BarChartRodData(toY: 3200, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2300, color: Colors.red, width: 8),
-        ],
-      ),
-      BarChartGroupData(
-        x: 4,
-        barRods: [
-          BarChartRodData(toY: 3100, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2600, color: Colors.red, width: 8),
-        ],
-      ),
-      BarChartGroupData(
-        x: 5,
-        barRods: [
-          BarChartRodData(toY: 3800, color: Colors.green, width: 8),
-          BarChartRodData(toY: 2900, color: Colors.red, width: 8),
-        ],
-      ),
-    ];
-  }
-
-  Widget _buildRecentTransactionsSection(BuildContext context) {
-    final transactions = [
-      _Transaction(
-        name: 'Coffee',
-        amount: -4.50,
-        date: 'Today, 10:30 AM',
-        type: _TransactionType.expense,
-        icon: Icons.coffee,
-      ),
-      _Transaction(
-        name: 'Salary',
-        amount: 3500.00,
-        date: 'Yesterday, 09:00 AM',
-        type: _TransactionType.income,
-        icon: Icons.trending_up,
-      ),
-      _Transaction(
-        name: 'Grocery',
-        amount: -87.23,
-        date: '2 days ago',
-        type: _TransactionType.expense,
-        icon: Icons.shopping_cart,
-      ),
-      _Transaction(
-        name: 'Freelance Work',
-        amount: 250.00,
-        date: '3 days ago',
-        type: _TransactionType.income,
-        icon: Icons.work,
-      ),
-      _Transaction(
-        name: 'Gas',
-        amount: -55.00,
-        date: '5 days ago',
-        type: _TransactionType.expense,
-        icon: Icons.local_gas_station,
-      ),
-    ];
+    final total = wallets.fold<int>(0, (sum, w) => sum + (w['balance'] as int));
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Transactions',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Column(
-            children: transactions
-                .map((t) => _buildTransactionTile(t))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionTile(_Transaction transaction) {
-    final isIncome = transaction.type == _TransactionType.income;
-    final amountColor = isIncome ? Colors.green : Colors.red;
-    final backgroundColor = isIncome
-        ? Colors.green.shade50
-        : Colors.red.shade50;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: backgroundColor,
-          border: Border.all(
-            color: isIncome ? Colors.green.shade200 : Colors.red.shade200,
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isIncome ? Colors.green.shade200 : Colors.red.shade200,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                transaction.icon,
-                color: isIncome ? Colors.green.shade800 : Colors.red.shade800,
-                size: 20,
+                Icons.account_balance_wallet,
+                size: 28,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 16),
@@ -419,27 +170,23 @@ class HomePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    transaction.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                    'Current Balance',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    transaction.date,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    _formatVND(total),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Text(
-              '${isIncome ? '+' : '-'}\$${transaction.amount.abs().toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: amountColor,
               ),
             ),
           ],
@@ -447,32 +194,366 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
-}
 
-class _Wallet {
-  final String name;
-  final double balance;
-  final IconData icon;
-  const _Wallet({
-    required this.name,
-    required this.balance,
-    required this.icon,
-  });
-}
+  Widget _buildIncomeExpenseChart(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Income & Expense',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '2024',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildLegendItem(Colors.green, 'Income'),
+                const SizedBox(width: 20),
+                _buildLegendItem(Colors.red, 'Expense'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 1000000,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.shade200,
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 45,
+                        getTitlesWidget: (value, meta) {
+                          if (value == 0) return const SizedBox.shrink();
+                          return Text(
+                            '${(value / 1000000).toInt()}M',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          const months = [
+                            'Jan',
+                            'Feb',
+                            'Mar',
+                            'Apr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dec',
+                          ];
+                          if (value.toInt() >= 0 &&
+                              value.toInt() < months.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                months[value.toInt()],
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: [
+                        const FlSpot(0, 3000000),
+                        const FlSpot(1, 2800000),
+                        const FlSpot(2, 3500000),
+                        const FlSpot(3, 3200000),
+                        const FlSpot(4, 3100000),
+                        const FlSpot(5, 3800000),
+                        const FlSpot(6, 3600000),
+                        const FlSpot(7, 3900000),
+                        const FlSpot(8, 3400000),
+                        const FlSpot(9, 3700000),
+                        const FlSpot(10, 4000000),
+                        const FlSpot(11, 4200000),
+                      ],
+                      isCurved: true,
+                      color: Colors.green,
+                      barWidth: 3,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.green.withOpacity(0.1),
+                      ),
+                    ),
+                    LineChartBarData(
+                      spots: [
+                        const FlSpot(0, 2200000),
+                        const FlSpot(1, 2400000),
+                        const FlSpot(2, 2100000),
+                        const FlSpot(3, 2300000),
+                        const FlSpot(4, 2600000),
+                        const FlSpot(5, 2900000),
+                        const FlSpot(6, 2700000),
+                        const FlSpot(7, 3000000),
+                        const FlSpot(8, 2800000),
+                        const FlSpot(9, 3100000),
+                        const FlSpot(10, 3200000),
+                        const FlSpot(11, 3400000),
+                      ],
+                      isCurved: true,
+                      color: Colors.red,
+                      barWidth: 3,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.red.withOpacity(0.1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-enum _TransactionType { income, expense }
+  Widget _buildCategoryPieChart(BuildContext context) {
+    final categories = [
+      {'name': 'Food', 'amount': 2500000, 'color': Colors.orange},
+      {'name': 'Transport', 'amount': 1200000, 'color': Colors.blue},
+      {'name': 'Shopping', 'amount': 3000000, 'color': Colors.purple},
+      {'name': 'Entertainment', 'amount': 800000, 'color': Colors.pink},
+      {'name': 'Bills', 'amount': 1500000, 'color': Colors.teal},
+      {'name': 'Others', 'amount': 1000000, 'color': Colors.grey},
+    ];
 
-class _Transaction {
-  final String name;
-  final double amount;
-  final String date;
-  final _TransactionType type;
-  final IconData icon;
-  const _Transaction({
-    required this.name,
-    required this.amount,
-    required this.date,
-    required this.type,
-    required this.icon,
-  });
+    final total = categories.fold<int>(
+      0,
+      (sum, c) => sum + (c['amount'] as int),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Expense by Category',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Pie chart centered
+            Center(
+              child: SizedBox(
+                height: 200,
+                width: 200,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 3,
+                    centerSpaceRadius: 60,
+                    sections: categories.map((category) {
+                      final amount = category['amount'] as int;
+                      final percentage = (amount / total * 100).toStringAsFixed(
+                        0,
+                      );
+                      return PieChartSectionData(
+                        value: amount.toDouble(),
+                        title: '$percentage%',
+                        color: category['color'] as Color,
+                        radius: 50,
+                        titleStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Category list - vertical layout for better readability
+            ...categories.map((category) {
+              final amount = category['amount'] as int;
+              final percentage = (amount / total * 100).toStringAsFixed(1);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: category['color'] as Color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            category['name'] as String,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade800,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '$percentage%',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatVND(amount),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatVND(int amount) {
+    final formatted = amount.toString().replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => '.',
+    );
+    return '$formatted đ';
+  }
 }

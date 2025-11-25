@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 class LoginPage extends StatefulWidget {
   final AuthViewModel viewModel;
@@ -264,12 +265,11 @@ class _LoginPageState extends State<LoginPage> {
     final success = await _viewModel.signInWithGoogle();
     if (success && mounted) {
       // Navigation will be handled by router based on auth state
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Signed in successfully!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      SuccessNotification.show(
+        context: context,
+        message: 'Successfully signed in!',
+        duration: const Duration(seconds: 2),
       );
     }
   }
