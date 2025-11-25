@@ -48,15 +48,12 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final newCategory = CategoryItem(
-        id: 0,
-        name: _nameController.text,
-        icon: _selectedIcon,
-        color: _getColorForIcon(_selectedIcon),
-        transactionCount: 0,
-        amount: 0.0,
-        type: _selectedType,
-      );
+      final result = {
+        'name': _nameController.text,
+        'icon': _selectedIcon,
+        'color': _getColorForIcon(_selectedIcon),
+        'type': _selectedType,
+      };
 
       debugPrint('New category: ${_nameController.text}');
 
@@ -68,7 +65,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
 
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
-          Navigator.pop(context, newCategory);
+          Navigator.pop(context, result);
         }
       });
     }

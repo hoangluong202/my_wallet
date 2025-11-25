@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'categories_page.dart';
+import '../../domain/entities/category.dart';
 
 class TransactionHistory {
   final double amount;
@@ -16,7 +16,7 @@ class TransactionHistory {
 }
 
 class CategoryHistoryPage extends StatelessWidget {
-  final CategoryItem category;
+  final Category category;
 
   const CategoryHistoryPage({super.key, required this.category});
 

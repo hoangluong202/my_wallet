@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'categories_page.dart';
+import '../../domain/entities/category.dart';
 import '../../../../shared/widgets/notification_widget.dart';
 
 class EditCategoryPage extends StatefulWidget {
-  final CategoryItem category;
+  final Category category;
 
   const EditCategoryPage({super.key, required this.category});
 
@@ -46,10 +46,12 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final updated = widget.category.copyWith(
-        name: _nameController.text,
-        icon: _selectedIcon,
-      );
+      final updated = {
+        'id': widget.category.id,
+        'name': _nameController.text,
+        'icon': _selectedIcon.codePoint,
+        'type': widget.category.type.name,
+      };
 
       debugPrint('Category updated: ${_nameController.text}');
 

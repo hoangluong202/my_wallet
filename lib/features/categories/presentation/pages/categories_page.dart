@@ -1,64 +1,15 @@
 import 'package:flutter/material.dart';
-
+import '../../../../app/di/injector.dart';
+import '../../../../shared/widgets/notification_widget.dart';
+import '../../../../core/utils/uuid_generator.dart';
+import '../../domain/entities/category.dart';
+import '../viewmodels/categories_viewmodel.dart';
 import 'add_category_page.dart';
 import 'edit_category_page.dart';
 import 'category_history_page.dart';
-import '../../../../shared/widgets/notification_widget.dart';
 
-enum CategoryType { expense, income, debt, loan }
-
-String categoryTypeLabel(CategoryType t) {
-  switch (t) {
-    case CategoryType.expense:
-      return 'Expense';
-    case CategoryType.income:
-      return 'Income';
-    case CategoryType.debt:
-      return 'Debt';
-    case CategoryType.loan:
-      return 'Loan';
-  }
-}
-
-class CategoryItem {
-  final int id;
-  final String name;
-  final IconData icon;
-  final Color color;
-  final int transactionCount;
-  final double amount;
-  final CategoryType type;
-
-  CategoryItem({
-    required this.id,
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.transactionCount,
-    required this.amount,
-    required this.type,
-  });
-
-  CategoryItem copyWith({
-    int? id,
-    String? name,
-    IconData? icon,
-    Color? color,
-    int? transactionCount,
-    double? amount,
-    CategoryType? type,
-  }) {
-    return CategoryItem(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      icon: icon ?? this.icon,
-      color: color ?? this.color,
-      transactionCount: transactionCount ?? this.transactionCount,
-      amount: amount ?? this.amount,
-      type: type ?? this.type,
-    );
-  }
-}
+export '../../domain/entities/category.dart'
+    show CategoryType, categoryTypeLabel;
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
@@ -68,152 +19,19 @@ class CategoriesPage extends StatefulWidget {
 }
 
 class _CategoriesPageState extends State<CategoriesPage> {
-  final Map<CategoryType, List<CategoryItem>> _categories = {};
-  int _nextId = 100;
+  late final CategoriesViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _initMockData();
+    _viewModel = getIt<CategoriesViewModel>();
+    _viewModel.loadCategories();
   }
 
-  void _initMockData() {
-    _categories[CategoryType.expense] = [
-      CategoryItem(
-        id: 1,
-        name: 'Food',
-        icon: Icons.restaurant,
-        color: Colors.orange,
-        transactionCount: 12,
-        amount: 245.50,
-        type: CategoryType.expense,
-      ),
-      CategoryItem(
-        id: 2,
-        name: 'Transport',
-        icon: Icons.directions_car,
-        color: Colors.blue,
-        transactionCount: 8,
-        amount: 180.00,
-        type: CategoryType.expense,
-      ),
-    ];
-
-    _categories[CategoryType.income] = [
-      CategoryItem(
-        id: 3,
-        name: 'Salary',
-        icon: Icons.account_balance,
-        color: Colors.green,
-        transactionCount: 1,
-        amount: 3500.00,
-        type: CategoryType.income,
-      ),
-    ];
-
-    _categories[CategoryType.debt] = [
-      CategoryItem(
-        id: 4,
-        name: 'Credit Card',
-        icon: Icons.credit_card,
-        color: Colors.red,
-        transactionCount: 15,
-        amount: 2500.00,
-        type: CategoryType.debt,
-      ),
-    ];
-
-    _categories[CategoryType.loan] = [
-      CategoryItem(
-        id: 5,
-        name: 'Home Loan',
-        icon: Icons.home,
-        color: Colors.brown,
-        transactionCount: 60,
-        amount: 150000.00,
-        type: CategoryType.loan,
-      ),
-    ];
-
-    _nextId = 10;
-  }
-
-  Future<void> _onAddCategory(CategoryType type) async {
-    final result = await Navigator.push<CategoryItem?>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddCategoryPage(preselectedType: type),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        final newCategory = result.copyWith(id: _nextId++);
-        final list = _categories[type] ?? [];
-        _categories[type] = [...list, newCategory];
-      });
-    }
-  }
-
-  Future<void> _onEditCategory(CategoryItem category) async {
-    final result = await Navigator.push<CategoryItem?>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditCategoryPage(category: category),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        final list = _categories[category.type]!;
-        final idx = list.indexWhere((c) => c.id == category.id);
-        if (idx != -1) list[idx] = result;
-      });
-    }
-  }
-
-  void _onViewHistory(CategoryItem category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryHistoryPage(category: category),
-      ),
-    );
-  }
-
-  void _onDeleteCategory(CategoryItem category) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category?'),
-        content: const Text(
-          'Are you sure you want to delete this category? '
-          'All transactions related to this category will also be deleted. '
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                final list = _categories[category.type]!;
-                list.removeWhere((c) => c.id == category.id);
-              });
-              SuccessNotification.show(
-                context: context,
-                message: 'Category "${category.name}" deleted successfully!',
-                duration: const Duration(seconds: 2),
-              );
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -328,65 +146,203 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
   Widget _buildTabContent(CategoryType type) {
-    final items = _categories[type] ?? [];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        if (_viewModel.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (_viewModel.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Error: ${_viewModel.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _viewModel.loadCategories,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final items = _viewModel.getCategoriesByType(type);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+          child: Column(
             children: [
-              Text(
-                '${categoryTypeLabel(type)} Categories',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${categoryTypeLabel(type)} Categories',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => _onAddCategory(type),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add'),
+                  ),
+                ],
               ),
-              FilledButton.icon(
-                onPressed: () => _onAddCategory(type),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add'),
+              const SizedBox(height: 12),
+              Expanded(
+                child: items.isEmpty
+                    ? _buildEmptyState(type)
+                    : RefreshIndicator(
+                        onRefresh: _viewModel.loadCategories,
+                        child: ListView.separated(
+                          itemCount: items.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final category = items[index];
+                            return _buildCategoryCard(category);
+                          },
+                        ),
+                      ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: items.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 48,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No ${categoryTypeLabel(type).toLowerCase()} categories yet',
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final category = items[index];
-                      return _buildCategoryCard(category);
-                    },
-                  ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(CategoryType type) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.category_outlined, size: 48, color: Colors.grey.shade300),
+          const SizedBox(height: 8),
+          Text(
+            'No ${categoryTypeLabel(type).toLowerCase()} categories yet',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCard(CategoryItem category) {
+  Future<void> _onAddCategory(CategoryType type) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddCategoryPage(preselectedType: type),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final category = Category(
+        id: UuidGenerator.generate(),
+        name: result['name'],
+        icon: result['icon'],
+        color: result['color'],
+        transactionCount: 0,
+        amount: 0.0,
+        type: result['type'],
+        createdOn: DateTime.now(),
+        lastUpdated: DateTime.now(),
+      );
+
+      await _viewModel.addCategory(category);
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Category "${category.name}" added successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  Future<void> _onEditCategory(Category category) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditCategoryPage(category: category),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final updatedCategory = Category(
+        id: category.id,
+        name: result['name'],
+        icon: result['icon'],
+        color: result['color'],
+        transactionCount: category.transactionCount,
+        amount: category.amount,
+        type: result['type'],
+        createdOn: category.createdOn,
+        lastUpdated: DateTime.now(),
+      );
+
+      await _viewModel.updateCategory(category, updatedCategory);
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Category "${updatedCategory.name}" updated successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  void _onViewHistory(Category category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryHistoryPage(category: category),
+      ),
+    );
+  }
+
+  Future<void> _onDeleteCategory(Category category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category?'),
+        content: const Text(
+          'Are you sure you want to delete this category? '
+          'All transactions related to this category will also be deleted. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _viewModel.deleteCategory(category.id);
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Category "${category.name}" deleted successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  Widget _buildCategoryCard(Category category) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -403,7 +359,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
             width: 44,
             height: 44,
@@ -414,7 +369,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
             child: Icon(category.icon, color: category.color, size: 22),
           ),
           const SizedBox(width: 12),
-          // Category info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +413,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
             ),
           ),
           const SizedBox(width: 8),
-          // Menu
           PopupMenuButton<String>(
             offset: const Offset(0, 30),
             onSelected: (value) {

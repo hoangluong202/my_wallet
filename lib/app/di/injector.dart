@@ -14,6 +14,15 @@ import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
 import '../../features/wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../features/categories/data/datasources/categories_local_data_source.dart';
+import '../../features/categories/data/repositories/categories_repository_impl.dart';
+import '../../features/categories/domain/repositories/categories_repository.dart';
+import '../../features/categories/domain/usecases/get_categories_usecase.dart';
+import '../../features/categories/domain/usecases/get_categories_by_type_usecase.dart';
+import '../../features/categories/domain/usecases/add_category_usecase.dart';
+import '../../features/categories/domain/usecases/update_category_usecase.dart';
+import '../../features/categories/domain/usecases/delete_category_usecase.dart';
+import '../../features/categories/presentation/viewmodels/categories_viewmodel.dart';
 
 final getIt = GetIt.instance;
 
@@ -93,5 +102,42 @@ Future<void> setupDependencies() async {
   // ViewModels
   getIt.registerFactory<WalletsViewModel>(
     () => WalletsViewModel(getIt<WalletRepository>()),
+  );
+
+  // Categories - Data Sources
+  getIt.registerLazySingleton<CategoriesLocalDataSource>(
+    () => CategoriesLocalDataSourceImpl(),
+  );
+
+  // Categories - Repositories
+  getIt.registerLazySingleton<CategoriesRepository>(
+    () => CategoriesRepositoryImpl(getIt<CategoriesLocalDataSource>()),
+  );
+
+  // Categories - Use Cases
+  getIt.registerLazySingleton<GetCategoriesUseCase>(
+    () => GetCategoriesUseCase(getIt<CategoriesRepository>()),
+  );
+  getIt.registerLazySingleton<GetCategoriesByTypeUseCase>(
+    () => GetCategoriesByTypeUseCase(getIt<CategoriesRepository>()),
+  );
+  getIt.registerLazySingleton<AddCategoryUseCase>(
+    () => AddCategoryUseCase(getIt<CategoriesRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateCategoryUseCase>(
+    () => UpdateCategoryUseCase(getIt<CategoriesRepository>()),
+  );
+  getIt.registerLazySingleton<DeleteCategoryUseCase>(
+    () => DeleteCategoryUseCase(getIt<CategoriesRepository>()),
+  );
+
+  // Categories - ViewModels
+  getIt.registerFactory<CategoriesViewModel>(
+    () => CategoriesViewModel(
+      getIt<GetCategoriesUseCase>(),
+      getIt<AddCategoryUseCase>(),
+      getIt<UpdateCategoryUseCase>(),
+      getIt<DeleteCategoryUseCase>(),
+    ),
   );
 }
