@@ -5,16 +5,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import 'tables/wallets_table.dart';
+import 'tables/users_table.dart';
 import 'daos/wallet_dao.dart';
+import 'daos/user_dao.dart';
+
+export 'daos/user_dao.dart';
+export 'daos/wallet_dao.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Wallets], daos: [WalletDao])
+@DriftDatabase(tables: [Wallets, Users], daos: [WalletDao, UserDao])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -24,10 +29,9 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         // Handle migrations here
-        // Example for version 2:
-        // if (from < 2) {
-        //   await m.addColumn(wallets, wallets.description);
-        // }
+        if (from < 2) {
+          await m.createTable(users);
+        }
       },
       beforeOpen: (details) async {
         // Enable foreign keys
@@ -40,6 +44,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> clearAllData() async {
     await transaction(() async {
       await delete(wallets).go();
+      await delete(users).go();
     });
   }
 

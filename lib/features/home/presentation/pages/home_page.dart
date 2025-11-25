@@ -3,9 +3,34 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../../app/di/injector.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../users/presentation/viewmodels/user_viewmodel.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late final UserViewModel _userViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _userViewModel = getIt<UserViewModel>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    final authViewModel = getIt<AuthViewModel>();
+    final currentUser = authViewModel.currentUser;
+    if (currentUser != null) {
+      await _userViewModel.loadUser(currentUser.uid);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,84 +71,107 @@ class HomePage extends StatelessWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white,
-                child: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.blue.shade100,
-                  child: Text(
-                    'HL',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+          child: ListenableBuilder(
+            listenable: _userViewModel,
+            builder: (context, _) {
+              final userName = _userViewModel.userName;
+              final initials = _getInitials(userName);
+
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.blue.shade100,
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back,',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Hoàng Lương',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton<String>(
-                onSelected: (value) async {
-                  if (value == 'signout') {
-                    final authViewModel = getIt.get<AuthViewModel>();
-                    await authViewModel.signOut();
-                    if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, AppRouter.login);
-                    }
-                  }
-                },
-                itemBuilder: (BuildContext context) => [
-                  const PopupMenuItem<String>(
-                    height: 10,
-                    value: 'signout',
-                    padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.logout),
-                        SizedBox(width: 4),
-                        Text('Sign Out'),
+                        Text(
+                          'Welcome back,',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.white70, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          userName,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                        ),
                       ],
                     ),
                   ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'signout') {
+                        final authViewModel = getIt.get<AuthViewModel>();
+                        await authViewModel.signOut();
+                        if (context.mounted) {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            AppRouter.login,
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      const PopupMenuItem<String>(
+                        height: 10,
+                        value: 'signout',
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.logout),
+                            SizedBox(width: 4),
+                            Text('Sign Out'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                    iconSize: 20,
+                    tooltip: 'Menu',
+                    padding: EdgeInsets.zero,
+                    offset: const Offset(0, 60),
+                  ),
                 ],
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                iconSize: 20,
-                tooltip: 'Menu',
-                padding: EdgeInsets.zero,
-                offset: const Offset(0, 60),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
     );
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      return parts[0][0].toUpperCase();
+    }
+    return 'U';
   }
 
   Widget _buildBalanceCards(BuildContext context) {

@@ -1,16 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../../users/domain/services/user_service.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
+  final UserService _userService;
 
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticated = false;
 
-  AuthViewModel(this._authRepository) {
+  AuthViewModel(this._authRepository, this._userService) {
     _initializeAuth();
   }
 
@@ -38,6 +40,10 @@ class AuthViewModel extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         _isAuthenticated = true;
+
+        // Save or update user in local database
+        await _userService.handleUserLogin(user);
+
         _isLoading = false;
         notifyListeners();
         return true;

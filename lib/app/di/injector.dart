@@ -8,6 +8,10 @@ import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/domain/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../features/users/data/repositories/user_repository_impl.dart';
+import '../../features/users/domain/repositories/user_repository.dart';
+import '../../features/users/domain/services/user_service.dart';
+import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
 
 final getIt = GetIt.instance;
 
@@ -27,9 +31,24 @@ Future<void> setupDependencies() async {
     () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>()),
   );
 
+  // User Repository
+  getIt.registerLazySingleton<UserRepository>(
+    () => UserRepositoryImpl(getIt<AppDatabase>().userDao),
+  );
+
+  // User Service
+  getIt.registerLazySingleton<UserService>(
+    () => UserService(getIt<UserRepository>()),
+  );
+
   // Auth ViewModel
   getIt.registerSingleton<AuthViewModel>(
-    AuthViewModel(getIt<AuthRepository>()),
+    AuthViewModel(getIt<AuthRepository>(), getIt<UserService>()),
+  );
+
+  // User ViewModel
+  getIt.registerLazySingleton<UserViewModel>(
+    () => UserViewModel(getIt<UserRepository>()),
   );
 
   // Data Sources
