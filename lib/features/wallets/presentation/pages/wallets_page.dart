@@ -44,7 +44,7 @@ class _WalletsPageState extends State<WalletsPage> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              WalletsAppBar(onAddPressed: _onAddWallet, viewModel: _viewModel),
+              WalletsAppBar(onAddPressed: _onAddWallet),
               const SizedBox(height: 12),
               ListenableBuilder(
                 listenable: _viewModel,

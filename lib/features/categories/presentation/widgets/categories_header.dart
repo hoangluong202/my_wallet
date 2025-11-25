@@ -1,31 +1,27 @@
 import 'package:flutter/material.dart';
 
-class WalletsAppBar extends StatelessWidget {
-  final VoidCallback onAddPressed;
-
-  const WalletsAppBar({super.key, required this.onAddPressed});
+class CategoriesHeader extends StatelessWidget {
+  const CategoriesHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Wallets',
+              'Categories',
               style: Theme.of(
                 context,
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onAddPressed,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              iconSize: 24,
+            Icon(
+              Icons.category_outlined,
+              size: 28,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ],
         ),
