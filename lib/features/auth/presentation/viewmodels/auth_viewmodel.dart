@@ -1,23 +1,25 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../../users/domain/services/user_service.dart';
+import '../../../../core/local/database/app_database.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
   final UserService _userService;
+  final AppDatabase _database;
 
-  User? _currentUser;
+  firebase_auth.User? _currentUser;
   bool _isLoading = false;
   String? _error;
   bool _isAuthenticated = false;
 
-  AuthViewModel(this._authRepository, this._userService) {
+  AuthViewModel(this._authRepository, this._userService, this._database) {
     _initializeAuth();
   }
 
   // Getters
-  User? get currentUser => _currentUser;
+  firebase_auth.User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _isAuthenticated;
@@ -66,7 +68,12 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Clear all local data (wallets, users, etc.)
+      await _database.clearAllData();
+
+      // Sign out from Firebase
       await _authRepository.signOut();
+
       _currentUser = null;
       _isAuthenticated = false;
     } catch (e) {

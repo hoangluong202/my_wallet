@@ -4,6 +4,8 @@ import '../../../../app/di/injector.dart';
 import '../../../../app/router/app_router.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../users/presentation/viewmodels/user_viewmodel.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../../shared/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,11 +16,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final UserViewModel _userViewModel;
+  late final WalletsViewModel _walletsViewModel;
 
   @override
   void initState() {
     super.initState();
     _userViewModel = getIt<UserViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
@@ -29,6 +33,50 @@ class _HomePageState extends State<HomePage> {
     final currentUser = authViewModel.currentUser;
     if (currentUser != null) {
       await _userViewModel.loadUser(currentUser.uid);
+    }
+  }
+
+  Future<void> _syncData(BuildContext context) async {
+    try {
+      final authViewModel = getIt<AuthViewModel>();
+      final currentUser = authViewModel.currentUser;
+
+      if (currentUser == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No user logged in'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final userId = currentUser.uid;
+
+      // Sync both wallets and user data
+      await Future.wait([
+        _walletsViewModel.bidirectionalSync(userId),
+        _userViewModel.bidirectionalSync(userId),
+      ]);
+
+      if (context.mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Sync completed: Local ↔ Cloud',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sync failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -118,11 +166,40 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                   ),
+                  ListenableBuilder(
+                    listenable: _walletsViewModel,
+                    builder: (context, _) {
+                      final isSyncing = _walletsViewModel.isSyncing;
+                      return IconButton(
+                        onPressed: isSyncing ? null : () => _syncData(context),
+                        icon: isSyncing
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.cloud_sync, color: Colors.white),
+                        iconSize: 24,
+                        tooltip: 'Sync wallets',
+                      );
+                    },
+                  ),
                   PopupMenuButton<String>(
                     onSelected: (value) async {
                       if (value == 'signout') {
                         final authViewModel = getIt.get<AuthViewModel>();
+
+                        // Clear ViewModels state
+                        _userViewModel.clear();
+
+                        // Sign out (this will also clear all local data)
                         await authViewModel.signOut();
+
                         if (context.mounted) {
                           Navigator.pushReplacementNamed(
                             context,

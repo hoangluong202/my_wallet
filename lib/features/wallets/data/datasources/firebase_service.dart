@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:drift/drift.dart';
 import '../../../../core/local/database/app_database.dart';
 import '../../../../core/local/database/daos/wallet_dao.dart';
@@ -13,10 +14,19 @@ abstract class FirebaseService {
 class FirebaseServiceImpl implements FirebaseService {
   final FirebaseFirestore _firestore;
   final WalletDao _walletDao;
+  final firebase_auth.FirebaseAuth _auth;
 
-  FirebaseServiceImpl(this._firestore, this._walletDao);
+  FirebaseServiceImpl(this._firestore, this._walletDao, this._auth);
+
+  String? get _currentUserId => _auth.currentUser?.uid;
 
   CollectionReference _getUserWalletsCollection(String userId) {
+    // Verify that the userId matches the authenticated user
+    if (_currentUserId != null && _currentUserId != userId) {
+      throw Exception(
+        'Access denied: userId does not match authenticated user',
+      );
+    }
     return _firestore.collection('users').doc(userId).collection('wallets');
   }
 

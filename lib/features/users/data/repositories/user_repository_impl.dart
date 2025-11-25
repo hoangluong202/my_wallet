@@ -2,11 +2,13 @@ import 'package:drift/drift.dart';
 import '../../../../core/local/database/app_database.dart';
 import '../../domain/entities/user.dart' as entity;
 import '../../domain/repositories/user_repository.dart';
+import '../datasources/user_firebase_service.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final UserDao _userDao;
+  final UserFirebaseService _firebaseService;
 
-  UserRepositoryImpl(this._userDao);
+  UserRepositoryImpl(this._userDao, this._firebaseService);
 
   @override
   Future<entity.User?> getUserById(String id) async {
@@ -48,6 +50,24 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<bool> userExists(String id) async {
     return await _userDao.userExists(id);
+  }
+
+  @override
+  Future<void> syncToCloud(String userId) async {
+    try {
+      await _firebaseService.syncUserToCloud(userId);
+    } catch (e) {
+      throw Exception('Failed to sync user to cloud: $e');
+    }
+  }
+
+  @override
+  Future<void> pullFromCloud(String userId) async {
+    try {
+      await _firebaseService.pullUserFromCloud(userId);
+    } catch (e) {
+      throw Exception('Failed to pull user from cloud: $e');
+    }
   }
 
   entity.User _mapToEntity(User data) {

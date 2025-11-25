@@ -8,10 +8,12 @@ import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/domain/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../features/users/data/datasources/user_firebase_service.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
+import '../../features/wallets/presentation/viewmodels/wallets_viewmodel.dart';
 
 final getIt = GetIt.instance;
 
@@ -31,9 +33,21 @@ Future<void> setupDependencies() async {
     () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>()),
   );
 
+  // User Firebase Service
+  getIt.registerLazySingleton<UserFirebaseService>(
+    () => UserFirebaseServiceImpl(
+      getIt<FirebaseFirestore>(),
+      getIt<AppDatabase>().userDao,
+      getIt<FirebaseAuth>(),
+    ),
+  );
+
   // User Repository
   getIt.registerLazySingleton<UserRepository>(
-    () => UserRepositoryImpl(getIt<AppDatabase>().userDao),
+    () => UserRepositoryImpl(
+      getIt<AppDatabase>().userDao,
+      getIt<UserFirebaseService>(),
+    ),
   );
 
   // User Service
@@ -43,7 +57,11 @@ Future<void> setupDependencies() async {
 
   // Auth ViewModel
   getIt.registerSingleton<AuthViewModel>(
-    AuthViewModel(getIt<AuthRepository>(), getIt<UserService>()),
+    AuthViewModel(
+      getIt<AuthRepository>(),
+      getIt<UserService>(),
+      getIt<AppDatabase>(),
+    ),
   );
 
   // User ViewModel
@@ -60,6 +78,7 @@ Future<void> setupDependencies() async {
     () => FirebaseServiceImpl(
       getIt<FirebaseFirestore>(),
       getIt<AppDatabase>().walletDao,
+      getIt<FirebaseAuth>(),
     ),
   );
 
@@ -69,5 +88,10 @@ Future<void> setupDependencies() async {
       getIt<WalletLocalDataSource>(),
       getIt<FirebaseService>(),
     ),
+  );
+
+  // ViewModels
+  getIt.registerFactory<WalletsViewModel>(
+    () => WalletsViewModel(getIt<WalletRepository>()),
   );
 }

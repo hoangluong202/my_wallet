@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_wallet/shared/widgets/notification_widget.dart';
 import '../../../../app/di/injector.dart';
-import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/wallet.dart';
-import '../../domain/repositories/wallet_repository.dart';
 import '../viewmodels/wallets_viewmodel.dart';
 import '../widgets/wallets_app_bar.dart';
 import '../widgets/wallet_summary_card.dart';
@@ -27,7 +25,7 @@ class _WalletsPageState extends State<WalletsPage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = WalletsViewModel(getIt<WalletRepository>());
+    _viewModel = getIt<WalletsViewModel>();
     _viewModel.loadWallets();
   }
 
@@ -46,11 +44,7 @@ class _WalletsPageState extends State<WalletsPage> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              WalletsAppBar(
-                onAddPressed: _onAddWallet,
-                onSyncPressed: _onSyncToCloud,
-                viewModel: _viewModel,
-              ),
+              WalletsAppBar(onAddPressed: _onAddWallet, viewModel: _viewModel),
               const SizedBox(height: 12),
               ListenableBuilder(
                 listenable: _viewModel,
@@ -240,25 +234,5 @@ class _WalletsPageState extends State<WalletsPage> {
         builder: (context) => WalletHistoryPage(wallet: wallet),
       ),
     );
-  }
-
-  Future<void> _onSyncToCloud() async {
-    try {
-      const userId = '101'; // Replace with actual user ID from authentication
-
-      await _viewModel.bidirectionalSync(userId);
-
-      if (mounted) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Sync completed: Local → Cloud → Local',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        context.showErrorMessage('Sync failed: $e');
-      }
-    }
   }
 }
