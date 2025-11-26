@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/dialogs/confirm_dialog.dart';
+import '../widgets/dialogs/confirm_dialog.dart';
 
 extension ContextExtensions on BuildContext {
   ThemeData get theme => Theme.of(this);

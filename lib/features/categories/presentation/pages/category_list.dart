@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/widgets/notification_widget.dart';
+import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/category.dart';
 import '../viewmodels/categories_viewmodel.dart';

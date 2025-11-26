@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../app/router/app_router.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/constants/navigation_items.dart';
-import '../../../../shared/widgets/bottom_navigation/custom_bottom_bar.dart';
-import '../../../../shared/widgets/custom_fab.dart';
+import '../../../../core/widgets/bottom_navigation/custom_bottom_bar.dart';
+import '../../../../core/widgets/custom_fab.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../wallets/presentation/pages/wallets_page.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart';

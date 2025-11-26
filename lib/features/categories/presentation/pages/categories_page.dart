@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../app/di/injector.dart';
+import '../../../../core/di/injector.dart';
 import '../../domain/entities/category.dart';
 import '../viewmodels/categories_viewmodel.dart';
 import '../widgets/categories_header.dart';

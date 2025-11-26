@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:drift/drift.dart';
-import '../../../../core/local/database/app_database.dart';
-import '../../../../core/local/database/daos/user_dao.dart';
+import '../../../../database/app_database.dart';
+import '../../../../database/daos/user_dao.dart';
 
 abstract class UserFirebaseService {
   Future<void> syncUserToCloud(String userId);

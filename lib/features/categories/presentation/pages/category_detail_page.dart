@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/widgets/header/detail_header.dart';
+import '../../../../core/widgets/header/detail_header.dart';
 import '../../domain/entities/category.dart';
 import '../widgets/category_icon_section.dart';
 import '../widgets/category_info_card.dart';

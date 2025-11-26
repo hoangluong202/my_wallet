@@ -1,7 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/local/database/app_database.dart';
+import '../../database/app_database.dart';
 import '../../features/wallets/data/datasources/wallet_local_datasource.dart';
 import '../../features/wallets/data/datasources/firebase_service.dart';
 import '../../features/wallets/data/repositories/wallet_repository_impl.dart';

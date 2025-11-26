@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/bottom_navigation/bottom_bar_item_model.dart';
+import '../widgets/bottom_navigation/bottom_bar_item_model.dart';
 
 class NavigationItems {
   static const List<BottomBarItemModel> mainNavItems = [

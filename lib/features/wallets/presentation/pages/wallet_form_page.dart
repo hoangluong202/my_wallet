@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../domain/entities/wallet.dart';
 import '../viewmodels/wallet_form_viewmodel.dart';
-import '../../../../shared/widgets/header/detail_header.dart';
+import '../../../../core/widgets/header/detail_header.dart';
 import '../widgets/wallet_icon_selector.dart';
-import '../../../../shared/widgets/form/custom_text_field.dart';
+import '../../../../core/widgets/form/custom_text_field.dart';
 
 class WalletFormPage extends StatefulWidget {
   final Wallet? wallet;

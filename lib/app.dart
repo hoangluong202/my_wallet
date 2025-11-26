@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'theme/app_theme.dart';
-import 'router/app_router.dart';
-import 'di/injector.dart';
-import '../features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'core/theme/app_theme.dart';
+import 'core/router/app_router.dart';
+import 'core/di/injector.dart';
+import 'features/auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

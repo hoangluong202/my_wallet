@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/auth_viewmodel.dart';
-import '../../../../shared/widgets/notification_widget.dart';
+import '../../../../core/widgets/notification_widget.dart';
 
 class LoginPage extends StatefulWidget {
   final AuthViewModel viewModel;

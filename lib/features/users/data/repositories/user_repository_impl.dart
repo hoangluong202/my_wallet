@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import '../../../../core/local/database/app_database.dart';
+import '../../../../database/app_database.dart';
 import '../../domain/entities/user.dart' as entity;
 import '../../domain/repositories/user_repository.dart';
 import '../datasources/user_firebase_service.dart';

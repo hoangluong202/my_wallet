@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../../app/di/injector.dart';
-import '../../../../app/router/app_router.dart';
+import '../../../../core/di/injector.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../users/presentation/viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
-import '../../../../shared/widgets/notification_widget.dart';
+import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

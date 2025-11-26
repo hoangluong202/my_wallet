@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_wallet/shared/widgets/notification_widget.dart';
-import '../../../../app/di/injector.dart';
+import 'package:my_wallet/core/widgets/notification_widget.dart';
+import '../../../../core/di/injector.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/wallet.dart';
 import '../viewmodels/wallets_viewmodel.dart';

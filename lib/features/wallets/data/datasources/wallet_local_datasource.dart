@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' as drift;
-import '../../../../core/local/database/app_database.dart';
+import '../../../../database/app_database.dart';
 import '../../domain/entities/wallet.dart';
 
 abstract class WalletLocalDataSource {

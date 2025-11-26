@@ -7,7 +7,7 @@ import '../../features/wallets/presentation/pages/edit_wallet_page.dart';
 import '../../features/wallets/presentation/pages/wallet_detail_page.dart';
 import '../../features/wallets/presentation/pages/wallet_history_page.dart';
 import '../../features/wallets/domain/entities/wallet.dart';
-import '../../app/di/injector.dart';
+import '../di/injector.dart';
 
 class AppRouter {
   static const String login = '/login';
