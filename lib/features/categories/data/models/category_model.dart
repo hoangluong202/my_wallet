@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../database/app_database.dart';
 import '../../domain/entities/category.dart';
 
 class CategoryModel extends Category {
@@ -39,6 +40,18 @@ class CategoryModel extends Category {
     };
   }
 
+  factory CategoryModel.fromDrift(CategoryData data) {
+    return CategoryModel(
+      id: data.id,
+      name: data.name,
+      icon: IconData(data.iconCode, fontFamily: 'MaterialIcons'),
+      color: Color(data.iconColor),
+      type: _categoryTypeFromString(data.type),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    );
+  }
+
   factory CategoryModel.fromEntity(Category category) {
     return CategoryModel(
       id: category.id,
@@ -49,5 +62,20 @@ class CategoryModel extends Category {
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     );
+  }
+
+  static CategoryType _categoryTypeFromString(String type) {
+    switch (type) {
+      case 'expense':
+        return CategoryType.expense;
+      case 'income':
+        return CategoryType.income;
+      case 'debt':
+        return CategoryType.debt;
+      case 'loan':
+        return CategoryType.loan;
+      default:
+        return CategoryType.expense;
+    }
   }
 }

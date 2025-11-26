@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:drift/drift.dart';
+import '../../../../database/app_database.dart';
 import '../models/category_model.dart';
 import '../../domain/entities/category.dart';
 
@@ -12,98 +13,77 @@ abstract class CategoryLocalService {
 }
 
 class CategoryLocalServiceImpl implements CategoryLocalService {
-  final List<CategoryModel> _mockCategories = [];
+  final AppDatabase _database;
 
-  CategoryLocalServiceImpl() {
-    _initMockData();
-  }
-
-  void _initMockData() {
-    _mockCategories.addAll([
-      CategoryModel(
-        id: '1',
-        name: 'Food',
-        icon: Icons.restaurant,
-        color: Colors.orange,
-        type: CategoryType.expense,
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-      ),
-      CategoryModel(
-        id: '2',
-        name: 'Transport',
-        icon: Icons.directions_car,
-        color: Colors.blue,
-        type: CategoryType.expense,
-        createdAt: DateTime.now().subtract(const Duration(days: 25)),
-        updatedAt: DateTime.now(),
-      ),
-      CategoryModel(
-        id: '3',
-        name: 'Salary',
-        icon: Icons.account_balance,
-        color: Colors.green,
-        type: CategoryType.income,
-        createdAt: DateTime.now().subtract(const Duration(days: 20)),
-        updatedAt: DateTime.now(),
-      ),
-      CategoryModel(
-        id: '4',
-        name: 'Credit Card',
-        icon: Icons.credit_card,
-        color: Colors.red,
-        type: CategoryType.debt,
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        updatedAt: DateTime.now(),
-      ),
-      CategoryModel(
-        id: '5',
-        name: 'Home Loan',
-        icon: Icons.home,
-        color: Colors.brown,
-        type: CategoryType.loan,
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
-        updatedAt: DateTime.now(),
-      ),
-    ]);
-  }
+  CategoryLocalServiceImpl(this._database);
 
   @override
   Future<List<CategoryModel>> getCategories() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return List.from(_mockCategories);
+    final categories = await _database.categoryDao.getAllCategories();
+    return categories.map((data) => CategoryModel.fromDrift(data)).toList();
   }
 
   @override
   Future<List<CategoryModel>> getCategoriesByType(CategoryType type) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _mockCategories.where((c) => c.type == type).toList();
+    final typeString = _categoryTypeToString(type);
+    final categories = await _database.categoryDao.getCategoriesByType(
+      typeString,
+    );
+    return categories.map((data) => CategoryModel.fromDrift(data)).toList();
   }
 
   @override
   Future<CategoryModel> getCategoryById(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _mockCategories.firstWhere((c) => c.id == id);
+    final data = await _database.categoryDao.getCategoryById(id);
+    if (data == null) {
+      throw Exception('Category not found');
+    }
+    return CategoryModel.fromDrift(data);
   }
 
   @override
   Future<void> addCategory(CategoryModel category) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _mockCategories.add(category);
+    final companion = CategoriesCompanion.insert(
+      id: category.id,
+      name: category.name,
+      iconCode: category.icon.codePoint,
+      iconColor: category.color.value,
+      type: _categoryTypeToString(category.type),
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    );
+    await _database.categoryDao.insertCategory(companion);
   }
 
   @override
   Future<void> updateCategory(CategoryModel category) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    final index = _mockCategories.indexWhere((c) => c.id == category.id);
-    if (index != -1) {
-      _mockCategories[index] = category;
-    }
+    final companion = CategoriesCompanion(
+      id: Value(category.id),
+      name: Value(category.name),
+      iconCode: Value(category.icon.codePoint),
+      iconColor: Value(category.color.value),
+      type: Value(_categoryTypeToString(category.type)),
+      createdAt: Value(category.createdAt),
+      updatedAt: Value(category.updatedAt),
+    );
+    await _database.categoryDao.updateCategory(companion);
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _mockCategories.removeWhere((c) => c.id == id);
+    await _database.categoryDao.deleteCategory(id);
+  }
+
+  String _categoryTypeToString(CategoryType type) {
+    switch (type) {
+      case CategoryType.expense:
+        return 'expense';
+      case CategoryType.income:
+        return 'income';
+      case CategoryType.debt:
+        return 'debt';
+      case CategoryType.loan:
+        return 'loan';
+    }
   }
 }

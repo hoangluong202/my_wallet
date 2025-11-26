@@ -7,4 +7,8 @@ abstract class CategoriesRepository {
   Future<void> addCategory(Category category);
   Future<void> updateCategory(Category category);
   Future<void> deleteCategory(String id);
+
+  // Cloud sync methods
+  Future<void> syncToCloud(String userId);
+  Future<void> pullFromCloud(String userId);
 }

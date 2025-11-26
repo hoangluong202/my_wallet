@@ -6,20 +6,26 @@ import 'package:path/path.dart' as p;
 
 import 'tables/wallets_table.dart';
 import 'tables/users_table.dart';
+import 'tables/categories_table.dart';
 import 'daos/wallet_dao.dart';
 import 'daos/user_dao.dart';
+import 'daos/category_dao.dart';
 
 export 'daos/user_dao.dart';
 export 'daos/wallet_dao.dart';
+export 'daos/category_dao.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Wallets, Users], daos: [WalletDao, UserDao])
+@DriftDatabase(
+  tables: [Wallets, Users, Categories],
+  daos: [WalletDao, UserDao, CategoryDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -31,6 +37,9 @@ class AppDatabase extends _$AppDatabase {
         // Handle migrations here
         if (from < 2) {
           await m.createTable(users);
+        }
+        if (from < 3) {
+          await m.createTable(categories);
         }
       },
       beforeOpen: (details) async {
@@ -45,6 +54,7 @@ class AppDatabase extends _$AppDatabase {
     await transaction(() async {
       await delete(wallets).go();
       await delete(users).go();
+      await delete(categories).go();
     });
   }
 

@@ -22,6 +22,7 @@ import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
 import '../../features/wallets/presentation/viewmodels/wallets_viewmodel.dart';
 import '../../features/categories/data/services/category_local_service.dart';
+import '../../features/categories/data/services/category_firebase_service.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
 import '../../features/categories/data/repositories/categories_repository.dart';
 import '../../features/categories/domain/usecases/get_categories_usecase.dart';
@@ -30,6 +31,7 @@ import '../../features/categories/domain/usecases/get_category_by_id_usecase.dar
 import '../../features/categories/domain/usecases/add_category_usecase.dart';
 import '../../features/categories/domain/usecases/update_category_usecase.dart';
 import '../../features/categories/domain/usecases/delete_category_usecase.dart';
+import '../../features/categories/domain/usecases/sync_categories_usecase.dart';
 import '../../features/categories/presentation/viewmodels/categories_viewmodel.dart';
 
 final getIt = GetIt.instance;
@@ -145,12 +147,23 @@ Future<void> setupDependencies() async {
 
   // Categories - Services
   getIt.registerLazySingleton<CategoryLocalService>(
-    () => CategoryLocalServiceImpl(),
+    () => CategoryLocalServiceImpl(getIt<AppDatabase>()),
+  );
+
+  getIt.registerLazySingleton<CategoryFirebaseService>(
+    () => CategoryFirebaseServiceImpl(
+      getIt<FirebaseFirestore>(),
+      getIt<AppDatabase>().categoryDao,
+      getIt<FirebaseAuth>(),
+    ),
   );
 
   // Categories - Repositories
   getIt.registerLazySingleton<CategoriesRepository>(
-    () => CategoriesRepositoryImpl(getIt<CategoryLocalService>()),
+    () => CategoriesRepositoryImpl(
+      getIt<CategoryLocalService>(),
+      getIt<CategoryFirebaseService>(),
+    ),
   );
 
   // Categories - Use Cases
@@ -172,6 +185,9 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton<DeleteCategoryUseCase>(
     () => DeleteCategoryUseCase(getIt<CategoriesRepository>()),
   );
+  getIt.registerLazySingleton<SyncCategoriesUseCase>(
+    () => SyncCategoriesUseCase(getIt<CategoriesRepository>()),
+  );
 
   // Categories - ViewModels
   getIt.registerFactory<CategoriesViewModel>(
@@ -180,6 +196,7 @@ Future<void> setupDependencies() async {
       getIt<AddCategoryUseCase>(),
       getIt<UpdateCategoryUseCase>(),
       getIt<DeleteCategoryUseCase>(),
+      getIt<SyncCategoriesUseCase>(),
     ),
   );
 }

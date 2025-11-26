@@ -1,12 +1,14 @@
 import '../../domain/entities/category.dart';
 import 'categories_repository.dart';
 import '../services/category_local_service.dart';
+import '../services/category_firebase_service.dart';
 import '../models/category_model.dart';
 
 class CategoriesRepositoryImpl implements CategoriesRepository {
   final CategoryLocalService localService;
+  final CategoryFirebaseService firebaseService;
 
-  CategoriesRepositoryImpl(this.localService);
+  CategoriesRepositoryImpl(this.localService, this.firebaseService);
 
   @override
   Future<List<Category>> getCategories() async {
@@ -38,5 +40,15 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
   @override
   Future<void> deleteCategory(String id) async {
     await localService.deleteCategory(id);
+  }
+
+  @override
+  Future<void> syncToCloud(String userId) async {
+    await firebaseService.syncCategoriesToCloud(userId);
+  }
+
+  @override
+  Future<void> pullFromCloud(String userId) async {
+    await firebaseService.syncCategoriesFromCloud(userId);
   }
 }
