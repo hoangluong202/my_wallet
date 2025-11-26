@@ -1,4 +1,4 @@
-import '../entities/wallet.dart';
+import '../../domain/entities/wallet.dart';
 
 abstract class WalletRepository {
   Future<List<Wallet>> getAllWallets();

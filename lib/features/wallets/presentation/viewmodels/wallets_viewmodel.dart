@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
-import '../../domain/repositories/wallet_repository.dart';
+import '../../domain/use_cases/get_wallets_use_case.dart';
+import '../../domain/use_cases/get_wallet_by_id_use_case.dart';
+import '../../domain/use_cases/create_wallet_use_case.dart';
+import '../../domain/use_cases/update_wallet_use_case.dart';
+import '../../domain/use_cases/delete_wallet_use_case.dart';
+import '../../domain/use_cases/get_total_balance_use_case.dart';
+import '../../domain/use_cases/sync_wallets_use_case.dart';
 
 class WalletsViewModel extends ChangeNotifier {
-  final WalletRepository _walletRepository;
+  final GetWalletsUseCase _getWalletsUseCase;
+  final GetWalletByIdUseCase _getWalletByIdUseCase;
+  final CreateWalletUseCase _createWalletUseCase;
+  final UpdateWalletUseCase _updateWalletUseCase;
+  final DeleteWalletUseCase _deleteWalletUseCase;
+  final GetTotalBalanceUseCase _getTotalBalanceUseCase;
+  final SyncWalletsUseCase _syncWalletsUseCase;
 
   List<Wallet> _wallets = [];
   bool _isLoading = false;
@@ -12,7 +24,15 @@ class WalletsViewModel extends ChangeNotifier {
   String? _syncMessage;
   double _totalBalance = 0.0;
 
-  WalletsViewModel(this._walletRepository) {
+  WalletsViewModel(
+    this._getWalletsUseCase,
+    this._getWalletByIdUseCase,
+    this._createWalletUseCase,
+    this._updateWalletUseCase,
+    this._deleteWalletUseCase,
+    this._getTotalBalanceUseCase,
+    this._syncWalletsUseCase,
+  ) {
     loadWallets();
   }
 
@@ -30,8 +50,8 @@ class WalletsViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _wallets = await _walletRepository.getAllWallets();
-      _calculateTotalBalance();
+      _wallets = await _getWalletsUseCase();
+      _totalBalance = await _getTotalBalanceUseCase();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -42,7 +62,7 @@ class WalletsViewModel extends ChangeNotifier {
 
   Future<void> addWallet(Wallet wallet) async {
     try {
-      await _walletRepository.createWallet(wallet);
+      await _createWalletUseCase(wallet);
       await loadWallets(); // Refresh after creation
     } catch (e) {
       _error = e.toString();
@@ -53,7 +73,7 @@ class WalletsViewModel extends ChangeNotifier {
 
   Future<void> updateWallet(Wallet oldWallet, Wallet updatedWallet) async {
     try {
-      await _walletRepository.updateWallet(updatedWallet);
+      await _updateWalletUseCase(updatedWallet);
       await loadWallets(); // Refresh after update
     } catch (e) {
       _error = e.toString();
@@ -64,7 +84,7 @@ class WalletsViewModel extends ChangeNotifier {
 
   Future<void> deleteWallet(String walletId) async {
     try {
-      await _walletRepository.deleteWallet(walletId);
+      await _deleteWalletUseCase(walletId);
       await loadWallets(); // Refresh after deletion
     } catch (e) {
       _error = e.toString();
@@ -73,19 +93,19 @@ class WalletsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<List<Wallet>> searchWallets(String query) async {
+  Future<Wallet?> getWalletById(String id) async {
     try {
-      return await _walletRepository.searchWallets(query);
+      return await _getWalletByIdUseCase(id);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
-      return [];
+      return null;
     }
   }
 
   Future<void> syncToCloud(String userId) async {
     try {
-      await _walletRepository.syncToCloud(userId);
+      await _syncWalletsUseCase.syncToCloud(userId);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -105,13 +125,13 @@ class WalletsViewModel extends ChangeNotifier {
       _syncMessage = 'Uploading local data to cloud...';
       notifyListeners();
 
-      await _walletRepository.syncToCloud(userId);
+      await _syncWalletsUseCase.syncToCloud(userId);
 
       // Step 2: Pull new/updated data from cloud to local
       _syncMessage = 'Downloading updates from cloud...';
       notifyListeners();
 
-      await _walletRepository.pullFromCloud(userId);
+      await _syncWalletsUseCase.pullFromCloud(userId);
 
       // Step 3: Reload local data to reflect all changes
       _syncMessage = 'Refreshing local data...';
@@ -134,13 +154,5 @@ class WalletsViewModel extends ChangeNotifier {
       _isSyncing = false;
       notifyListeners();
     }
-  }
-
-  void _calculateTotalBalance() {
-    _totalBalance = _wallets.fold<double>(0, (sum, w) => sum + w.balance);
-  }
-
-  void dispose() {
-    super.dispose();
   }
 }

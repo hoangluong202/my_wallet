@@ -2,21 +2,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:drift/drift.dart';
 import '../../../../database/app_database.dart';
-import '../../../../database/daos/wallet_dao.dart';
 
-abstract class FirebaseService {
+abstract class WalletFirebaseService {
   Future<void> syncWalletsToCloud(String userId);
   Future<void> syncWalletsFromCloud(String userId);
   Future<List<WalletData>> getWalletsFromCloud(String userId);
   Stream<List<WalletData>> watchWalletsFromCloud(String userId);
 }
 
-class FirebaseServiceImpl implements FirebaseService {
+class WalletFirebaseServiceImpl implements WalletFirebaseService {
   final FirebaseFirestore _firestore;
   final WalletDao _walletDao;
   final firebase_auth.FirebaseAuth _auth;
 
-  FirebaseServiceImpl(this._firestore, this._walletDao, this._auth);
+  WalletFirebaseServiceImpl(this._firestore, this._walletDao, this._auth);
 
   String? get _currentUserId => _auth.currentUser?.uid;
 

@@ -3,7 +3,7 @@ import 'package:drift/drift.dart' as drift;
 import '../../../../database/app_database.dart';
 import '../../domain/entities/wallet.dart';
 
-abstract class WalletLocalDataSource {
+abstract class WalletLocalService {
   Future<List<Wallet>> getAllWallets();
   Future<Wallet?> getWalletById(String id);
   Future<void> insertWallet(Wallet wallet);
@@ -16,10 +16,10 @@ abstract class WalletLocalDataSource {
   Stream<Wallet?> watchWalletById(String id);
 }
 
-class WalletLocalDataSourceImpl implements WalletLocalDataSource {
+class WalletLocalServiceImpl implements WalletLocalService {
   final AppDatabase _database;
 
-  WalletLocalDataSourceImpl(this._database);
+  WalletLocalServiceImpl(this._database);
 
   @override
   Future<List<Wallet>> getAllWallets() async {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class WalletIconData {
+class WalletIcon {
   final IconData icon;
   final Color color;
   final String label;
 
-  const WalletIconData({
+  const WalletIcon({
     required this.icon,
     required this.color,
     required this.label,
@@ -14,7 +14,7 @@ class WalletIconData {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WalletIconData &&
+      other is WalletIcon &&
           runtimeType == other.runtimeType &&
           icon == other.icon &&
           color == other.color;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/wallet_constants.dart';
-import '../../domain/models/wallet_icon_data.dart';
+import '../../domain/entities/wallet_icon.dart';
 
 class WalletIconSelector extends StatelessWidget {
   final IconData selectedIcon;
@@ -67,7 +67,7 @@ class WalletIconSelector extends StatelessWidget {
 }
 
 class _IconOption extends StatelessWidget {
-  final WalletIconData iconData;
+  final WalletIcon iconData;
   final bool isSelected;
   final VoidCallback onTap;
 

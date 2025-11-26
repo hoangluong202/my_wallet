@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
-import '../../domain/repositories/wallet_repository.dart';
-import '../datasources/wallet_local_datasource.dart';
-import '../datasources/firebase_service.dart';
+import 'wallet_repository.dart';
+import '../services/wallet_local_service.dart';
+import '../services/wallet_firebase_service.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
-  final WalletLocalDataSource _localDataSource;
-  final FirebaseService _firebaseService;
+  final WalletLocalService _localService;
+  final WalletFirebaseService _firebaseService;
 
-  WalletRepositoryImpl(this._localDataSource, this._firebaseService);
+  WalletRepositoryImpl(this._localService, this._firebaseService);
 
   @override
   Future<List<Wallet>> getAllWallets() async {
     try {
-      return await _localDataSource.getAllWallets();
+      return await _localService.getAllWallets();
     } catch (e) {
       throw Exception('Failed to get wallets: $e');
     }
@@ -22,7 +22,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Wallet?> getWalletById(String id) async {
     try {
-      return await _localDataSource.getWalletById(id);
+      return await _localService.getWalletById(id);
     } catch (e) {
       throw Exception('Failed to get wallet: $e');
     }
@@ -31,7 +31,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<String> createWallet(Wallet wallet) async {
     try {
-      await _localDataSource.insertWallet(wallet);
+      await _localService.insertWallet(wallet);
       return wallet.id;
     } catch (e) {
       rethrow;
@@ -41,7 +41,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<void> updateWallet(Wallet wallet) async {
     try {
-      await _localDataSource.updateWallet(wallet);
+      await _localService.updateWallet(wallet);
     } catch (e) {
       rethrow;
     }
@@ -50,7 +50,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<void> deleteWallet(String id) async {
     try {
-      await _localDataSource.deleteWallet(id);
+      await _localService.deleteWallet(id);
     } catch (e) {
       rethrow;
     }
@@ -59,7 +59,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<double> getTotalBalance() async {
     try {
-      final wallets = await _localDataSource.getAllWallets();
+      final wallets = await _localService.getAllWallets();
       return wallets.fold<double>(0.0, (sum, w) => sum + w.balance);
     } catch (e) {
       throw Exception('Failed to get total balance: $e');
@@ -69,7 +69,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<int> getWalletsCount() async {
     try {
-      final wallets = await _localDataSource.getAllWallets();
+      final wallets = await _localService.getAllWallets();
       return wallets.length;
     } catch (e) {
       throw Exception('Failed to get wallets count: $e');
@@ -79,7 +79,7 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<List<Wallet>> searchWallets(String query) async {
     try {
-      return await _localDataSource.searchWallets(query);
+      return await _localService.searchWallets(query);
     } catch (e) {
       throw Exception('Failed to search wallets: $e');
     }
@@ -114,17 +114,15 @@ class WalletRepositoryImpl implements WalletRepository {
 
       // For each cloud wallet, check if it exists locally
       for (final cloudWallet in cloudWalletEntities) {
-        final localWallet = await _localDataSource.getWalletById(
-          cloudWallet.id,
-        );
+        final localWallet = await _localService.getWalletById(cloudWallet.id);
 
         if (localWallet == null) {
           // If not exist locally, insert from cloud
-          await _localDataSource.insertWallet(cloudWallet);
+          await _localService.insertWallet(cloudWallet);
         } else {
           // If exists, only update if cloud version is newer
           if (cloudWallet.lastUpdated.isAfter(localWallet.lastUpdated)) {
-            await _localDataSource.updateWallet(cloudWallet);
+            await _localService.updateWallet(cloudWallet);
           }
           // If local is newer or same, do nothing (local data takes priority)
         }
@@ -144,10 +142,10 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   Stream<List<Wallet>> watchAllWallets() {
-    return _localDataSource.watchAllWallets();
+    return _localService.watchAllWallets();
   }
 
   Stream<Wallet?> watchWalletById(String id) {
-    return _localDataSource.watchWalletById(id);
+    return _localService.watchWalletById(id);
   }
 }
