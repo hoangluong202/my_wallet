@@ -7,22 +7,18 @@ class Category {
   final String name;
   final IconData icon;
   final Color color;
-  final int transactionCount;
-  final double amount;
   final CategoryType type;
-  final DateTime createdOn;
-  final DateTime lastUpdated;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Category({
     required this.id,
     required this.name,
     required this.icon,
     required this.color,
-    required this.transactionCount,
-    required this.amount,
     required this.type,
-    required this.createdOn,
-    required this.lastUpdated,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   Category copyWith({
@@ -30,22 +26,18 @@ class Category {
     String? name,
     IconData? icon,
     Color? color,
-    int? transactionCount,
-    double? amount,
     CategoryType? type,
-    DateTime? createdOn,
-    DateTime? lastUpdated,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Category(
       id: id ?? this.id,
       name: name ?? this.name,
       icon: icon ?? this.icon,
       color: color ?? this.color,
-      transactionCount: transactionCount ?? this.transactionCount,
-      amount: amount ?? this.amount,
       type: type ?? this.type,
-      createdOn: createdOn ?? this.createdOn,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

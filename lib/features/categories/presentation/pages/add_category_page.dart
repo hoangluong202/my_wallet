@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'categories_page.dart';
-import '../../../../shared/widgets/notification_widget.dart';
 
 class AddCategoryPage extends StatefulWidget {
   final CategoryType preselectedType;
@@ -54,20 +53,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
         'color': _getColorForIcon(_selectedIcon),
         'type': _selectedType,
       };
-
-      debugPrint('New category: ${_nameController.text}');
-
-      SuccessNotification.show(
-        context: context,
-        message: '${_nameController.text} category created successfully!',
-        duration: const Duration(seconds: 2),
-      );
-
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) {
-          Navigator.pop(context, result);
-        }
-      });
+      Navigator.pop(context, result);
     }
   }
 

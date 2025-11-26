@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/entities/category.dart';
 
 class CategoryCard extends StatelessWidget {
@@ -58,32 +57,30 @@ class CategoryCard extends StatelessWidget {
       children: [
         Text(
           category.name,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              '${category.transactionCount} transactions',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-            const SizedBox(width: 6),
-            Container(width: 1, height: 12, color: Colors.grey.shade300),
-            const SizedBox(width: 6),
-            Text(
-              CurrencyFormatter.formatVNDWithSymbol(category.amount),
-              style: TextStyle(
-                fontSize: 11,
-                color: category.color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        Text(
+          _getCategoryTypeLabel(category.type),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
     );
+  }
+
+  String _getCategoryTypeLabel(CategoryType type) {
+    switch (type) {
+      case CategoryType.expense:
+        return 'Expense';
+      case CategoryType.income:
+        return 'Income';
+      case CategoryType.debt:
+        return 'Debt';
+      case CategoryType.loan:
+        return 'Loan';
+    }
   }
 
   Widget _buildRightArrow() {

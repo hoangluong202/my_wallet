@@ -4,7 +4,9 @@ import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/category.dart';
 import '../viewmodels/categories_viewmodel.dart';
 import 'add_category_page.dart';
+import 'edit_category_page.dart';
 import 'category_detail_page.dart';
+import 'category_history_page.dart';
 import '../widgets/category_card.dart';
 import '../widgets/category_empty_state.dart';
 
@@ -118,15 +120,65 @@ class CategoryList extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => CategoryDetailPage(
           category: category,
-          onEdit: () {},
-          onDelete: () {},
-          onHistory: () {},
+          onEdit: () => _onEditCategory(context, category),
+          onDelete: () => _onDeleteCategory(context, category),
+          onHistory: () => _onViewHistory(context, category),
         ),
       ),
     ).then((_) {
       // Refresh categories after returning from detail page
       viewModel.loadCategories();
     });
+  }
+
+  Future<void> _onEditCategory(BuildContext context, Category category) async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditCategoryPage(category: category),
+      ),
+    );
+
+    if (result != null && context.mounted) {
+      final updatedCategory = category.copyWith(
+        name: result['name'],
+        icon: IconData(result['icon'], fontFamily: 'MaterialIcons'),
+        updatedAt: DateTime.now(),
+      );
+
+      await viewModel.updateCategory(category, updatedCategory);
+      if (context.mounted) {
+        Navigator.pop(context); // Close detail page
+        SuccessNotification.show(
+          context: context,
+          message: 'Category "${updatedCategory.name}" updated successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
+  Future<void> _onDeleteCategory(
+    BuildContext context,
+    Category category,
+  ) async {
+    await viewModel.deleteCategory(category.id);
+    if (context.mounted) {
+      SuccessNotification.show(
+        context: context,
+        message: 'Category "${category.name}" deleted successfully!',
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  void _onViewHistory(BuildContext context, Category category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryHistoryPage(category: category),
+      ),
+    );
   }
 
   Future<void> _onAddCategory(BuildContext context) async {
@@ -143,11 +195,9 @@ class CategoryList extends StatelessWidget {
         name: result['name'],
         icon: result['icon'],
         color: result['color'],
-        transactionCount: 0,
-        amount: 0.0,
         type: result['type'],
-        createdOn: DateTime.now(),
-        lastUpdated: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       await viewModel.addCategory(category);

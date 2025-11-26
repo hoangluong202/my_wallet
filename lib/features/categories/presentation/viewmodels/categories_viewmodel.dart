@@ -34,10 +34,6 @@ class CategoriesViewModel extends ChangeNotifier {
     return getCategoriesByType(type).length;
   }
 
-  double getTotalAmountByType(entity.CategoryType type) {
-    return getCategoriesByType(type).fold(0.0, (sum, c) => sum + c.amount);
-  }
-
   Future<void> loadCategories() async {
     _isLoading = true;
     _error = null;

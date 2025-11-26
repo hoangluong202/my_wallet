@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/category.dart';
-import '../../../../shared/widgets/notification_widget.dart';
 
 class EditCategoryPage extends StatefulWidget {
   final Category category;
@@ -55,11 +54,11 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
 
       debugPrint('Category updated: ${_nameController.text}');
 
-      SuccessNotification.show(
-        context: context,
-        message: '${_nameController.text} updated successfully!',
-        duration: const Duration(seconds: 2),
-      );
+      // SuccessNotification.show(
+      //   context: context,
+      //   message: '${_nameController.text} updated successfully!',
+      //   duration: const Duration(seconds: 2),
+      // );
 
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {

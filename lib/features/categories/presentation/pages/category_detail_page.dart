@@ -4,6 +4,7 @@ import '../../domain/entities/category.dart';
 import '../widgets/category_icon_section.dart';
 import '../widgets/category_info_card.dart';
 import '../../../wallets/presentation/widgets/wallet_action_buttons.dart';
+import '../../../../core/extensions/context_extensions.dart';
 
 class CategoryDetailPage extends StatelessWidget {
   final Category category;
@@ -58,32 +59,21 @@ class CategoryDetailPage extends StatelessWidget {
     );
   }
 
-  Future<void> _showDeleteConfirmation(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category?'),
-        content: Text(
-          'Are you sure you want to delete "${category.name}"?\n\n'
+    Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await context.showConfirmDialog(
+      title: 'Delete Category?',
+      content:
+           'Are you sure you want to delete "${category.name}"?\n\n'
           'All transactions related to this category will also be deleted. '
           'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDangerous: true,
     );
 
     if (confirmed == true && context.mounted) {
+      Navigator.pop(context); // Close detail page
       onDelete();
-      Navigator.pop(context);
     }
   }
 }

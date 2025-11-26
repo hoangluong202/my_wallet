@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/entities/category.dart';
 
@@ -29,20 +28,6 @@ class CategoryInfoCard extends StatelessWidget {
         children: [
           _buildInfoRow(
             context,
-            'Total Amount',
-            CurrencyFormatter.formatVNDWithSymbol(category.amount),
-            category.color,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
-            'Transactions',
-            '${category.transactionCount}',
-            Colors.blue,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
             'Type',
             _getCategoryTypeLabel(category.type),
             category.color,
@@ -51,14 +36,14 @@ class CategoryInfoCard extends StatelessWidget {
           _buildInfoRow(
             context,
             'Created On',
-            DateFormatter.formatDate(category.createdOn),
+            DateFormatter.formatDate(category.createdAt),
             Colors.green,
           ),
           const SizedBox(height: 16),
           _buildInfoRow(
             context,
             'Last Updated',
-            DateFormatter.formatDuration(category.lastUpdated),
+            DateFormatter.formatDuration(category.updatedAt),
             Colors.orange,
           ),
         ],
