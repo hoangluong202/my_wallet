@@ -21,11 +21,12 @@ import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
 import '../../features/wallets/presentation/viewmodels/wallets_viewmodel.dart';
-import '../../features/categories/data/datasources/categories_local_data_source.dart';
+import '../../features/categories/data/services/category_local_service.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
-import '../../features/categories/domain/repositories/categories_repository.dart';
+import '../../features/categories/data/repositories/categories_repository.dart';
 import '../../features/categories/domain/usecases/get_categories_usecase.dart';
 import '../../features/categories/domain/usecases/get_categories_by_type_usecase.dart';
+import '../../features/categories/domain/usecases/get_category_by_id_usecase.dart';
 import '../../features/categories/domain/usecases/add_category_usecase.dart';
 import '../../features/categories/domain/usecases/update_category_usecase.dart';
 import '../../features/categories/domain/usecases/delete_category_usecase.dart';
@@ -142,14 +143,14 @@ Future<void> setupDependencies() async {
     ),
   );
 
-  // Categories - Data Sources
-  getIt.registerLazySingleton<CategoriesLocalDataSource>(
-    () => CategoriesLocalDataSourceImpl(),
+  // Categories - Services
+  getIt.registerLazySingleton<CategoryLocalService>(
+    () => CategoryLocalServiceImpl(),
   );
 
   // Categories - Repositories
   getIt.registerLazySingleton<CategoriesRepository>(
-    () => CategoriesRepositoryImpl(getIt<CategoriesLocalDataSource>()),
+    () => CategoriesRepositoryImpl(getIt<CategoryLocalService>()),
   );
 
   // Categories - Use Cases
@@ -158,6 +159,9 @@ Future<void> setupDependencies() async {
   );
   getIt.registerLazySingleton<GetCategoriesByTypeUseCase>(
     () => GetCategoriesByTypeUseCase(getIt<CategoriesRepository>()),
+  );
+  getIt.registerLazySingleton<GetCategoryByIdUseCase>(
+    () => GetCategoryByIdUseCase(getIt<CategoriesRepository>()),
   );
   getIt.registerLazySingleton<AddCategoryUseCase>(
     () => AddCategoryUseCase(getIt<CategoriesRepository>()),

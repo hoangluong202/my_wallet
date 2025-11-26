@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/category_model.dart';
 import '../../domain/entities/category.dart';
 
-abstract class CategoriesLocalDataSource {
+abstract class CategoryLocalService {
   Future<List<CategoryModel>> getCategories();
   Future<List<CategoryModel>> getCategoriesByType(CategoryType type);
   Future<CategoryModel> getCategoryById(String id);
@@ -11,10 +11,10 @@ abstract class CategoriesLocalDataSource {
   Future<void> deleteCategory(String id);
 }
 
-class CategoriesLocalDataSourceImpl implements CategoriesLocalDataSource {
+class CategoryLocalServiceImpl implements CategoryLocalService {
   final List<CategoryModel> _mockCategories = [];
 
-  CategoriesLocalDataSourceImpl() {
+  CategoryLocalServiceImpl() {
     _initMockData();
   }
 

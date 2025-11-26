@@ -1,42 +1,42 @@
 import '../../domain/entities/category.dart';
-import '../../domain/repositories/categories_repository.dart';
-import '../datasources/categories_local_data_source.dart';
+import 'categories_repository.dart';
+import '../services/category_local_service.dart';
 import '../models/category_model.dart';
 
 class CategoriesRepositoryImpl implements CategoriesRepository {
-  final CategoriesLocalDataSource localDataSource;
+  final CategoryLocalService localService;
 
-  CategoriesRepositoryImpl(this.localDataSource);
+  CategoriesRepositoryImpl(this.localService);
 
   @override
   Future<List<Category>> getCategories() async {
-    return await localDataSource.getCategories();
+    return await localService.getCategories();
   }
 
   @override
   Future<List<Category>> getCategoriesByType(CategoryType type) async {
-    return await localDataSource.getCategoriesByType(type);
+    return await localService.getCategoriesByType(type);
   }
 
   @override
   Future<Category> getCategoryById(String id) async {
-    return await localDataSource.getCategoryById(id);
+    return await localService.getCategoryById(id);
   }
 
   @override
   Future<void> addCategory(Category category) async {
     final model = CategoryModel.fromEntity(category);
-    await localDataSource.addCategory(model);
+    await localService.addCategory(model);
   }
 
   @override
   Future<void> updateCategory(Category category) async {
     final model = CategoryModel.fromEntity(category);
-    await localDataSource.updateCategory(model);
+    await localService.updateCategory(model);
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    await localDataSource.deleteCategory(id);
+    await localService.deleteCategory(id);
   }
 }
