@@ -51,6 +51,8 @@ class CategoryLocalServiceImpl implements CategoryLocalService {
       type: _categoryTypeToString(category.type),
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
+      isSynced: const Value(false), // Mark as not synced
+      isDeleted: const Value(false),
     );
     await _database.categoryDao.insertCategory(companion);
   }
@@ -65,13 +67,15 @@ class CategoryLocalServiceImpl implements CategoryLocalService {
       type: Value(_categoryTypeToString(category.type)),
       createdAt: Value(category.createdAt),
       updatedAt: Value(category.updatedAt),
+      isSynced: const Value(false), // Mark as not synced when updated
     );
     await _database.categoryDao.updateCategory(companion);
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    await _database.categoryDao.deleteCategory(id);
+    // Soft delete: mark as deleted instead of hard delete
+    await _database.categoryDao.softDeleteCategory(id);
   }
 
   String _categoryTypeToString(CategoryType type) {

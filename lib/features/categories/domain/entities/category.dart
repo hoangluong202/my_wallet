@@ -10,6 +10,8 @@ class Category {
   final CategoryType type;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isSynced;
+  final bool isDeleted;
 
   Category({
     required this.id,
@@ -19,6 +21,8 @@ class Category {
     required this.type,
     required this.createdAt,
     required this.updatedAt,
+    this.isSynced = false,
+    this.isDeleted = false,
   });
 
   Category copyWith({
@@ -29,6 +33,8 @@ class Category {
     CategoryType? type,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isSynced,
+    bool? isDeleted,
   }) {
     return Category(
       id: id ?? this.id,
@@ -38,6 +44,8 @@ class Category {
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 

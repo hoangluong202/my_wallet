@@ -1,0 +1,62 @@
+@startuml
+skinparam shadowing false
+skinparam packageStyle rect
+skinparam defaultTextAlignment center
+skinparam wrapWidth 200
+
+title Data Flow of Flutter Clean Architecture\n(Local DB + Firebase Only)
+
+actor "User" as U
+
+package "Presentation Layer\n(features/<feature>/presentation)" {
+  component "Pages\n(UI Widgets)" as UI
+  component "ViewModels\n(State Mgmt)" as VM
+}
+
+package "Domain Layer\n(features/<feature>/domain)" {
+  component "Use Cases" as UC
+  component "Entities" as ENT
+}
+
+package "Data Layer\n(features/<feature>/data)" {
+  component "Repository Impl" as REPO
+  component "Models (DTOs)" as DTO
+
+  package "Services (Data Sources)" {
+    component "LocalDataService\n(Drift)" as LOCAL
+    component "FirebaseService\n(Firestore / Auth)" as FB
+  }
+}
+
+package "External Systems" {
+    database "Local SQLite\n(Drift)" as SQLITE
+    cloud "Firebase Cloud\n(Firestore/Storage/Auth)" as FIREBASE
+}
+
+' ---------- Flow ----------
+U --> UI : User Interaction
+UI --> VM : call viewmodel
+VM --> UC : execute use case
+UC --> REPO : request data
+
+REPO --> DTO : Convert Entities ↔ DTOs
+
+' Data source calls
+REPO --> LOCAL : read/write local db
+REPO --> FB : sync / fetch cloud data
+
+LOCAL --> SQLITE : CRUD
+FB --> FIREBASE : Cloud operations
+
+SQLITE --> LOCAL
+FIREBASE --> FB
+
+LOCAL --> REPO : DTO results
+FB --> REPO : DTO results
+
+REPO --> UC : return Entities
+UC --> VM : business data back
+VM --> UI : update UI
+UI --> U : show result
+
+@enduml

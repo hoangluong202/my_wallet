@@ -11,6 +11,8 @@ class CategoryModel extends Category {
     required super.type,
     required super.createdAt,
     required super.updatedAt,
+    super.isSynced = false,
+    super.isDeleted = false,
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,8 @@ class CategoryModel extends Category {
       ),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isSynced: json['isSynced'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
   }
 
@@ -37,6 +41,8 @@ class CategoryModel extends Category {
       'type': type.name,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isSynced': isSynced,
+      'isDeleted': isDeleted,
     };
   }
 
@@ -49,6 +55,8 @@ class CategoryModel extends Category {
       type: _categoryTypeFromString(data.type),
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
+      isSynced: data.isSynced,
+      isDeleted: data.isDeleted,
     );
   }
 
@@ -61,6 +69,8 @@ class CategoryModel extends Category {
       type: category.type,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
+      isSynced: category.isSynced,
+      isDeleted: category.isDeleted,
     );
   }
 

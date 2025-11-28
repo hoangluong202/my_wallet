@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -40,6 +40,16 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.createTable(categories);
+        }
+        if (from < 4) {
+          // Add isSynced and isDeleted columns to categories
+          await m.addColumn(categories, categories.isSynced);
+          await m.addColumn(categories, categories.isDeleted);
+        }
+        if (from < 5) {
+          // Add isSynced and isDeleted columns to wallets
+          await m.addColumn(wallets, wallets.isSynced);
+          await m.addColumn(wallets, wallets.isDeleted);
         }
       },
       beforeOpen: (details) async {

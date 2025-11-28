@@ -6,6 +6,7 @@ import '../../../../database/app_database.dart';
 abstract class WalletFirebaseService {
   Future<void> syncWalletsToCloud(String userId);
   Future<void> syncWalletsFromCloud(String userId);
+  Future<void> deleteWalletsFromCloud(String userId, List<String> walletIds);
   Future<List<WalletData>> getWalletsFromCloud(String userId);
   Stream<List<WalletData>> watchWalletsFromCloud(String userId);
 }
@@ -40,6 +41,23 @@ class WalletFirebaseServiceImpl implements WalletFirebaseService {
     for (final wallet in wallets) {
       final docRef = colRef.doc(wallet.id);
       batch.set(docRef, _walletToMap(wallet), SetOptions(merge: true));
+    }
+
+    await batch.commit();
+  }
+
+  @override
+  Future<void> deleteWalletsFromCloud(
+    String userId,
+    List<String> walletIds,
+  ) async {
+    if (walletIds.isEmpty) return;
+
+    final batch = _firestore.batch();
+    final colRef = _getUserWalletsCollection(userId);
+
+    for (final walletId in walletIds) {
+      batch.delete(colRef.doc(walletId));
     }
 
     await batch.commit();
@@ -86,6 +104,8 @@ class WalletFirebaseServiceImpl implements WalletFirebaseService {
           iconColor: data['iconColor'] as int,
           createdAt: DateTime.parse(data['createdAt'] as String),
           updatedAt: DateTime.parse(data['updatedAt'] as String),
+          isSynced: data['isSynced'] as bool? ?? true,
+          isDeleted: data['isDeleted'] as bool? ?? false,
         );
       }).toList();
     } catch (e) {
@@ -107,6 +127,8 @@ class WalletFirebaseServiceImpl implements WalletFirebaseService {
           iconColor: data['iconColor'] as int,
           createdAt: DateTime.parse(data['createdAt'] as String),
           updatedAt: DateTime.parse(data['updatedAt'] as String),
+          isSynced: data['isSynced'] as bool? ?? true,
+          isDeleted: data['isDeleted'] as bool? ?? false,
         );
       }).toList(),
     );
@@ -122,6 +144,8 @@ class WalletFirebaseServiceImpl implements WalletFirebaseService {
       'iconColor': wallet.iconColor,
       'createdAt': wallet.createdAt.toIso8601String(),
       'updatedAt': wallet.updatedAt.toIso8601String(),
+      'isSynced': wallet.isSynced,
+      'isDeleted': wallet.isDeleted,
     };
   }
 }

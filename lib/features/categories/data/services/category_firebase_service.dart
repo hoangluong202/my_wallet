@@ -31,18 +31,51 @@ class CategoryFirebaseServiceImpl implements CategoryFirebaseService {
 
   @override
   Future<void> syncCategoriesToCloud(String userId) async {
-    final categories = await _categoryDao.getAllCategories();
-    if (categories.isEmpty) return;
+    // Step 1: Get dirty categories (isSynced = false)
+    final dirtyCategories = await _categoryDao.getDirtyCategories();
+    if (dirtyCategories.isNotEmpty) {
+      final batch = _firestore.batch();
+      final colRef = _getUserCategoriesCollection(userId);
 
-    final batch = _firestore.batch();
-    final colRef = _getUserCategoriesCollection(userId);
+      for (final category in dirtyCategories) {
+        final docRef = colRef.doc(category.id);
+        batch.set(docRef, _categoryToMap(category), SetOptions(merge: true));
+      }
 
-    for (final category in categories) {
-      final docRef = colRef.doc(category.id);
-      batch.set(docRef, _categoryToMap(category), SetOptions(merge: true));
+      try {
+        await batch.commit();
+
+        // Mark all synced categories
+        for (final category in dirtyCategories) {
+          await _categoryDao.markAsSynced(category.id);
+        }
+      } catch (e) {
+        throw Exception('Failed to sync categories to cloud: $e');
+      }
     }
 
-    await batch.commit();
+    // Step 2: Handle deleted categories (isDeleted = true)
+    final deletedCategories = await _categoryDao.getDeletedCategories();
+    if (deletedCategories.isNotEmpty) {
+      final batch = _firestore.batch();
+      final colRef = _getUserCategoriesCollection(userId);
+
+      for (final category in deletedCategories) {
+        final docRef = colRef.doc(category.id);
+        // Soft delete on cloud: mark as deleted
+        batch.set(docRef, {
+          'id': category.id,
+          'isDeleted': true,
+          'updatedAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
+
+      try {
+        await batch.commit();
+      } catch (e) {
+        throw Exception('Failed to sync deleted categories to cloud: $e');
+      }
+    }
   }
 
   @override
@@ -51,21 +84,40 @@ class CategoryFirebaseServiceImpl implements CategoryFirebaseService {
 
     if (snapshot.docs.isEmpty) return;
 
-    final categories = snapshot.docs.map((doc) {
+    for (final doc in snapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
-      return CategoriesCompanion.insert(
-        id: data['id'],
-        name: data['name'] as String,
-        iconCode: data['iconCode'] as int,
-        iconColor: data['iconColor'] as int,
-        type: data['type'] as String,
-        createdAt: DateTime.parse(data['createdAt'] as String),
-        updatedAt: DateTime.parse(data['updatedAt'] as String),
-      );
-    }).toList();
+      final isDeleted = data['isDeleted'] as bool? ?? false;
 
-    for (final category in categories) {
-      await _categoryDao.insertCategory(category);
+      if (isDeleted) {
+        // Handle soft-deleted items from cloud
+        final existingCategory = await _categoryDao.getCategoryById(data['id']);
+        if (existingCategory != null) {
+          await _categoryDao.softDeleteCategory(data['id']);
+        }
+      } else {
+        // Upsert category from cloud
+        final category = CategoriesCompanion.insert(
+          id: data['id'] as String,
+          name: data['name'] as String,
+          iconCode: data['iconCode'] as int,
+          iconColor: data['iconColor'] as int,
+          type: data['type'] as String,
+          createdAt: DateTime.parse(data['createdAt'] as String),
+          updatedAt: DateTime.parse(data['updatedAt'] as String),
+          isSynced: const Value(true),
+          isDeleted: const Value(false),
+        );
+
+        // Check if category already exists
+        final existing = await _categoryDao.getCategoryById(data['id']);
+        if (existing != null) {
+          // Update existing
+          await _categoryDao.updateCategory(category);
+        } else {
+          // Insert new
+          await _categoryDao.insertCategory(category);
+        }
+      }
     }
   }
 
@@ -86,6 +138,8 @@ class CategoryFirebaseServiceImpl implements CategoryFirebaseService {
           type: data['type'] as String,
           createdAt: DateTime.parse(data['createdAt'] as String),
           updatedAt: DateTime.parse(data['updatedAt'] as String),
+          isSynced: data['isSynced'] as bool? ?? true,
+          isDeleted: data['isDeleted'] as bool? ?? false,
         );
       }).toList();
     } catch (e) {
@@ -106,6 +160,8 @@ class CategoryFirebaseServiceImpl implements CategoryFirebaseService {
           type: data['type'] as String,
           createdAt: DateTime.parse(data['createdAt'] as String),
           updatedAt: DateTime.parse(data['updatedAt'] as String),
+          isSynced: data['isSynced'] as bool? ?? true,
+          isDeleted: data['isDeleted'] as bool? ?? false,
         );
       }).toList(),
     );
@@ -120,6 +176,8 @@ class CategoryFirebaseServiceImpl implements CategoryFirebaseService {
       'type': category.type,
       'createdAt': category.createdAt.toIso8601String(),
       'updatedAt': category.updatedAt.toIso8601String(),
+      'isSynced': category.isSynced,
+      'isDeleted': category.isDeleted,
     };
   }
 }

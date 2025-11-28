@@ -1,0 +1,76 @@
+@startuml
+skinparam participantPadding 20
+skinparam boxPadding 10
+
+actor "User" as User
+participant "App Logic\n(Repository)" as App
+database "Local DB\n(SQLite/Drift)" as LocalDB
+database "Cloud DB\n(Firestore)" as CloudDB
+
+User -> App: Click **Sync Button**
+activate App
+
+note over App: START: Bidirectional Sync
+
+== 1. Push Local Changes to Cloud ==
+
+App -> LocalDB: Query items where **isSynced = false** AND **isDeleted = false**
+LocalDB --> App: List<DirtyItems>
+
+loop for each item in DirtyItems
+    
+    group Transaction / Atomic Operation
+        App -> CloudDB: **UPSERT** item\n(set updatedAt = now())
+        
+        alt Cloud Write Success
+            CloudDB --> App: Success
+            App -> LocalDB: Update item\nset **isSynced = true**
+        else Cloud Write Failed
+            App -> App: Skip / Log Error\n(Keep isSynced = false to retry later)
+        end
+    end
+    
+end
+
+note over App: DELETED ITEMS: Push soft deletes
+
+App -> LocalDB: Query items where **isDeleted = true**
+LocalDB --> App: List<DeletedItems>
+
+loop for each deleted item
+    App -> CloudDB: Update item\nset **isDeleted = true, updatedAt = now()**
+end
+
+note over App: PUSH COMPLETED. START: Pull from Cloud
+
+== 2. Pull Changes from Cloud ==
+
+App -> CloudDB: Query items\n(all categories for this user)
+CloudDB --> App: List<CloudCategories>
+
+loop for each item in CloudCategories
+    
+    note right of App
+        Merge Logic:
+        Cloud data has priority
+        (Cloud as Source of Truth)
+    end note
+
+    alt item.isDeleted == true
+        App -> LocalDB: **Soft Delete**\nset isDeleted = true\nset isSynced = true
+    else item.isDeleted == false
+        alt item exists locally
+            App -> LocalDB: **UPDATE** with cloud data\nset isSynced = true
+        else item is new
+            App -> LocalDB: **INSERT** from cloud\nset isSynced = true
+        end
+    end
+    
+end
+
+note over App: SYNC COMPLETED
+
+App --> User: Show "Sync Completed"
+deactivate App
+
+@enduml

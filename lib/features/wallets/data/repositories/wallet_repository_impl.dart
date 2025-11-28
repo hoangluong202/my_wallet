@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import '../../domain/entities/wallet.dart';
 import 'wallet_repository.dart';
 import '../services/wallet_local_service.dart';
 import '../services/wallet_firebase_service.dart';
+import '../models/wallet_model.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
   final WalletLocalService _localService;
@@ -50,7 +50,24 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<void> deleteWallet(String id) async {
     try {
-      await _localService.deleteWallet(id);
+      // Use soft delete for sync compatibility
+      await _localService.softDeleteWallet(id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> softDeleteWallet(String id) async {
+    try {
+      await _localService.softDeleteWallet(id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> restoreDeletedWallet(String id) async {
+    try {
+      await _localService.restoreDeletedWallet(id);
     } catch (e) {
       rethrow;
     }
@@ -89,6 +106,11 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<void> syncToCloud(String userId) async {
     try {
       await _firebaseService.syncWalletsToCloud(userId);
+      // Mark all synced wallets
+      final dirtyWallets = await _localService.getDirtyWallets();
+      for (final wallet in dirtyWallets) {
+        await _localService.markAsSynced(wallet.id);
+      }
     } catch (e) {
       throw Exception('Failed to sync to cloud: $e');
     }
@@ -99,21 +121,9 @@ class WalletRepositoryImpl implements WalletRepository {
     try {
       final cloudWallets = await _firebaseService.getWalletsFromCloud(userId);
 
-      // Convert WalletData to Wallet entities
-      final cloudWalletEntities = cloudWallets.map((cloudData) {
-        return Wallet(
-          id: cloudData.id,
-          name: cloudData.name,
-          balance: cloudData.balance,
-          createdOn: cloudData.createdAt,
-          lastUpdated: cloudData.updatedAt,
-          icon: _getIconFromCode(cloudData.iconCode),
-          iconColor: Color(cloudData.iconColor),
-        );
-      }).toList();
-
       // For each cloud wallet, check if it exists locally
-      for (final cloudWallet in cloudWalletEntities) {
+      for (final cloudData in cloudWallets) {
+        final cloudWallet = WalletModel.fromDrift(cloudData);
         final localWallet = await _localService.getWalletById(cloudWallet.id);
 
         if (localWallet == null) {
@@ -129,15 +139,6 @@ class WalletRepositoryImpl implements WalletRepository {
       }
     } catch (e) {
       throw Exception('Failed to pull from cloud: $e');
-    }
-  }
-
-  // Helper method to convert icon code to IconData
-  IconData _getIconFromCode(int code) {
-    try {
-      return IconData(code, fontFamily: 'MaterialIcons');
-    } catch (e) {
-      return Icons.account_balance_wallet;
     }
   }
 
