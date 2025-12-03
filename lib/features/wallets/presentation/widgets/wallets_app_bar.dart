@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/page_header.dart';
 
 class WalletsAppBar extends StatelessWidget {
   final VoidCallback onAddPressed;
@@ -7,29 +8,12 @@ class WalletsAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Wallets',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onAddPressed,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              iconSize: 24,
-            ),
-          ],
-        ),
-      ),
+    return PageHeader(
+      title: 'Wallets',
+      subtitle: 'Manage your wallets',
+      icon: Icons.account_balance_wallet_outlined,
+      onActionPressed: onAddPressed,
+      actionIcon: Icons.add,
     );
   }
 }

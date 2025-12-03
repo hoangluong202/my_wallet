@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/header/detail_header.dart';
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -18,6 +19,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String? _selectedWallet;
   String? _selectedCategory;
   String _selectedCategoryType = 'Expense'; // Default to Expense
+  DateTime _selectedDate = DateTime.now(); // Default to today
 
   // Wallet data with icons and colors
   final List<Map<String, dynamic>> _wallets = [
@@ -162,6 +164,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         'categoryType': selectedCategoryData['type'],
         'amount': double.parse(_amountController.text),
         'description': _descriptionController.text,
+        'date': _selectedDate,
       };
 
       debugPrint('Transaction added: $transactionData');
@@ -186,121 +189,136 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('+ Add New Transaction'),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Close',
-        ),
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Scrollable content area
-              Expanded(
-                child: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            DetailHeader(
+              title: 'Add Transaction',
+              onBack: () => Navigator.pop(context),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Wallet Selector Section
-                      _buildSectionTitle('Select Wallet'),
-                      const SizedBox(height: 12),
-                      _buildWalletSelector(),
-                      const SizedBox(height: 20),
+                      // Scrollable content area
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Wallet Selector Section
+                              _buildSectionTitle('Select Wallet'),
+                              const SizedBox(height: 12),
+                              _buildWalletSelector(),
+                              const SizedBox(height: 20),
 
-                      // Category Selector Section
-                      _buildSectionTitle('Select Category Type'),
-                      const SizedBox(height: 12),
-                      _buildCategoryTypeSelector(),
-                      const SizedBox(height: 16),
+                              // Category Selector Section
+                              _buildSectionTitle('Select Category Type'),
+                              const SizedBox(height: 12),
+                              _buildCategoryTypeSelector(),
+                              const SizedBox(height: 16),
 
-                      _buildSectionTitle('Select Category'),
-                      const SizedBox(height: 12),
-                      _buildCategorySelector(),
-                      const SizedBox(height: 20),
+                              _buildSectionTitle('Select Category'),
+                              const SizedBox(height: 12),
+                              _buildCategorySelector(),
+                              const SizedBox(height: 20),
 
-                      // Amount Input Section
-                      _buildSectionTitle('Amount'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: _buildInputDecoration(
-                          'Enter amount (e.g., 25.50)',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.only(left: 12.0),
-                            child: Text(
-                              '₫',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
+                              // Date Selector Section
+                              _buildSectionTitle('Date'),
+                              const SizedBox(height: 8),
+                              _buildDateSelector(),
+                              const SizedBox(height: 20),
+
+                              // Amount Input Section
+                              _buildSectionTitle('Amount'),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _amountController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: _buildInputDecoration(
+                                  'Amount',
+                                  suffixIcon: Padding(
+                                    padding: const EdgeInsets.only(right: 12.0),
+                                    child: Text(
+                                      '₫',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                  suffixIconConstraints: const BoxConstraints(
+                                    minWidth: 0,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter an amount';
+                                  }
+                                  final amount = double.tryParse(value);
+                                  if (amount == null || amount <= 0) {
+                                    return 'Please enter a valid amount greater than 0';
+                                  }
+                                  return null;
+                                },
                               ),
+                              const SizedBox(height: 16),
+
+                              // Note Section
+                              _buildSectionTitle('Note'),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _descriptionController,
+                                keyboardType: TextInputType.text,
+                                maxLines: 3,
+                                decoration: _buildInputDecoration(
+                                  'Note',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Fixed Submit Button at bottom
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          prefixIconConstraints: const BoxConstraints(
-                            minWidth: 0,
+                          child: const Text(
+                            'Save',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an amount';
-                          }
-                          final amount = double.tryParse(value);
-                          if (amount == null || amount <= 0) {
-                            return 'Please enter a valid amount greater than 0';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Description Section
-                      _buildSectionTitle('Description (Optional)'),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _descriptionController,
-                        keyboardType: TextInputType.text,
-                        maxLines: 3,
-                        decoration: _buildInputDecoration(
-                          'Add a note or description',
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-
-              // Fixed Submit Button at bottom
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Add Transaction',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -310,6 +328,75 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return _categories
         .where((cat) => cat['type'] == _selectedCategoryType)
         .toList();
+  }
+
+  Widget _buildDateSelector() {
+    return GestureDetector(
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _selectedDate,
+          firstDate: DateTime(now.year - 10),
+          lastDate: DateTime(now.year + 10),
+        );
+        if (picked != null) {
+          setState(() {
+            _selectedDate = picked;
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade50,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.grey.shade200,
+              child: Icon(
+                Icons.calendar_today,
+                color: Colors.grey.shade700,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Transaction Date',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.edit_calendar,
+              color: Colors.blueGrey.shade600,
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildCategoryTypeSelector() {
@@ -734,11 +821,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     String hintText, {
     Widget? prefixIcon,
     BoxConstraints? prefixIconConstraints,
+    Widget? suffixIcon,
+    BoxConstraints? suffixIconConstraints,
   }) {
     return InputDecoration(
       hintText: hintText,
       prefixIcon: prefixIcon,
       prefixIconConstraints: prefixIconConstraints,
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: suffixIconConstraints,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       filled: true,

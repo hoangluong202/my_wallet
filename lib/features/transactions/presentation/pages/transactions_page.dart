@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'edit_transaction_page.dart';
+import '../../../../core/utils/currency_formatter.dart';
+import '../../data/models/transaction_item.dart';
+import 'transaction_details_page.dart';
+import '../widgets/transactions_header.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -30,7 +33,7 @@ class _TransactionsPageState extends State<TransactionsPage>
       body: Column(
         children: [
           // Modern Header
-          _buildHeader(context),
+          const TransactionsHeader(),
 
           // Tab Bar - Enhanced
           Container(
@@ -73,57 +76,6 @@ class _TransactionsPageState extends State<TransactionsPage>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Transactions',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Track your spending',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -263,7 +215,7 @@ class _TransactionsTabContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${netDifference >= 0 ? '+' : ''} ₫${netDifference.toStringAsFixed(2)}',
+                  '${netDifference >= 0 ? '+' : ''}${CurrencyFormatter.formatVNDWithSymbol(netDifference)}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -325,7 +277,7 @@ class _TransactionsTabContent extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '₫${amount.toStringAsFixed(2)}',
+            CurrencyFormatter.formatVNDWithSymbol(amount),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -346,8 +298,8 @@ class _TransactionsTabContent extends StatelessWidget {
     final bgColor = isExpense ? Colors.red.shade50 : Colors.green.shade50;
 
     return GestureDetector(
-      onLongPress: () {
-        _showTransactionOptions(context, transaction);
+      onTap: () {
+        _onTransactionTap(context, transaction);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12.0),
@@ -416,7 +368,7 @@ class _TransactionsTabContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${isExpense ? '-' : '+'} ₫${transaction.amount.toStringAsFixed(2)}',
+                    '${isExpense ? '-' : '+'}${CurrencyFormatter.formatVNDWithSymbol(transaction.amount)}',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -451,203 +403,11 @@ class _TransactionsTabContent extends StatelessWidget {
     );
   }
 
-  void _showTransactionOptions(
-    BuildContext context,
-    TransactionItem transaction,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Transaction details preview
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: transaction.type == TransactionType.expense
-                              ? Colors.red.shade50
-                              : Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(10),
-                        child: Icon(
-                          transaction.categoryIcon,
-                          color: transaction.type == TransactionType.expense
-                              ? Colors.red
-                              : Colors.green,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              transaction.category,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              transaction.description,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '${transaction.type == TransactionType.expense ? '-' : '+'} ₫${transaction.amount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: transaction.type == TransactionType.expense
-                              ? Colors.red
-                              : Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Divider(color: Colors.grey.shade200),
-                const SizedBox(height: 8),
-
-                // Edit Button
-                ListTile(
-                  leading: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.edit,
-                      color: Colors.blue.shade700,
-                      size: 24,
-                    ),
-                  ),
-                  title: const Text(
-                    'Edit Transaction',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    'Modify this transaction',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _onEditTransaction(context, transaction);
-                  },
-                ),
-                const SizedBox(height: 8),
-
-                // Delete Button
-                ListTile(
-                  leading: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.delete,
-                      color: Colors.red.shade700,
-                      size: 24,
-                    ),
-                  ),
-                  title: const Text(
-                    'Delete Transaction',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Remove this transaction',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _onDeleteTransaction(context, transaction);
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _onEditTransaction(BuildContext context, TransactionItem transaction) {
+  void _onTransactionTap(BuildContext context, TransactionItem transaction) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditTransactionPage(transaction: transaction),
-      ),
-    );
-  }
-
-  void _onDeleteTransaction(BuildContext context, TransactionItem transaction) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction?'),
-        content: Text(
-          'Are you sure you want to delete "${transaction.description}"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Transaction "${transaction.description}" deleted',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
+        builder: (context) => TransactionDetailsPage(transaction: transaction),
       ),
     );
   }
@@ -810,24 +570,4 @@ class _TransactionsTabContent extends StatelessWidget {
       return '${months[date.month]} ${date.day}, ${date.year}';
     }
   }
-}
-
-enum TransactionType { income, expense }
-
-class TransactionItem {
-  final String description;
-  final String category;
-  final double amount;
-  final TransactionType type;
-  final IconData categoryIcon;
-  final DateTime date;
-
-  TransactionItem({
-    required this.description,
-    required this.category,
-    required this.amount,
-    required this.type,
-    required this.categoryIcon,
-    required this.date,
-  });
 }

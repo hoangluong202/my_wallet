@@ -38,78 +38,81 @@ class _WalletsPageState extends State<WalletsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              WalletsAppBar(onAddPressed: _onAddWallet),
-              const SizedBox(height: 12),
-              ListenableBuilder(
-                listenable: _viewModel,
-                builder: (context, _) {
-                  if (_viewModel.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+      body: Column(
+        children: [
+          WalletsAppBar(onAddPressed: _onAddWallet),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  ListenableBuilder(
+                    listenable: _viewModel,
+                    builder: (context, _) {
+                      if (_viewModel.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                  if (_viewModel.error != null) {
-                    return Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            'Error: ${_viewModel.error}',
-                            style: const TextStyle(color: Colors.red),
+                      if (_viewModel.error != null) {
+                        return Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Error: ${_viewModel.error}',
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: _viewModel.loadWallets,
+                                child: const Text('Retry'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: _viewModel.loadWallets,
-                            child: const Text('Retry'),
+                        );
+                      }
+
+                      return WalletSummaryCard(
+                        walletsCount: _viewModel.walletsCount,
+                        totalBalance: _viewModel.totalBalance,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListenableBuilder(
+                      listenable: _viewModel,
+                      builder: (context, _) {
+                        if (_viewModel.isLoading) {
+                          return const SizedBox.shrink();
+                        }
+
+                        if (_viewModel.wallets.isEmpty) {
+                          return _buildEmptyState();
+                        }
+
+                        return RefreshIndicator(
+                          onRefresh: _viewModel.loadWallets,
+                          child: ListView.builder(
+                            itemCount: _viewModel.wallets.length,
+                            padding: const EdgeInsets.only(bottom: 24),
+                            itemBuilder: (context, index) {
+                              final wallet = _viewModel.wallets[index];
+                              return WalletCard(
+                                wallet: wallet,
+                                onTap: () => _onWalletTap(wallet),
+                              );
+                            },
                           ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return WalletSummaryCard(
-                    walletsCount: _viewModel.walletsCount,
-                    totalBalance: _viewModel.totalBalance,
-                  );
-                },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: _viewModel,
-                  builder: (context, _) {
-                    if (_viewModel.isLoading) {
-                      return const SizedBox.shrink();
-                    }
-
-                    if (_viewModel.wallets.isEmpty) {
-                      return _buildEmptyState();
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: _viewModel.loadWallets,
-                      child: ListView.builder(
-                        itemCount: _viewModel.wallets.length,
-                        padding: const EdgeInsets.only(bottom: 24),
-                        itemBuilder: (context, index) {
-                          final wallet = _viewModel.wallets[index];
-                          return WalletCard(
-                            wallet: wallet,
-                            onTap: () => _onWalletTap(wallet),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
