@@ -7,25 +7,28 @@ import 'package:path/path.dart' as p;
 import 'tables/wallets_table.dart';
 import 'tables/users_table.dart';
 import 'tables/categories_table.dart';
+import 'tables/transactions_table.dart';
 import 'daos/wallet_dao.dart';
 import 'daos/user_dao.dart';
 import 'daos/category_dao.dart';
+import 'daos/transaction_dao.dart';
 
 export 'daos/user_dao.dart';
 export 'daos/wallet_dao.dart';
 export 'daos/category_dao.dart';
+export 'daos/transaction_dao.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Wallets, Users, Categories],
-  daos: [WalletDao, UserDao, CategoryDao],
+  tables: [Wallets, Users, Categories, Transactions],
+  daos: [WalletDao, UserDao, CategoryDao, TransactionDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +54,10 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(wallets, wallets.isSynced);
           await m.addColumn(wallets, wallets.isDeleted);
         }
+        if (from < 6) {
+          // Add transactions table
+          await m.createTable(transactions);
+        }
       },
       beforeOpen: (details) async {
         // Enable foreign keys
@@ -62,6 +69,7 @@ class AppDatabase extends _$AppDatabase {
   // Clear all data
   Future<void> clearAllData() async {
     await transaction(() async {
+      await delete(transactions).go();
       await delete(wallets).go();
       await delete(users).go();
       await delete(categories).go();

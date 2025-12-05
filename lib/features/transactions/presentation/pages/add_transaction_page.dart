@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/widgets/header/detail_header.dart';
+import '../../../../core/di/injector.dart';
+import '../viewmodels/transactions_viewmodel.dart';
+import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../domain/entities/transaction.dart';
+import '../../../categories/domain/entities/category.dart';
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -15,119 +22,18 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
 
+  // ViewModels
+  late TransactionsViewModel _transactionsViewModel;
+  late CategoriesViewModel _categoriesViewModel;
+  late WalletsViewModel _walletsViewModel;
+
   // Selected values
-  String? _selectedWallet;
-  String? _selectedCategory;
+  String? _selectedWalletId;
+  String? _selectedCategoryId;
   String _selectedCategoryType = 'Expense'; // Default to Expense
   DateTime _selectedDate = DateTime.now(); // Default to today
 
-  // Wallet data with icons and colors
-  final List<Map<String, dynamic>> _wallets = [
-    {
-      'name': 'Main Bank Account',
-      'icon': Icons.account_balance,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Momo Wallet',
-      'icon': Icons.mobile_friendly,
-      'color': Colors.pink,
-    },
-    {'name': 'Savings', 'icon': Icons.savings, 'color': Colors.green},
-    {'name': 'Crypto', 'icon': Icons.currency_bitcoin, 'color': Colors.orange},
-  ];
-
-  // Category data with icons and types
-  final List<Map<String, dynamic>> _categories = [
-    // Expense
-    {
-      'name': 'Food',
-      'icon': Icons.restaurant,
-      'color': Colors.red,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Transport',
-      'icon': Icons.directions_car,
-      'color': Colors.blue,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Shopping',
-      'icon': Icons.shopping_cart,
-      'color': Colors.purple,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Entertainment',
-      'icon': Icons.movie,
-      'color': Colors.orange,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Utilities',
-      'icon': Icons.electric_bolt,
-      'color': Colors.amber,
-      'type': 'Expense',
-    },
-    // Income
-    {
-      'name': 'Salary',
-      'icon': Icons.trending_up,
-      'color': Colors.green,
-      'type': 'Income',
-    },
-    {
-      'name': 'Freelance',
-      'icon': Icons.work,
-      'color': Colors.lightGreen,
-      'type': 'Income',
-    },
-    {
-      'name': 'Bonus',
-      'icon': Icons.card_giftcard,
-      'color': Colors.teal,
-      'type': 'Income',
-    },
-    // Debt
-    {
-      'name': 'Credit Card',
-      'icon': Icons.credit_card,
-      'color': Colors.red,
-      'type': 'Debt',
-    },
-    {
-      'name': 'Personal Loan',
-      'icon': Icons.account_balance,
-      'color': Colors.orange,
-      'type': 'Debt',
-    },
-    {
-      'name': 'Other Debt',
-      'icon': Icons.assignment,
-      'color': Colors.pink,
-      'type': 'Debt',
-    },
-    // Loan
-    {
-      'name': 'Home Loan',
-      'icon': Icons.home,
-      'color': Colors.blue,
-      'type': 'Loan',
-    },
-    {
-      'name': 'Auto Loan',
-      'icon': Icons.directions_car,
-      'color': Colors.indigo,
-      'type': 'Loan',
-    },
-    {
-      'name': 'Education Loan',
-      'icon': Icons.school,
-      'color': Colors.deepPurple,
-      'type': 'Loan',
-    },
-  ];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -135,13 +41,37 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _amountController = TextEditingController();
     _descriptionController = TextEditingController();
 
-    // Set default wallet to first wallet
-    _selectedWallet = _wallets[0]['name'];
+    // Initialize ViewModels
+    _transactionsViewModel = getIt<TransactionsViewModel>();
+    _categoriesViewModel = getIt<CategoriesViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
 
-    // Set default category to first Expense category
-    _selectedCategory = _categories.firstWhere(
-      (cat) => cat['type'] == _selectedCategoryType,
-    )['name'];
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    // Load categories and wallets
+    await Future.wait([
+      _categoriesViewModel.loadCategories(),
+      _walletsViewModel.loadWallets(),
+    ]);
+
+    // Set default selections
+    if (_walletsViewModel.wallets.isNotEmpty) {
+      _selectedWalletId = _walletsViewModel.wallets.first.id;
+    }
+
+    // Set default category based on type
+    final expenseCategories = _categoriesViewModel.categories
+        .where((cat) => cat.type.name == 'expense')
+        .toList();
+    if (expenseCategories.isNotEmpty) {
+      _selectedCategoryId = expenseCategories.first.id;
+    }
+
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -151,43 +81,68 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Form is valid (wallet and category already have defaults)
-      final selectedCategoryData = _categories.firstWhere(
-        (cat) => cat['name'] == _selectedCategory,
-      );
+      if (_selectedWalletId == null || _selectedCategoryId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select wallet and category'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-      final transactionData = {
-        'wallet': _selectedWallet,
-        'category': _selectedCategory,
-        'categoryType': selectedCategoryData['type'],
-        'amount': double.parse(_amountController.text),
-        'description': _descriptionController.text,
-        'date': _selectedDate,
-      };
+      try {
+        // Create transaction entity
+        final transaction = Transaction(
+          id: const Uuid().v4(),
+          categoryId: _selectedCategoryId!,
+          walletId: _selectedWalletId!,
+          amount: double.parse(_amountController.text),
+          note: _descriptionController.text.isEmpty
+              ? null
+              : _descriptionController.text,
+          transactionDate: _selectedDate,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      debugPrint('Transaction added: $transactionData');
+        // Save transaction
+        await _transactionsViewModel.addTransaction(transaction);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Transaction added successfully!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Pop back to previous page after a short delay
-      Future.delayed(const Duration(milliseconds: 500), () {
+        // Show success message
         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Transaction added successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Pop back to previous page
           Navigator.pop(context);
         }
-      });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey.shade50,
@@ -389,9 +344,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
   }
 
-  List<Map<String, dynamic>> _getFilteredCategories() {
-    return _categories
-        .where((cat) => cat['type'] == _selectedCategoryType)
+  List<Category> _getFilteredCategories() {
+    return _categoriesViewModel.categories
+        .where((cat) => cat.type.name == _selectedCategoryType.toLowerCase())
         .toList();
   }
 
@@ -478,7 +433,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   // Reset category selection to first category of new type
                   final filteredCategories = _getFilteredCategories();
                   if (filteredCategories.isNotEmpty) {
-                    _selectedCategory = filteredCategories[0]['name'];
+                    _selectedCategoryId = filteredCategories[0].id;
                   }
                 });
               },
@@ -528,7 +483,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildWalletSelector() {
-    return _selectedWallet == null
+    return _selectedWalletId == null
         ? _buildWalletSelectionGrid()
         : _buildSelectedWalletCard();
   }
@@ -564,7 +519,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildSelectedWalletCard() {
-    final wallet = _wallets.firstWhere((w) => w['name'] == _selectedWallet);
+    final wallet = _walletsViewModel.wallets.firstWhere(
+      (w) => w.id == _selectedWalletId,
+    );
     return GestureDetector(
       onTap: _showWalletPicker,
       child: Row(
@@ -572,19 +529,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (wallet['color'] as Color).withOpacity(0.1),
+              color: wallet.iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              wallet['icon'] as IconData,
-              color: wallet['color'] as Color,
-              size: 20,
-            ),
+            child: Icon(wallet.icon, color: wallet.iconColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              wallet['name'] as String,
+              wallet.name,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -628,12 +581,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            ...List.generate(_wallets.length, (index) {
-              final wallet = _wallets[index];
+            ...List.generate(_walletsViewModel.wallets.length, (index) {
+              final wallet = _walletsViewModel.wallets[index];
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    _selectedWallet = wallet['name'];
+                    _selectedWalletId = wallet.id;
                   });
                   Navigator.pop(context);
                 },
@@ -642,7 +595,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: (wallet['color'] as Color).withOpacity(0.2),
+                      color: wallet.iconColor.withOpacity(0.2),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -650,18 +603,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: (wallet['color'] as Color).withOpacity(
-                          0.2,
-                        ),
+                        backgroundColor: wallet.iconColor.withOpacity(0.2),
                         child: Icon(
-                          wallet['icon'] as IconData,
-                          color: wallet['color'] as Color,
+                          wallet.icon,
+                          color: wallet.iconColor,
                           size: 22,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        wallet['name'] as String,
+                        wallet.name,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -680,7 +631,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildCategorySelector() {
-    return _selectedCategory == null
+    return _selectedCategoryId == null
         ? _buildCategorySelectionGrid()
         : _buildSelectedCategoryCard();
   }
@@ -716,8 +667,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildSelectedCategoryCard() {
-    final category = _categories.firstWhere(
-      (c) => c['name'] == _selectedCategory,
+    final category = _categoriesViewModel.categories.firstWhere(
+      (c) => c.id == _selectedCategoryId,
     );
     return GestureDetector(
       onTap: _showCategoryPicker,
@@ -726,19 +677,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (category['color'] as Color).withOpacity(0.1),
+              color: category.color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              category['icon'] as IconData,
-              color: category['color'] as Color,
-              size: 20,
-            ),
+            child: Icon(category.icon, color: category.color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              category['name'] as String,
+              category.name,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -790,7 +737,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _selectedCategory = category['name'];
+                        _selectedCategoryId = category.id;
                       });
                       Navigator.pop(context);
                     },
@@ -799,7 +746,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: (category['color'] as Color).withOpacity(0.2),
+                          color: category.color.withOpacity(0.2),
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -807,11 +754,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: (category['color'] as Color)
-                                .withOpacity(0.2),
+                            backgroundColor: category.color.withOpacity(0.2),
                             child: Icon(
-                              category['icon'] as IconData,
-                              color: category['color'] as Color,
+                              category.icon,
+                              color: category.color,
                               size: 22,
                             ),
                           ),
@@ -821,14 +767,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  category['type'] as String,
+                                  category.type.name.toUpperCase(),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
                                 Text(
-                                  category['name'] as String,
+                                  category.name,
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

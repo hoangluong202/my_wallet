@@ -33,6 +33,8 @@ import '../../features/categories/domain/usecases/update_category_usecase.dart';
 import '../../features/categories/domain/usecases/delete_category_usecase.dart';
 import '../../features/categories/domain/usecases/sync_categories_usecase.dart';
 import '../../features/categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../features/transactions/data/services/transaction_local_service.dart';
+import '../../features/transactions/presentation/viewmodels/transactions_viewmodel.dart';
 
 final getIt = GetIt.instance;
 
@@ -198,5 +200,15 @@ Future<void> setupDependencies() async {
       getIt<DeleteCategoryUseCase>(),
       getIt<SyncCategoriesUseCase>(),
     ),
+  );
+
+  // Transactions - Services
+  getIt.registerLazySingleton<TransactionLocalService>(
+    () => TransactionLocalServiceImpl(getIt<AppDatabase>()),
+  );
+
+  // Transactions - ViewModels
+  getIt.registerFactory<TransactionsViewModel>(
+    () => TransactionsViewModel(getIt<TransactionLocalService>()),
   );
 }

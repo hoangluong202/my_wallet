@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../core/constants/navigation_items.dart';
 import '../../../../core/widgets/bottom_navigation/custom_bottom_bar.dart';
 import '../../../../core/widgets/custom_fab.dart';
+import '../../../../core/di/injector.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../wallets/presentation/pages/wallets_page.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart';
+import '../../../transactions/presentation/pages/add_transaction_page.dart';
+import '../../../transactions/presentation/viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/pages/categories_page.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -31,8 +33,18 @@ class _MainScaffoldState extends State<MainScaffold> {
     });
   }
 
-  void _onFabPressed() {
-    Navigator.pushNamed(context, AppRouter.addTransaction);
+  void _onFabPressed() async {
+    // Navigate to add transaction page
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+    );
+
+    // Reload transactions after returning
+    if (mounted) {
+      final transactionsViewModel = getIt<TransactionsViewModel>();
+      await transactionsViewModel.loadTransactions();
+    }
   }
 
   @override

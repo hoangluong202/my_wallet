@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/di/injector.dart';
+import '../../domain/entities/transaction.dart';
 import '../../data/models/transaction_item.dart';
+import '../viewmodels/transactions_viewmodel.dart';
+import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../categories/domain/entities/category.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../wallets/domain/entities/wallet.dart';
 import 'transaction_details_page.dart';
 import '../widgets/transactions_header.dart';
 
@@ -14,11 +21,13 @@ class TransactionsPage extends StatefulWidget {
 class _TransactionsPageState extends State<TransactionsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late TransactionsViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _viewModel = getIt<TransactionsViewModel>();
   }
 
   @override
@@ -69,9 +78,18 @@ class _TransactionsPageState extends State<TransactionsPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _TransactionsTabContent(tabType: TabType.past),
-                _TransactionsTabContent(tabType: TabType.today),
-                _TransactionsTabContent(tabType: TabType.future),
+                _TransactionsTabContent(
+                  tabType: TabType.past,
+                  viewModel: _viewModel,
+                ),
+                _TransactionsTabContent(
+                  tabType: TabType.today,
+                  viewModel: _viewModel,
+                ),
+                _TransactionsTabContent(
+                  tabType: TabType.future,
+                  viewModel: _viewModel,
+                ),
               ],
             ),
           ),
@@ -83,14 +101,114 @@ class _TransactionsPageState extends State<TransactionsPage>
 
 enum TabType { past, today, future }
 
-class _TransactionsTabContent extends StatelessWidget {
+class _TransactionsTabContent extends StatefulWidget {
   final TabType tabType;
+  final TransactionsViewModel viewModel;
 
-  const _TransactionsTabContent({required this.tabType});
+  const _TransactionsTabContent({
+    required this.tabType,
+    required this.viewModel,
+  });
+
+  @override
+  State<_TransactionsTabContent> createState() =>
+      _TransactionsTabContentState();
+}
+
+class _TransactionsTabContentState extends State<_TransactionsTabContent> {
+  late CategoriesViewModel _categoriesViewModel;
+  late WalletsViewModel _walletsViewModel;
+  Map<String, Category> _categoriesCache = {};
+  Map<String, Wallet> _walletsCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    widget.viewModel.addListener(_onViewModelChanged);
+    _categoriesViewModel = getIt<CategoriesViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    widget.viewModel.removeListener(_onViewModelChanged);
+    super.dispose();
+  }
+
+  void _onViewModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _loadData() async {
+    // Load transactions
+    await widget.viewModel.loadTransactions();
+
+    // Load categories and wallets for display
+    await _loadCategoriesAndWallets();
+  }
+
+  Future<void> _loadCategoriesAndWallets() async {
+    // Load categories
+    await _categoriesViewModel.loadCategories();
+    _categoriesCache = {
+      for (var cat in _categoriesViewModel.categories) cat.id: cat,
+    };
+
+    // Load wallets
+    await _walletsViewModel.loadWallets();
+    _walletsCache = {
+      for (var wallet in _walletsViewModel.wallets) wallet.id: wallet,
+    };
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final transactionsByDate = _getGroupedTransactions(tabType);
+    if (widget.viewModel.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (widget.viewModel.error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 56, color: Colors.red.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading transactions',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.viewModel.error!,
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => widget.viewModel.loadTransactions(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final transactionsByDate = _getGroupedTransactions(
+      widget.tabType,
+      widget.viewModel.transactions,
+    );
 
     if (transactionsByDate.isEmpty) {
       return Center(
@@ -416,107 +534,19 @@ class _TransactionsTabContent extends StatelessWidget {
     );
   }
 
-  Map<String, List<TransactionItem>> _getGroupedTransactions(TabType tabType) {
+  Map<String, List<TransactionItem>> _getGroupedTransactions(
+    TabType tabType,
+    List<Transaction> transactions,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    const twoDaysAgo = Duration(days: 2);
-    final tomorrowDate = today.add(const Duration(days: 1));
-
-    final allTransactions = [
-      // Past transactions (before today)
-      TransactionItem(
-        description: 'Taxi ride',
-        category: 'Transport',
-        amount: 15.00,
-        type: TransactionType.expense,
-        categoryIcon: Icons.directions_car,
-        date: yesterday,
-      ),
-      TransactionItem(
-        description: 'Monthly salary',
-        category: 'Income',
-        amount: 3500.00,
-        type: TransactionType.income,
-        categoryIcon: Icons.trending_up,
-        date: yesterday,
-      ),
-      TransactionItem(
-        description: 'Gas station',
-        category: 'Transport',
-        amount: 45.00,
-        type: TransactionType.expense,
-        categoryIcon: Icons.local_gas_station,
-        date: today.subtract(twoDaysAgo),
-      ),
-      TransactionItem(
-        description: 'Freelance project payment',
-        category: 'Income',
-        amount: 250.00,
-        type: TransactionType.income,
-        categoryIcon: Icons.work,
-        date: today.subtract(twoDaysAgo),
-      ),
-      TransactionItem(
-        description: 'Movie tickets',
-        category: 'Entertainment',
-        amount: 30.00,
-        type: TransactionType.expense,
-        categoryIcon: Icons.movie,
-        date: today.subtract(twoDaysAgo),
-      ),
-
-      // Today's transactions
-      TransactionItem(
-        description: 'Lunch with friends',
-        category: 'Food',
-        amount: 25.50,
-        type: TransactionType.expense,
-        categoryIcon: Icons.restaurant,
-        date: today,
-      ),
-      TransactionItem(
-        description: 'Coffee',
-        category: 'Food',
-        amount: 4.50,
-        type: TransactionType.expense,
-        categoryIcon: Icons.coffee,
-        date: today,
-      ),
-      TransactionItem(
-        description: 'Grocery shopping',
-        category: 'Shopping',
-        amount: 97.50,
-        type: TransactionType.expense,
-        categoryIcon: Icons.shopping_cart,
-        date: today,
-      ),
-
-      // Future transactions (after today)
-      TransactionItem(
-        description: 'Scheduled transfer',
-        category: 'Transfer',
-        amount: 500.00,
-        type: TransactionType.expense,
-        categoryIcon: Icons.send,
-        date: tomorrowDate,
-      ),
-      TransactionItem(
-        description: 'Bonus payment',
-        category: 'Income',
-        amount: 1000.00,
-        type: TransactionType.income,
-        categoryIcon: Icons.trending_up,
-        date: tomorrowDate.add(const Duration(days: 3)),
-      ),
-    ];
 
     // Filter transactions based on tab type
-    final filteredTransactions = allTransactions.where((transaction) {
+    final filteredTransactions = transactions.where((transaction) {
       final transactionDate = DateTime(
-        transaction.date.year,
-        transaction.date.month,
-        transaction.date.day,
+        transaction.transactionDate.year,
+        transaction.transactionDate.month,
+        transaction.transactionDate.day,
       );
 
       switch (tabType) {
@@ -533,11 +563,39 @@ class _TransactionsTabContent extends StatelessWidget {
     final grouped = <String, List<TransactionItem>>{};
 
     for (final transaction in filteredTransactions) {
-      final dateLabel = _getDateLabel(transaction.date);
+      final dateLabel = _getDateLabel(transaction.transactionDate);
       if (!grouped.containsKey(dateLabel)) {
         grouped[dateLabel] = [];
       }
-      grouped[dateLabel]!.add(transaction);
+
+      // Get category details
+      final category = _categoriesCache[transaction.categoryId];
+      final categoryName = category?.name ?? 'Unknown Category';
+      final categoryIcon = category?.icon ?? Icons.category;
+      final categoryType = category?.type.name ?? 'expense';
+
+      // Get wallet details
+      final wallet = _walletsCache[transaction.walletId];
+      final walletName = wallet?.name ?? 'Unknown Wallet';
+
+      // Determine transaction type from category
+      final transactionType = categoryType == 'income'
+          ? TransactionType.income
+          : TransactionType.expense;
+
+      // Convert Transaction to TransactionItem for UI
+      grouped[dateLabel]!.add(
+        TransactionItem(
+          description: transaction.note?.isNotEmpty == true
+              ? transaction.note!
+              : walletName,
+          category: categoryName,
+          amount: transaction.amount,
+          type: transactionType,
+          categoryIcon: categoryIcon,
+          date: transaction.transactionDate,
+        ),
+      );
     }
 
     return grouped;
