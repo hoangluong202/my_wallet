@@ -19,13 +19,6 @@ class WalletIconSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select Wallet Icon',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
         _buildIconPreview(),
         const SizedBox(height: 16),
         _buildIconList(),

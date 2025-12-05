@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/transaction_item.dart';
 import '../../../../core/widgets/header/detail_header.dart';
-import '../../../../core/widgets/form/custom_text_field.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final TransactionItem transaction;
@@ -145,18 +144,31 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     );
     _selectedDate = widget.transaction.date;
 
-    // Initialize wallet and category from transaction
-    // Note: In real app, you'd get these from the transaction object
-    // For now, using defaults
-    _selectedWallet = _wallets[0]['name'];
-    _selectedCategory = widget.transaction.category;
+    // Initialize wallet - use first wallet as default
+    _selectedWallet = _wallets.isNotEmpty
+        ? _wallets[0]['name'] as String
+        : null;
 
-    // Determine category type from transaction
-    final categoryData = _categories.firstWhere(
-      (cat) => cat['name'] == widget.transaction.category,
-      orElse: () => _categories[0],
-    );
-    _selectedCategoryType = categoryData['type'] as String;
+    // Try to find matching category, otherwise use first Expense category
+    try {
+      final matchingCategory = _categories.firstWhere(
+        (cat) => cat['name'] == widget.transaction.category,
+      );
+      _selectedCategory = matchingCategory['name'] as String;
+      _selectedCategoryType = matchingCategory['type'] as String;
+    } catch (e) {
+      // If category not found, use first category of default type
+      final defaultCategories = _categories
+          .where((cat) => cat['type'] == 'Expense')
+          .toList();
+      if (defaultCategories.isNotEmpty) {
+        _selectedCategory = defaultCategories[0]['name'] as String;
+        _selectedCategoryType = 'Expense';
+      } else {
+        _selectedCategory = null;
+        _selectedCategoryType = 'Expense';
+      }
+    }
   }
 
   @override
@@ -168,9 +180,21 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      // Validate that category is selected
+      if (_selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a category'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
       // Form is valid
       final selectedCategoryData = _categories.firstWhere(
         (cat) => cat['name'] == _selectedCategory,
+        orElse: () => _categories[0],
       );
 
       final updatedTransaction = {
@@ -207,16 +231,16 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
-            // Consistent header
             DetailHeader(
               title: 'Edit Transaction',
               onBack: () => Navigator.pop(context),
             ),
             Expanded(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -226,50 +250,73 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Scrollable content area
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Wallet Selector
-                              _buildSectionTitle('Wallet'),
-                              const SizedBox(height: 12),
-                              _buildWalletSelector(),
-                              const SizedBox(height: 20),
+                      // Category Type Selector - Prominent at top
+                      _buildCategoryTypeSelector(),
+                      const SizedBox(height: 16),
 
-                              // Category Type Selector
-                              _buildSectionTitle('Category Type'),
-                              const SizedBox(height: 12),
-                              _buildCategoryTypeSelector(),
-                              const SizedBox(height: 16),
+                      // Main Form Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Category Section
+                            _buildCardSection(
+                              title: 'Category',
+                              icon: Icons.category_outlined,
+                              child: _buildCategorySelector(),
+                            ),
 
-                              // Category Selector
-                              _buildSectionTitle('Category'),
-                              const SizedBox(height: 12),
-                              _buildCategorySelector(),
-                              const SizedBox(height: 20),
+                            Divider(height: 1, color: Colors.grey.shade200),
 
-                              // Date Selector
-                              _buildSectionTitle('Date'),
-                              const SizedBox(height: 8),
-                              _buildDateSelector(),
-                              const SizedBox(height: 20),
-
-                              // Amount (use shared CustomTextField, currency as suffix)
-                              CustomTextField(
+                            // Amount Section
+                            _buildCardSection(
+                              title: 'Amount',
+                              icon: Icons.payments_outlined,
+                              child: TextFormField(
                                 controller: _amountController,
-                                label: 'Amount',
-                                hintText: 'Enter amount (e.g., 25.50)',
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
-                                suffixText: '₫',
-                                suffixStyle: TextStyle(
-                                  fontSize: 20,
+                                style: const TextStyle(
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey.shade600,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  hintStyle: TextStyle(
+                                    fontSize: 24,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  suffixIcon: Padding(
+                                    padding: const EdgeInsets.only(
+                                      right: 12.0,
+                                      top: 12,
+                                    ),
+                                    child: Text(
+                                      '₫',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                  suffixIconConstraints: const BoxConstraints(
+                                    minWidth: 0,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -282,48 +329,96 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 20),
+                            ),
 
-                              // Note section (rename from Description)
-                              CustomTextField(
+                            Divider(height: 1, color: Colors.grey.shade200),
+
+                            // Wallet Section
+                            _buildCardSection(
+                              title: 'Wallet',
+                              icon: Icons.account_balance_wallet_outlined,
+                              child: _buildWalletSelector(),
+                            ),
+
+                            Divider(height: 1, color: Colors.grey.shade200),
+
+                            // Date Section
+                            _buildCardSection(
+                              title: 'Date',
+                              icon: Icons.calendar_today_outlined,
+                              child: _buildDateSelector(),
+                            ),
+
+                            Divider(height: 1, color: Colors.grey.shade200),
+
+                            // Note Section
+                            _buildCardSection(
+                              title: 'Note',
+                              icon: Icons.notes_outlined,
+                              child: TextFormField(
                                 controller: _descriptionController,
-                                label: 'Note',
-                                hintText: 'Transaction note',
                                 keyboardType: TextInputType.text,
                                 maxLines: 3,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a note';
-                                  }
-                                  return null;
-                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Add a note (optional)',
+                                  hintStyle: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
 
-                      // Fixed Submit Button at bottom
-                      const SizedBox(height: 12),
-                      SizedBox(
+                      const SizedBox(height: 20),
+
+                      // Submit Button
+                      Container(
                         width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.shade600,
+                              Colors.blue.shade700,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
                         child: ElevatedButton(
                           onPressed: _submitForm,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
-                            'Save',
+                            'Update Transaction',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -342,27 +437,37 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildCategoryTypeSelector() {
-    final categoryTypes = ['Expense', 'Income', 'Debt', 'Loan'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    final categoryTypes = [
+      {'type': 'Expense', 'icon': Icons.remove_circle, 'color': Colors.red},
+      {'type': 'Income', 'icon': Icons.add_circle, 'color': Colors.green},
+      {'type': 'Debt', 'icon': Icons.account_balance, 'color': Colors.orange},
+      {'type': 'Loan', 'icon': Icons.savings, 'color': Colors.purple},
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: List.generate(categoryTypes.length, (index) {
-          final type = categoryTypes[index];
+          final item = categoryTypes[index];
+          final type = item['type'] as String;
+          final icon = item['icon'] as IconData;
+          final color = item['color'] as Color;
           final isSelected = _selectedCategoryType == type;
-          return Padding(
-            padding: EdgeInsets.only(
-              right: index == categoryTypes.length - 1 ? 0 : 8,
-            ),
-            child: FilterChip(
-              label: Text(
-                type,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade700,
-                ),
-              ),
-              selected: isSelected,
-              onSelected: (selected) {
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
                 setState(() {
                   _selectedCategoryType = type;
                   // Reset category selection to first category of new type
@@ -372,9 +477,44 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   }
                 });
               },
-              backgroundColor: Colors.grey.shade200,
-              selectedColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.only(
+                  right: index == categoryTypes.length - 1 ? 0 : 8,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? color.withOpacity(0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? color : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      color: isSelected ? color : Colors.grey.shade400,
+                      size: 24,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      type,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: isSelected ? color : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         }),
@@ -391,84 +531,70 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   Widget _buildWalletSelectionGrid() {
     return GestureDetector(
       onTap: _showWalletPicker,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300, width: 2),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade50,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, color: Colors.grey.shade600, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Tap to select wallet',
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Select a wallet',
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
+                color: Colors.grey.shade500,
               ),
             ),
-          ],
-        ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
       ),
     );
   }
 
   Widget _buildSelectedWalletCard() {
-    final wallet = _wallets.firstWhere((w) => w['name'] == _selectedWallet);
+    if (_selectedWallet == null) {
+      return _buildWalletSelectionGrid();
+    }
+    final wallet = _wallets.firstWhere(
+      (w) => w['name'] == _selectedWallet,
+      orElse: () => _wallets[0],
+    );
     return GestureDetector(
       onTap: _showWalletPicker,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: (wallet['color'] as Color).withOpacity(0.3),
-            width: 2,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (wallet['color'] as Color).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              wallet['icon'] as IconData,
+              color: wallet['color'] as Color,
+              size: 20,
+            ),
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: (wallet['color'] as Color).withOpacity(0.1),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: (wallet['color'] as Color).withOpacity(0.2),
-              child: Icon(
-                wallet['icon'] as IconData,
-                color: wallet['color'] as Color,
-                size: 24,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              wallet['name'] as String,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Wallet',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    wallet['name'] as String,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.check_circle, color: wallet['color'] as Color, size: 24),
-          ],
-        ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
       ),
     );
   }
@@ -563,90 +689,70 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   Widget _buildCategorySelectionGrid() {
     return GestureDetector(
       onTap: _showCategoryPicker,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300, width: 2),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade50,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add, color: Colors.grey.shade600, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Tap to select category',
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Select a category',
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
+                color: Colors.grey.shade500,
               ),
             ),
-          ],
-        ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
       ),
     );
   }
 
   Widget _buildSelectedCategoryCard() {
+    if (_selectedCategory == null) {
+      return _buildCategorySelectionGrid();
+    }
     final category = _categories.firstWhere(
       (c) => c['name'] == _selectedCategory,
+      orElse: () => _categories[0],
     );
     return GestureDetector(
       onTap: _showCategoryPicker,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: (category['color'] as Color).withOpacity(0.3),
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: (category['color'] as Color).withOpacity(0.1),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: (category['color'] as Color).withOpacity(0.2),
-              child: Icon(
-                category['icon'] as IconData,
-                color: category['color'] as Color,
-                size: 24,
-              ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (category['color'] as Color).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category['type'] as String,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    category['name'] as String,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.check_circle,
+            child: Icon(
+              category['icon'] as IconData,
               color: category['color'] as Color,
-              size: 24,
+              size: 20,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              category['name'] as String,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
       ),
     );
   }
@@ -765,65 +871,64 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           });
         }
       },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300, width: 1),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade50,
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: Colors.grey.shade200,
-              child: Icon(
-                Icons.calendar_today,
-                color: Colors.grey.shade700,
-                size: 20,
-              ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Transaction Date',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
+            child: Icon(
+              Icons.calendar_month,
+              color: Colors.blue.shade700,
+              size: 20,
             ),
-            Icon(
-              Icons.edit_calendar,
-              color: Colors.blueGrey.shade600,
-              size: 22,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
-          ],
-        ),
+          ),
+          const Spacer(),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
+  Widget _buildCardSection({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }

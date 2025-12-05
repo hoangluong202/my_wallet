@@ -11,22 +11,33 @@ class WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
       onTap: onTap,
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(14.0),
           child: Row(
             children: [
               _buildIcon(),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(child: _buildWalletInfo()),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               _buildBalance(),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
             ],
           ),
         ),
@@ -35,10 +46,13 @@ class WalletCard extends StatelessWidget {
   }
 
   Widget _buildIcon() {
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: wallet.iconColor.withOpacity(0.2),
-      child: Icon(wallet.icon, size: 20, color: wallet.iconColor),
+    return Container(
+      decoration: BoxDecoration(
+        color: wallet.iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Icon(wallet.icon, color: wallet.iconColor, size: 26),
     );
   }
 
@@ -48,21 +62,22 @@ class WalletCard extends StatelessWidget {
       children: [
         Text(
           wallet.name,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Created on ${DateFormatter.formatDate(wallet.createdOn)}',
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         Text(
           'Last updated ${DateFormatter.formatDuration(wallet.lastUpdated)}',
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w400,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

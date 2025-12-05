@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/header/detail_header.dart';
+import '../../../../core/extensions/context_extensions.dart';
 import '../../data/models/transaction_item.dart';
+import '../widgets/transaction_action_buttons.dart';
 import 'edit_transaction_page.dart';
 
 class TransactionDetailsPage extends StatelessWidget {
@@ -10,153 +13,240 @@ class TransactionDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            DetailHeader(
+              title: 'Transaction Details',
+              onBack: () => Navigator.pop(context),
+            ),
+            Expanded(child: _buildContent(context)),
+            TransactionActionButtons(
+              onEdit: () => _onEditTransaction(context),
+              onDelete: () => _showDeleteConfirmation(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final isExpense = transaction.type == TransactionType.expense;
     final amountColor = isExpense ? Colors.red : Colors.green.shade700;
-    final bgColor = isExpense ? Colors.red.shade50 : Colors.green.shade50;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transaction Details'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: Column(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  // Transaction Icon and Amount
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24.0),
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Icon(
-                            transaction.categoryIcon,
-                            color: amountColor,
-                            size: 48,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          '${isExpense ? '-' : '+'} ${CurrencyFormatter.formatVNDWithSymbol(transaction.amount)}',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: amountColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isExpense ? 'Expense' : 'Income',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: amountColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Transaction Details
-                  _buildDetailCard(
-                    title: 'Transaction Details',
-                    children: [
-                      _buildDetailRow('Category', transaction.category),
-                      _buildDetailRow('Description', transaction.description),
-                      _buildDetailRow('Date', _formatDate(transaction.date)),
-                      _buildDetailRow(
-                        'Amount',
-                        CurrencyFormatter.formatVNDWithSymbol(
-                          transaction.amount,
-                        ),
-                      ),
-                      _buildDetailRow('Type', isExpense ? 'Expense' : 'Income'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Action Buttons
+          // Main Transaction Card
           Container(
-            padding: const EdgeInsets.all(20.0),
+            width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey.shade200, width: 1),
-              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _onEditTransaction(context),
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+            child: Column(
+              children: [
+                // Header with Icon and Amount
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        amountColor.withOpacity(0.1),
+                        amountColor.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _onDeleteTransaction(context),
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Delete'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    children: [
+                      // Icon with enhanced design
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Background circle
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: amountColor.withOpacity(0.15),
+                            ),
+                          ),
+                          // Icon container
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: amountColor.withOpacity(0.2),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              transaction.categoryIcon,
+                              color: amountColor,
+                              size: 28,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+
+                      // Amount and Type section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Type Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    amountColor,
+                                    amountColor.withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: amountColor.withOpacity(0.3),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isExpense
+                                        ? Icons.arrow_downward
+                                        : Icons.arrow_upward,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isExpense ? 'Expense' : 'Income',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Amount
+                            Text(
+                              '${isExpense ? '-' : '+'}${CurrencyFormatter.formatVND(transaction.amount)}',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: amountColor,
+                                letterSpacing: -0.5,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+
+                            // Currency symbol
+                            Text(
+                              'VND',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: amountColor.withOpacity(0.7),
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                // Details Section
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Category
+                      _buildInfoRow(
+                        icon: Icons.category_outlined,
+                        label: 'Category',
+                        value: transaction.category,
+                        iconColor: Colors.purple,
+                      ),
+                      const Divider(height: 24),
+
+                      // Date
+                      _buildInfoRow(
+                        icon: Icons.calendar_today_outlined,
+                        label: 'Date',
+                        value: _formatDate(transaction.date),
+                        iconColor: Colors.blue,
+                      ),
+                      const Divider(height: 24),
+
+                      // Wallet (if available)
+                      _buildInfoRow(
+                        icon: Icons.account_balance_wallet_outlined,
+                        label: 'Wallet',
+                        value: 'Main Wallet', // TODO: Get from transaction
+                        iconColor: Colors.orange,
+                      ),
+                      const Divider(height: 24),
+
+                      // Description
+                      _buildInfoRow(
+                        icon: Icons.notes_outlined,
+                        label: 'Note',
+                        value: transaction.description.isEmpty
+                            ? 'No note'
+                            : transaction.description,
+                        iconColor: Colors.teal,
+                        isMultiline: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -164,72 +254,55 @@ class TransactionDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailCard({
-    required String title,
-    required List<Widget> children,
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconColor,
+    bool isMultiline = false,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Row(
+      crossAxisAlignment: isMultiline
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        // Icon
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(width: 12),
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
+        // Label and Value
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -261,36 +334,25 @@ class TransactionDetailsPage extends StatelessWidget {
     );
   }
 
-  void _onDeleteTransaction(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction?'),
-        content: Text(
-          'Are you sure you want to delete "${transaction.description}"? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Go back to transactions page
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Transaction "${transaction.description}" deleted',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    final confirmed = await context.showConfirmDialog(
+      title: 'Delete Transaction?',
+      content:
+          'Are you sure you want to delete "${transaction.description}"?\n\n'
+          'This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDangerous: true,
     );
+
+    if (confirmed == true && context.mounted) {
+      Navigator.pop(context); // Close detail page
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Transaction "${transaction.description}" deleted'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }

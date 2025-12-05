@@ -363,7 +363,7 @@ class _TransactionsTabContent extends StatelessWidget {
               ),
               const SizedBox(width: 12),
 
-              // Amount
+              // Amount and Badge
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -396,6 +396,10 @@ class _TransactionsTabContent extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(width: 8),
+
+              // Arrow Icon
+              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
             ],
           ),
         ),

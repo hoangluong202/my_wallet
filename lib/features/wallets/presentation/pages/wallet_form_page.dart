@@ -4,7 +4,6 @@ import '../../domain/entities/wallet.dart';
 import '../viewmodels/wallet_form_viewmodel.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../widgets/wallet_icon_selector.dart';
-import '../../../../core/widgets/form/custom_text_field.dart';
 
 class WalletFormPage extends StatefulWidget {
   final Wallet? wallet;
@@ -51,6 +50,7 @@ class _WalletFormPageState extends State<WalletFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -60,82 +60,244 @@ class _WalletFormPageState extends State<WalletFormPage> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: ListenableBuilder(
-                      listenable: _viewModel,
-                      builder: (context, _) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            WalletIconSelector(
-                              selectedIcon: _viewModel.selectedIcon,
-                              selectedIconColor: _viewModel.selectedIconColor,
-                              onIconSelected: _viewModel.selectIcon,
-                            ),
-                            const SizedBox(height: 20),
-                            CustomTextField(
-                              controller: _viewModel.nameController,
-                              label: 'Wallet Name',
-                              hintText: 'e.g., Savings, Momo, Main Account',
-                              validator: _viewModel.validateName,
-                            ),
-                            const SizedBox(height: 16),
-                            CustomTextField(
-                              controller: _viewModel.balanceController,
-                              label: widget.isEditMode
-                                  ? 'Current Balance'
-                                  : 'Initial Balance',
-                              hintText: '1.000.000',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: ListenableBuilder(
+                    listenable: _viewModel,
+                    builder: (context, _) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Icon Selector Card
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
                               ],
-                              onChanged: _viewModel.formatBalance,
-                              validator: _viewModel.validateBalance,
-                              suffixText: 'đ',
-                              suffixStyle: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade700,
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.palette_outlined,
+                                      size: 18,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Wallet Icon & Color',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                WalletIconSelector(
+                                  selectedIcon: _viewModel.selectedIcon,
+                                  selectedIconColor:
+                                      _viewModel.selectedIconColor,
+                                  onIconSelected: _viewModel.selectIcon,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Form Card
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                // Wallet Name Section
+                                _buildCardSection(
+                                  title: 'Wallet Name',
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  child: TextFormField(
+                                    controller: _viewModel.nameController,
+                                    decoration: InputDecoration(
+                                      hintText:
+                                          'e.g., Savings, Momo, Main Account',
+                                      hintStyle: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
+                                    ),
+                                    validator: _viewModel.validateName,
+                                  ),
+                                ),
+                                Divider(height: 1, color: Colors.grey.shade200),
+
+                                // Balance Section
+                                _buildCardSection(
+                                  title: widget.isEditMode
+                                      ? 'Current Balance'
+                                      : 'Initial Balance',
+                                  icon: Icons.payments_outlined,
+                                  child: TextFormField(
+                                    controller: _viewModel.balanceController,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                    onChanged: _viewModel.formatBalance,
+                                    decoration: InputDecoration(
+                                      hintText: '1.000.000',
+                                      hintStyle: TextStyle(
+                                        fontSize: 20,
+                                        color: Colors.grey.shade300,
+                                      ),
+                                      suffixIcon: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 12.0,
+                                          top: 12,
+                                        ),
+                                        child: Text(
+                                          'đ',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                      suffixIconConstraints:
+                                          const BoxConstraints(minWidth: 0),
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                    validator: _viewModel.validateBalance,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Submit Button
+                          Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.blue.shade600,
+                                  Colors.blue.shade700,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _submitForm,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Text(
+                                widget.isEditMode
+                                    ? 'Update Wallet'
+                                    : 'Create Wallet',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 20),
-                          ],
-                        );
-                      },
-                    ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
             ),
-            _buildSubmitButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSubmitButton() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: _submitForm,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: Text(widget.isEditMode ? 'Update Wallet' : 'Create Wallet'),
+  Widget _buildCardSection({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
