@@ -1,12 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/widgets/header/detail_header.dart';
+import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
 import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
 import '../../domain/entities/transaction.dart';
 import '../../../categories/domain/entities/category.dart';
+
+// Custom formatter for thousand separator
+class ThousandSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all dots (thousand separators)
+    String text = newValue.text.replaceAll('.', '');
+
+    // Only allow digits
+    if (!RegExp(r'^\d+$').hasMatch(text)) {
+      return oldValue;
+    }
+
+    // Format with thousand separators
+    final number = int.tryParse(text);
+    if (number == null) {
+      return oldValue;
+    }
+
+    final formatter = NumberFormat('#,##0', 'en_US');
+    final formatted = formatter.format(number).replaceAll(',', '.');
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -74,6 +112,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     setState(() => _isLoading = false);
   }
 
+  // Parse amount from formatted string (30.000 -> 30000)
+  double _parseAmount(String text) {
+    // Remove thousand separators (dots) and parse
+    final cleanText = text.replaceAll('.', '');
+    return double.tryParse(cleanText) ?? 0.0;
+  }
+
   @override
   void dispose() {
     _amountController.dispose();
@@ -84,11 +129,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       if (_selectedWalletId == null || _selectedCategoryId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select wallet and category'),
-            backgroundColor: Colors.red,
-          ),
+        ErrorNotification.show(
+          context: context,
+          message: 'Please select wallet and category',
+          duration: const Duration(seconds: 2),
         );
         return;
       }
@@ -99,7 +143,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           id: const Uuid().v4(),
           categoryId: _selectedCategoryId!,
           walletId: _selectedWalletId!,
-          amount: double.parse(_amountController.text),
+          amount: _parseAmount(_amountController.text),
           note: _descriptionController.text.isEmpty
               ? null
               : _descriptionController.text,
@@ -111,23 +155,28 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         // Save transaction
         await _transactionsViewModel.addTransaction(transaction);
 
-        // Show success message
+        // Show success notification and wait before popping
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Transaction added successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+          SuccessNotification.show(
+            context: context,
+            message: 'Transaction added successfully!',
+            duration: const Duration(seconds: 2),
           );
 
-          // Pop back to previous page
-          Navigator.pop(context);
+          // Wait a bit to ensure listener updates before popping
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          // Pop back with success result
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          ErrorNotification.show(
+            context: context,
+            message: 'Failed to add transaction: $e',
+            duration: const Duration(seconds: 3),
           );
         }
       }
@@ -198,10 +247,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               icon: Icons.payments_outlined,
                               child: TextFormField(
                                 controller: _amountController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  ThousandSeparatorInputFormatter(),
+                                ],
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -236,8 +285,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter an amount';
                                   }
-                                  final amount = double.tryParse(value);
-                                  if (amount == null || amount <= 0) {
+                                  final amount = _parseAmount(value);
+                                  if (amount <= 0) {
                                     return 'Please enter a valid amount greater than 0';
                                   }
                                   return null;

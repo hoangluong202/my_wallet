@@ -1,6 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/transaction_item.dart';
 import '../../../../core/widgets/header/detail_header.dart';
+import '../../../../core/widgets/notification_widget.dart';
+import '../../../../core/di/injector.dart';
+import '../viewmodels/transactions_viewmodel.dart';
+import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../domain/entities/transaction.dart';
+import '../../../categories/domain/entities/category.dart';
+import '../../../wallets/domain/entities/wallet.dart';
+
+// Custom formatter for thousand separator
+class ThousandSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all dots (thousand separators)
+    String text = newValue.text.replaceAll('.', '');
+
+    // Only allow digits
+    if (!RegExp(r'^\d+$').hasMatch(text)) {
+      return oldValue;
+    }
+
+    // Format with thousand separators
+    final number = int.tryParse(text);
+    if (number == null) {
+      return oldValue;
+    }
+
+    final formatter = NumberFormat('#,##0', 'en_US');
+    final formatted = formatter.format(number).replaceAll(',', '.');
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class EditTransactionPage extends StatefulWidget {
   final TransactionItem transaction;
@@ -19,156 +64,108 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   late TextEditingController _descriptionController;
   late DateTime _selectedDate;
 
-  // Editable selections
-  String? _selectedWallet;
-  String? _selectedCategory;
+  // ViewModels
+  late TransactionsViewModel _transactionsViewModel;
+  late CategoriesViewModel _categoriesViewModel;
+  late WalletsViewModel _walletsViewModel;
+
+  // Selected values (using IDs now)
+  String? _selectedWalletId;
+  String? _selectedCategoryId;
   String _selectedCategoryType = 'Expense';
 
-  // Wallet data with icons and colors
-  final List<Map<String, dynamic>> _wallets = [
-    {
-      'name': 'Main Bank Account',
-      'icon': Icons.account_balance,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Momo Wallet',
-      'icon': Icons.mobile_friendly,
-      'color': Colors.pink,
-    },
-    {'name': 'Savings', 'icon': Icons.savings, 'color': Colors.green},
-    {'name': 'Crypto', 'icon': Icons.currency_bitcoin, 'color': Colors.orange},
-  ];
-
-  // Category data with icons and types
-  final List<Map<String, dynamic>> _categories = [
-    // Expense
-    {
-      'name': 'Food',
-      'icon': Icons.restaurant,
-      'color': Colors.red,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Transport',
-      'icon': Icons.directions_car,
-      'color': Colors.blue,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Shopping',
-      'icon': Icons.shopping_cart,
-      'color': Colors.purple,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Entertainment',
-      'icon': Icons.movie,
-      'color': Colors.orange,
-      'type': 'Expense',
-    },
-    {
-      'name': 'Utilities',
-      'icon': Icons.electric_bolt,
-      'color': Colors.amber,
-      'type': 'Expense',
-    },
-    // Income
-    {
-      'name': 'Salary',
-      'icon': Icons.trending_up,
-      'color': Colors.green,
-      'type': 'Income',
-    },
-    {
-      'name': 'Freelance',
-      'icon': Icons.work,
-      'color': Colors.lightGreen,
-      'type': 'Income',
-    },
-    {
-      'name': 'Bonus',
-      'icon': Icons.card_giftcard,
-      'color': Colors.teal,
-      'type': 'Income',
-    },
-    // Debt
-    {
-      'name': 'Credit Card',
-      'icon': Icons.credit_card,
-      'color': Colors.red,
-      'type': 'Debt',
-    },
-    {
-      'name': 'Personal Loan',
-      'icon': Icons.account_balance,
-      'color': Colors.orange,
-      'type': 'Debt',
-    },
-    {
-      'name': 'Other Debt',
-      'icon': Icons.assignment,
-      'color': Colors.pink,
-      'type': 'Debt',
-    },
-    // Loan
-    {
-      'name': 'Home Loan',
-      'icon': Icons.home,
-      'color': Colors.blue,
-      'type': 'Loan',
-    },
-    {
-      'name': 'Auto Loan',
-      'icon': Icons.directions_car,
-      'color': Colors.indigo,
-      'type': 'Loan',
-    },
-    {
-      'name': 'Education Loan',
-      'icon': Icons.school,
-      'color': Colors.deepPurple,
-      'type': 'Loan',
-    },
-  ];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize ViewModels
+    _transactionsViewModel = getIt<TransactionsViewModel>();
+    _categoriesViewModel = getIt<CategoriesViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
+
     // Initialize with transaction data
     _amountController = TextEditingController(
-      text: widget.transaction.amount.toStringAsFixed(2),
+      text: _formatAmount(widget.transaction.amount),
     );
     _descriptionController = TextEditingController(
       text: widget.transaction.description,
     );
     _selectedDate = widget.transaction.date;
 
-    // Initialize wallet - use first wallet as default
-    _selectedWallet = _wallets.isNotEmpty
-        ? _wallets[0]['name'] as String
-        : null;
+    // Get type from transaction to determine category type (read-only in edit mode)
+    _selectedCategoryType = switch (widget.transaction.type) {
+      TransactionType.income => 'Income',
+      TransactionType.expense => 'Expense',
+      TransactionType.debt => 'Debt',
+      TransactionType.loan => 'Loan',
+    };
 
-    // Try to find matching category, otherwise use first Expense category
+    // Load data from database
+    _loadData();
+  }
+
+  // Load data from database
+  Future<void> _loadData() async {
+    await _categoriesViewModel.loadCategories();
+    await _walletsViewModel.loadWallets();
+
+    // Set initial selections based on transaction
+    // We'll find the category and wallet by name for now
+    final categories = _categoriesViewModel.categories;
+    final wallets = _walletsViewModel.wallets;
+
+    // Convert string type to enum
+    final categoryTypeEnum = switch (_selectedCategoryType) {
+      'Income' => CategoryType.income,
+      'Expense' => CategoryType.expense,
+      'Debt' => CategoryType.debt,
+      'Loan' => CategoryType.loan,
+      _ => CategoryType.expense,
+    };
+
+    // Find matching category
     try {
-      final matchingCategory = _categories.firstWhere(
-        (cat) => cat['name'] == widget.transaction.category,
+      final matchingCategory = categories.firstWhere(
+        (cat) => cat.name == widget.transaction.category,
       );
-      _selectedCategory = matchingCategory['name'] as String;
-      _selectedCategoryType = matchingCategory['type'] as String;
+      _selectedCategoryId = matchingCategory.id;
     } catch (e) {
-      // If category not found, use first category of default type
-      final defaultCategories = _categories
-          .where((cat) => cat['type'] == 'Expense')
+      // If no matching category found, use first category of the type
+      final categoriesOfType = categories
+          .where((cat) => cat.type == categoryTypeEnum)
           .toList();
-      if (defaultCategories.isNotEmpty) {
-        _selectedCategory = defaultCategories[0]['name'] as String;
-        _selectedCategoryType = 'Expense';
-      } else {
-        _selectedCategory = null;
-        _selectedCategoryType = 'Expense';
+      if (categoriesOfType.isNotEmpty) {
+        _selectedCategoryId = categoriesOfType.first.id;
+      } else if (categories.isNotEmpty) {
+        _selectedCategoryId = categories.first.id;
       }
     }
+
+    // For wallet, we'll use the first available wallet
+    // (transaction doesn't store wallet info in TransactionItem)
+    if (wallets.isNotEmpty) {
+      _selectedWalletId = wallets.first.id;
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  // Format amount with thousand separator (30000 -> 30.000)
+  String _formatAmount(double amount) {
+    final formatter = NumberFormat('#,##0.##', 'en_US');
+    // Format with comma, then replace comma with dot for display
+    return formatter.format(amount).replaceAll(',', '.');
+  }
+
+  // Parse amount from formatted string (30.000 -> 30000)
+  double _parseAmount(String text) {
+    // Remove thousand separators (dots) and parse
+    final cleanText = text.replaceAll('.', '');
+    return double.tryParse(cleanText) ?? 0.0;
   }
 
   @override
@@ -178,271 +175,338 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Validate that category is selected
-      if (_selectedCategory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a category'),
-            duration: Duration(seconds: 2),
-          ),
+      // Validate that category and wallet are selected
+      if (_selectedCategoryId == null) {
+        ErrorNotification.show(
+          context: context,
+          message: 'Please select a category',
+          duration: const Duration(seconds: 2),
         );
         return;
       }
 
-      // Form is valid
-      final selectedCategoryData = _categories.firstWhere(
-        (cat) => cat['name'] == _selectedCategory,
-        orElse: () => _categories[0],
-      );
-
-      final updatedTransaction = {
-        'wallet': _selectedWallet,
-        'category': _selectedCategory,
-        'categoryType': selectedCategoryData['type'],
-        'description': _descriptionController.text,
-        'amount': double.parse(_amountController.text),
-        'date': _selectedDate,
-      };
-
-      debugPrint('Transaction updated: $updatedTransaction');
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Transaction "${_descriptionController.text}" updated successfully!',
-          ),
+      if (_selectedWalletId == null) {
+        ErrorNotification.show(
+          context: context,
+          message: 'Please select a wallet',
           duration: const Duration(seconds: 2),
-        ),
-      );
+        );
+        return;
+      }
 
-      // Pop back to previous page after a short delay
-      Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        // Create updated Transaction entity
+        final now = DateTime.now();
+        final updatedTransaction = Transaction(
+          id: widget.transaction.id, // Keep same ID for update
+          categoryId: _selectedCategoryId!,
+          walletId: _selectedWalletId!,
+          amount: _parseAmount(_amountController.text),
+          note: _descriptionController.text,
+          transactionDate: _selectedDate,
+          createdAt: now, // Will be ignored by update, but required by model
+          updatedAt: now,
+        );
+
+        // Save to database via ViewModel
+        await _transactionsViewModel.updateTransaction(updatedTransaction);
+
         if (mounted) {
-          Navigator.pop(context);
+          // Show success notification
+          SuccessNotification.show(
+            context: context,
+            message:
+                'Transaction "${_descriptionController.text}" updated successfully!',
+            duration: const Duration(seconds: 2),
+          );
+
+          // Wait a bit before popping to ensure notification is visible
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          // Pop back with result to trigger reload
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
         }
-      });
+      } catch (e) {
+        if (mounted) {
+          ErrorNotification.show(
+            context: context,
+            message: 'Failed to update transaction: $e',
+            duration: const Duration(seconds: 3),
+          );
+        }
+      }
     }
   }
 
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
-        child: Column(
-          children: [
-            DetailHeader(
-              title: 'Edit Transaction',
-              onBack: () => Navigator.pop(context),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category Type Selector - Prominent at top
-                      _buildCategoryTypeSelector(),
-                      const SizedBox(height: 16),
-
-                      // Main Form Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  DetailHeader(
+                    title: 'Edit Transaction',
+                    onBack: () => Navigator.pop(context),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Form(
+                        key: _formKey,
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Category Section
-                            _buildCardSection(
-                              title: 'Category',
-                              icon: Icons.category_outlined,
-                              child: _buildCategorySelector(),
-                            ),
+                            // Category Type Display (Read-only) - Show current type
+                            _buildCategoryTypeDisplay(),
+                            const SizedBox(height: 16),
 
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Amount Section
-                            _buildCardSection(
-                              title: 'Amount',
-                              icon: Icons.payments_outlined,
-                              child: TextFormField(
-                                controller: _amountController,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  hintStyle: TextStyle(
-                                    fontSize: 24,
-                                    color: Colors.grey.shade300,
+                            // Main Form Card
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  suffixIcon: Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 12.0,
-                                      top: 12,
-                                    ),
-                                    child: Text(
-                                      '₫',
-                                      style: TextStyle(
-                                        fontSize: 20,
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  // Category Section
+                                  _buildCardSection(
+                                    title: 'Category',
+                                    icon: Icons.category_outlined,
+                                    child: _buildCategorySelector(),
+                                  ),
+
+                                  Divider(
+                                    height: 1,
+                                    color: Colors.grey.shade200,
+                                  ),
+
+                                  // Amount Section
+                                  _buildCardSection(
+                                    title: 'Amount',
+                                    icon: Icons.payments_outlined,
+                                    child: TextFormField(
+                                      controller: _amountController,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        ThousandSeparatorInputFormatter(),
+                                      ],
+                                      style: const TextStyle(
+                                        fontSize: 24,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade600,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: '0',
+                                        hintStyle: TextStyle(
+                                          fontSize: 24,
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        suffixIcon: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 12.0,
+                                            top: 12,
+                                          ),
+                                          child: Text(
+                                            '₫',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ),
+                                        suffixIconConstraints:
+                                            const BoxConstraints(minWidth: 0),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter an amount';
+                                        }
+                                        final amount = _parseAmount(value);
+                                        if (amount <= 0) {
+                                          return 'Please enter a valid amount greater than 0';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+
+                                  Divider(
+                                    height: 1,
+                                    color: Colors.grey.shade200,
+                                  ),
+
+                                  // Wallet Section
+                                  _buildCardSection(
+                                    title: 'Wallet',
+                                    icon: Icons.account_balance_wallet_outlined,
+                                    child: _buildWalletSelector(),
+                                  ),
+
+                                  Divider(
+                                    height: 1,
+                                    color: Colors.grey.shade200,
+                                  ),
+
+                                  // Date Section
+                                  _buildCardSection(
+                                    title: 'Date',
+                                    icon: Icons.calendar_today_outlined,
+                                    child: _buildDateSelector(),
+                                  ),
+
+                                  Divider(
+                                    height: 1,
+                                    color: Colors.grey.shade200,
+                                  ),
+
+                                  // Note Section
+                                  _buildCardSection(
+                                    title: 'Note',
+                                    icon: Icons.notes_outlined,
+                                    child: TextFormField(
+                                      controller: _descriptionController,
+                                      keyboardType: TextInputType.text,
+                                      maxLines: 3,
+                                      decoration: InputDecoration(
+                                        hintText: 'Add a note (optional)',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
                                       ),
                                     ),
                                   ),
-                                  suffixIconConstraints: const BoxConstraints(
-                                    minWidth: 0,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter an amount';
-                                  }
-                                  final amount = double.tryParse(value);
-                                  if (amount == null || amount <= 0) {
-                                    return 'Please enter a valid amount greater than 0';
-                                  }
-                                  return null;
-                                },
+                                ],
                               ),
                             ),
 
-                            Divider(height: 1, color: Colors.grey.shade200),
+                            const SizedBox(height: 20),
 
-                            // Wallet Section
-                            _buildCardSection(
-                              title: 'Wallet',
-                              icon: Icons.account_balance_wallet_outlined,
-                              child: _buildWalletSelector(),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Date Section
-                            _buildCardSection(
-                              title: 'Date',
-                              icon: Icons.calendar_today_outlined,
-                              child: _buildDateSelector(),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Note Section
-                            _buildCardSection(
-                              title: 'Note',
-                              icon: Icons.notes_outlined,
-                              child: TextFormField(
-                                controller: _descriptionController,
-                                keyboardType: TextInputType.text,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  hintText: 'Add a note (optional)',
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade400,
+                            // Submit Button
+                            Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.shade600,
+                                    Colors.blue.shade700,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
                                   ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Update Transaction',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // Submit Button
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.blue.shade600,
-                              Colors.blue.shade700,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            'Update Transaction',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  List<Map<String, dynamic>> _getFilteredCategories() {
-    return _categories
-        .where((cat) => cat['type'] == _selectedCategoryType)
+  List<Category> _getFilteredCategories() {
+    // Convert string type to enum for comparison
+    final categoryTypeEnum = switch (_selectedCategoryType) {
+      'Income' => CategoryType.income,
+      'Expense' => CategoryType.expense,
+      'Debt' => CategoryType.debt,
+      'Loan' => CategoryType.loan,
+      _ => CategoryType.expense,
+    };
+
+    return _categoriesViewModel.categories
+        .where((cat) => cat.type == categoryTypeEnum)
         .toList();
   }
 
-  Widget _buildCategoryTypeSelector() {
-    final categoryTypes = [
-      {'type': 'Expense', 'icon': Icons.remove_circle, 'color': Colors.red},
-      {'type': 'Income', 'icon': Icons.add_circle, 'color': Colors.green},
-      {'type': 'Debt', 'icon': Icons.account_balance, 'color': Colors.orange},
-      {'type': 'Loan', 'icon': Icons.savings, 'color': Colors.purple},
-    ];
+  Widget _buildCategoryTypeDisplay() {
+    // Get type info for display
+    final typeInfo = switch (_selectedCategoryType) {
+      'Income' => {
+        'icon': Icons.add_circle,
+        'color': Colors.green,
+        'label': 'Income',
+      },
+      'Expense' => {
+        'icon': Icons.remove_circle,
+        'color': Colors.red,
+        'label': 'Expense',
+      },
+      'Debt' => {
+        'icon': Icons.account_balance,
+        'color': Colors.orange,
+        'label': 'Debt',
+      },
+      'Loan' => {
+        'icon': Icons.savings,
+        'color': Colors.purple,
+        'label': 'Loan',
+      },
+      _ => {
+        'icon': Icons.remove_circle,
+        'color': Colors.red,
+        'label': 'Expense',
+      },
+    };
+
+    final icon = typeInfo['icon'] as IconData;
+    final color = typeInfo['color'] as Color;
+    final label = typeInfo['label'] as String;
 
     return Container(
       decoration: BoxDecoration(
@@ -456,74 +520,72 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       child: Row(
-        children: List.generate(categoryTypes.length, (index) {
-          final item = categoryTypes[index];
-          final type = item['type'] as String;
-          final icon = item['icon'] as IconData;
-          final color = item['color'] as Color;
-          final isSelected = _selectedCategoryType == type;
-
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedCategoryType = type;
-                  // Reset category selection to first category of new type
-                  final filteredCategories = _getFilteredCategories();
-                  if (filteredCategories.isNotEmpty) {
-                    _selectedCategory = filteredCategories[0]['name'];
-                  }
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(
-                  right: index == categoryTypes.length - 1 ? 0 : 8,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withOpacity(0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? color : Colors.transparent,
-                    width: 2,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Transaction Type',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      color: isSelected ? color : Colors.grey.shade400,
-                      size: 24,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      type,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isSelected ? color : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
-              ),
+              ],
             ),
-          );
-        }),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  'Locked',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildWalletSelector() {
-    return _selectedWallet == null
+    return _selectedWalletId == null
         ? _buildWalletSelectionGrid()
         : _buildSelectedWalletCard();
   }
@@ -559,13 +621,26 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildSelectedWalletCard() {
-    if (_selectedWallet == null) {
+    if (_selectedWalletId == null) {
       return _buildWalletSelectionGrid();
     }
-    final wallet = _wallets.firstWhere(
-      (w) => w['name'] == _selectedWallet,
-      orElse: () => _wallets[0],
-    );
+
+    // Find wallet, fallback to first if not found
+    Wallet? wallet;
+    try {
+      wallet = _walletsViewModel.wallets.firstWhere(
+        (w) => w.id == _selectedWalletId,
+      );
+    } catch (e) {
+      wallet = _walletsViewModel.wallets.isNotEmpty
+          ? _walletsViewModel.wallets.first
+          : null;
+    }
+
+    if (wallet == null) {
+      return _buildWalletSelectionGrid();
+    }
+
     return GestureDetector(
       onTap: _showWalletPicker,
       child: Row(
@@ -573,19 +648,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (wallet['color'] as Color).withOpacity(0.1),
+              color: wallet.iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              wallet['icon'] as IconData,
-              color: wallet['color'] as Color,
-              size: 20,
-            ),
+            child: Icon(wallet.icon, color: wallet.iconColor, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              wallet['name'] as String,
+              wallet.name,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -600,6 +671,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   void _showWalletPicker() {
+    final wallets = _walletsViewModel.wallets;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -629,12 +701,11 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            ...List.generate(_wallets.length, (index) {
-              final wallet = _wallets[index];
+            ...wallets.map((wallet) {
               return GestureDetector(
                 onTap: () {
                   setState(() {
-                    _selectedWallet = wallet['name'];
+                    _selectedWalletId = wallet.id;
                   });
                   Navigator.pop(context);
                 },
@@ -643,7 +714,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: (wallet['color'] as Color).withOpacity(0.2),
+                      color: wallet.iconColor.withOpacity(0.2),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -651,18 +722,16 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: (wallet['color'] as Color).withOpacity(
-                          0.2,
-                        ),
+                        backgroundColor: wallet.iconColor.withOpacity(0.2),
                         child: Icon(
-                          wallet['icon'] as IconData,
-                          color: wallet['color'] as Color,
+                          wallet.icon,
+                          color: wallet.iconColor,
                           size: 22,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        wallet['name'] as String,
+                        wallet.name,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -681,7 +750,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildCategorySelector() {
-    return _selectedCategory == null
+    return _selectedCategoryId == null
         ? _buildCategorySelectionGrid()
         : _buildSelectedCategoryCard();
   }
@@ -717,13 +786,26 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildSelectedCategoryCard() {
-    if (_selectedCategory == null) {
+    if (_selectedCategoryId == null) {
       return _buildCategorySelectionGrid();
     }
-    final category = _categories.firstWhere(
-      (c) => c['name'] == _selectedCategory,
-      orElse: () => _categories[0],
-    );
+
+    // Find category, fallback to first if not found
+    Category? category;
+    try {
+      category = _categoriesViewModel.categories.firstWhere(
+        (c) => c.id == _selectedCategoryId,
+      );
+    } catch (e) {
+      category = _categoriesViewModel.categories.isNotEmpty
+          ? _categoriesViewModel.categories.first
+          : null;
+    }
+
+    if (category == null) {
+      return _buildCategorySelectionGrid();
+    }
+
     return GestureDetector(
       onTap: _showCategoryPicker,
       child: Row(
@@ -731,19 +813,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (category['color'] as Color).withOpacity(0.1),
+              color: category.color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              category['icon'] as IconData,
-              color: category['color'] as Color,
-              size: 20,
-            ),
+            child: Icon(category.icon, color: category.color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              category['name'] as String,
+              category.name,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -758,6 +836,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   void _showCategoryPicker() {
+    final filteredCategories = _getFilteredCategories();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -789,13 +868,13 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: _getFilteredCategories().length,
+                itemCount: filteredCategories.length,
                 itemBuilder: (context, index) {
-                  final category = _getFilteredCategories()[index];
+                  final category = filteredCategories[index];
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _selectedCategory = category['name'];
+                        _selectedCategoryId = category.id;
                       });
                       Navigator.pop(context);
                     },
@@ -804,7 +883,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: (category['color'] as Color).withOpacity(0.2),
+                          color: category.color.withOpacity(0.2),
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -812,11 +891,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: (category['color'] as Color)
-                                .withOpacity(0.2),
+                            backgroundColor: category.color.withOpacity(0.2),
                             child: Icon(
-                              category['icon'] as IconData,
-                              color: category['color'] as Color,
+                              category.icon,
+                              color: category.color,
                               size: 22,
                             ),
                           ),
@@ -826,14 +904,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  category['type'] as String,
+                                  category.type.name.toUpperCase(),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
                                 Text(
-                                  category['name'] as String,
+                                  category.name,
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

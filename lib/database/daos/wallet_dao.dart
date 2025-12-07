@@ -152,6 +152,17 @@ class WalletDao extends DatabaseAccessor<AppDatabase> with _$WalletDaoMixin {
     return (select(wallets)..where((t) => t.isDeleted.equals(true))).get();
   }
 
+  // Update wallet balance
+  Future<int> updateWalletBalance(String id, double newBalance) async {
+    return (update(wallets)..where((t) => t.id.equals(id))).write(
+      WalletsCompanion(
+        balance: Value(newBalance),
+        isSynced: const Value(false),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   // Mark wallet as synced
   Future<int> markAsSynced(String id) async {
     return (update(wallets)..where((t) => t.id.equals(id))).write(

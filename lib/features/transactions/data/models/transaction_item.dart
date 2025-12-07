@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-enum TransactionType { income, expense }
+enum TransactionType { income, expense, debt, loan }
 
 class TransactionItem {
+  final String id;
   final String description;
   final String category;
   final double amount;
@@ -11,6 +12,7 @@ class TransactionItem {
   final DateTime date;
 
   TransactionItem({
+    required this.id,
     required this.description,
     required this.category,
     required this.amount,

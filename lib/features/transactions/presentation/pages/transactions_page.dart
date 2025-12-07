@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
+import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../categories/domain/entities/category.dart';
+import '../../../wallets/domain/entities/wallet.dart';
+import '../../domain/entities/transaction.dart';
 import '../widgets/transactions_header.dart';
 import '../widgets/transactions_tab_content.dart';
 
@@ -12,19 +17,111 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
-  late TransactionsViewModel _viewModel;
+  late TransactionsViewModel _transactionsViewModel;
+  late CategoriesViewModel _categoriesViewModel;
+  late WalletsViewModel _walletsViewModel;
+
+  // Cached data
+  List<Transaction> _transactions = [];
+  Map<String, Category> _categoriesCache = {};
+  Map<String, Wallet> _walletsCache = {};
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
-    _viewModel = getIt<TransactionsViewModel>();
+    _transactionsViewModel = getIt<TransactionsViewModel>();
+    _categoriesViewModel = getIt<CategoriesViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
+
+    // Add listener to transactions
+    _transactionsViewModel.addListener(_onTransactionsChanged);
+
+    // Add app lifecycle observer
+    WidgetsBinding.instance.addObserver(this);
+
+    // Load all data
+    _loadAllData();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Reload data when app returns to foreground
+    if (state == AppLifecycleState.resumed) {
+      _loadAllData();
+    }
+  }
+
+  void _onTransactionsChanged() {
+    if (mounted) {
+      setState(() {
+        _transactions = _transactionsViewModel.transactions;
+        _isLoading = _transactionsViewModel.isLoading;
+        _error = _transactionsViewModel.error;
+
+        // Rebuild caches to ensure consistency with updated transactions
+        _categoriesCache = {
+          for (var cat in _categoriesViewModel.categories) cat.id: cat,
+        };
+        _walletsCache = {
+          for (var wallet in _walletsViewModel.wallets) wallet.id: wallet,
+        };
+      });
+    }
+  }
+
+  Future<void> _loadAllData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Load all data in parallel
+      await Future.wait([
+        _transactionsViewModel.loadTransactions(),
+        _categoriesViewModel.loadCategories(),
+        _walletsViewModel.loadWallets(),
+      ]);
+
+      // Build caches
+      _categoriesCache = {
+        for (var cat in _categoriesViewModel.categories) cat.id: cat,
+      };
+      _walletsCache = {
+        for (var wallet in _walletsViewModel.wallets) wallet.id: wallet,
+      };
+      _transactions = _transactionsViewModel.transactions;
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  void _onTransactionEditedOrDeleted() {
+    // Reload all data when transaction is edited or deleted
+    _loadAllData();
   }
 
   @override
   void dispose() {
+    _transactionsViewModel.removeListener(_onTransactionsChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     super.dispose();
   }
@@ -73,15 +170,33 @@ class _TransactionsPageState extends State<TransactionsPage>
               children: [
                 TransactionsTabContent(
                   tabType: TabType.past,
-                  viewModel: _viewModel,
+                  transactions: _transactions,
+                  categoriesCache: _categoriesCache,
+                  walletsCache: _walletsCache,
+                  isLoading: _isLoading,
+                  error: _error,
+                  onRetry: _loadAllData,
+                  onTransactionChanged: _onTransactionEditedOrDeleted,
                 ),
                 TransactionsTabContent(
                   tabType: TabType.today,
-                  viewModel: _viewModel,
+                  transactions: _transactions,
+                  categoriesCache: _categoriesCache,
+                  walletsCache: _walletsCache,
+                  isLoading: _isLoading,
+                  error: _error,
+                  onRetry: _loadAllData,
+                  onTransactionChanged: _onTransactionEditedOrDeleted,
                 ),
                 TransactionsTabContent(
                   tabType: TabType.future,
-                  viewModel: _viewModel,
+                  transactions: _transactions,
+                  categoriesCache: _categoriesCache,
+                  walletsCache: _walletsCache,
+                  isLoading: _isLoading,
+                  error: _error,
+                  onRetry: _loadAllData,
+                  onTransactionChanged: _onTransactionEditedOrDeleted,
                 ),
               ],
             ),

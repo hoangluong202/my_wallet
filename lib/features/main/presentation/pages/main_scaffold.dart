@@ -20,11 +20,14 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomePage(),
-    WalletsPage(),
-    TransactionsPage(),
-    CategoriesPage(),
+  // Use timestamp to force rebuild TransactionsPage when needed
+  int _transactionsPageVersion = 0;
+
+  List<Widget> get _pages => [
+    const HomePage(),
+    const WalletsPage(),
+    TransactionsPage(key: ValueKey('transactions_$_transactionsPageVersion')),
+    const CategoriesPage(),
   ];
 
   void _onTabSelected(int index) {
@@ -35,15 +38,25 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   void _onFabPressed() async {
     // Navigate to add transaction page
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddTransactionPage()),
     );
 
-    // Reload transactions after returning
-    if (mounted) {
+    // Reload transactions if transaction was added successfully
+    if (mounted && result == true) {
       final transactionsViewModel = getIt<TransactionsViewModel>();
+
+      // Reload data first
       await transactionsViewModel.loadTransactions();
+
+      // Force rebuild TransactionsPage and switch to it
+      if (mounted) {
+        setState(() {
+          _transactionsPageVersion++; // Increment to force rebuild
+          _selectedIndex = 2; // Transactions tab index
+        });
+      }
     }
   }
 

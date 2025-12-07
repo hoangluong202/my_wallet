@@ -14,9 +14,38 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isExpense = transaction.type == TransactionType.expense;
-    final amountColor = isExpense ? Colors.red : Colors.green.shade700;
-    final bgColor = isExpense ? Colors.red.shade50 : Colors.green.shade50;
+    // Determine colors and display based on transaction type
+    final Color amountColor;
+    final Color bgColor;
+    final String typeLabel;
+    final String amountPrefix;
+
+    switch (transaction.type) {
+      case TransactionType.income:
+        amountColor = Colors.green.shade700;
+        bgColor = Colors.green.shade50;
+        typeLabel = 'Income';
+        amountPrefix = '+';
+        break;
+      case TransactionType.expense:
+        amountColor = Colors.red;
+        bgColor = Colors.red.shade50;
+        typeLabel = 'Expense';
+        amountPrefix = '-';
+        break;
+      case TransactionType.debt:
+        amountColor = Colors.orange.shade700;
+        bgColor = Colors.orange.shade50;
+        typeLabel = 'Debt';
+        amountPrefix = '+';
+        break;
+      case TransactionType.loan:
+        amountColor = Colors.purple.shade700;
+        bgColor = Colors.purple.shade50;
+        typeLabel = 'Loan';
+        amountPrefix = '-';
+        break;
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -87,7 +116,7 @@ class TransactionItemCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${isExpense ? '-' : '+'}${CurrencyFormatter.formatVNDWithSymbol(transaction.amount)}',
+                    '$amountPrefix${CurrencyFormatter.formatVNDWithSymbol(transaction.amount)}',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -105,7 +134,7 @@ class TransactionItemCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      isExpense ? 'Expense' : 'Income',
+                      typeLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

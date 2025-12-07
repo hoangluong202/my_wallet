@@ -73,24 +73,220 @@ class TransactionLocalServiceImpl implements TransactionLocalService {
 
   @override
   Future<void> insertTransaction(Transaction transaction) async {
-    final companion = _toInsertCompanion(transaction);
-    await _database.transactionDao.insertTransaction(companion);
+    await _database.transaction(() async {
+      // Get current wallet balance
+      final wallet = await _database.walletDao.getWalletById(
+        transaction.walletId,
+      );
+
+      if (wallet == null) {
+        throw Exception('Wallet not found');
+      }
+
+      // Get category to determine transaction type
+      final category = await _database.categoryDao.getCategoryById(
+        transaction.categoryId,
+      );
+
+      if (category == null) {
+        throw Exception('Category not found');
+      }
+
+      // Calculate new balance based on category type
+      double newBalance = wallet.balance;
+
+      if (category.type == 'income' || category.type == 'debt') {
+        // Income: add to balance
+        newBalance = wallet.balance + transaction.amount;
+      } else if (category.type == 'expense' || category.type == 'loan') {
+        // Expense: subtract from balance (check if sufficient)
+        if (wallet.balance < transaction.amount) {
+          throw Exception('Insufficient balance');
+        }
+        newBalance = wallet.balance - transaction.amount;
+      }
+
+      // Insert transaction
+      final companion = _toInsertCompanion(transaction);
+      await _database.transactionDao.insertTransaction(companion);
+
+      // Update wallet balance
+      await _database.walletDao.updateWalletBalance(
+        transaction.walletId,
+        newBalance,
+      );
+    });
   }
 
   @override
   Future<void> updateTransaction(Transaction transaction) async {
-    final companion = _toCompanion(transaction, isSynced: false);
-    await _database.transactionDao.updateTransaction(companion);
+    await _database.transaction(() async {
+      // Get old transaction to revert its effect on wallet
+      final oldTransactionData = await _database.transactionDao
+          .getTransactionById(transaction.id);
+
+      if (oldTransactionData == null) {
+        throw Exception('Transaction not found');
+      }
+
+      // Get old category
+      final oldCategory = await _database.categoryDao.getCategoryById(
+        oldTransactionData.categoryId,
+      );
+
+      if (oldCategory == null) {
+        throw Exception('Old category not found');
+      }
+
+      // Get new category
+      final newCategory = await _database.categoryDao.getCategoryById(
+        transaction.categoryId,
+      );
+
+      if (newCategory == null) {
+        throw Exception('New category not found');
+      }
+
+      // Get wallet
+      final wallet = await _database.walletDao.getWalletById(
+        transaction.walletId,
+      );
+
+      if (wallet == null) {
+        throw Exception('Wallet not found');
+      }
+
+      // Revert old transaction effect
+      double newBalance = wallet.balance;
+
+      if (oldCategory.type == 'income' || oldCategory.type == 'debt') {
+        newBalance -= oldTransactionData.amount; // Remove old income
+      } else if (oldCategory.type == 'expense' || oldCategory.type == 'loan') {
+        newBalance += oldTransactionData.amount; // Restore old expense
+      }
+
+      // Apply new transaction effect
+      if (newCategory.type == 'income' || newCategory.type == 'debt') {
+        newBalance += transaction.amount; // Add new income
+      } else if (newCategory.type == 'expense' || newCategory.type == 'loan') {
+        if (newBalance < transaction.amount) {
+          throw Exception('Insufficient balance');
+        }
+        newBalance -= transaction.amount; // Subtract new expense
+      }
+
+      // Update transaction
+      final companion = _toCompanion(transaction, isSynced: false);
+      await _database.transactionDao.updateTransaction(companion);
+
+      // Update wallet balance
+      await _database.walletDao.updateWalletBalance(
+        transaction.walletId,
+        newBalance,
+      );
+    });
   }
 
   @override
   Future<void> deleteTransaction(String id) async {
-    await _database.transactionDao.deleteTransaction(id);
+    await _database.transaction(() async {
+      // Get transaction to revert its effect on wallet
+      final transactionData = await _database.transactionDao.getTransactionById(
+        id,
+      );
+
+      if (transactionData == null) {
+        throw Exception('Transaction not found');
+      }
+
+      // Get category
+      final category = await _database.categoryDao.getCategoryById(
+        transactionData.categoryId,
+      );
+
+      if (category == null) {
+        throw Exception('Category not found');
+      }
+
+      // Get wallet
+      final wallet = await _database.walletDao.getWalletById(
+        transactionData.walletId,
+      );
+
+      if (wallet == null) {
+        throw Exception('Wallet not found');
+      }
+
+      // Revert transaction effect on wallet
+      double newBalance = wallet.balance;
+
+      if (category.type == 'income') {
+        newBalance -= transactionData.amount; // Remove income
+      } else if (category.type == 'expense') {
+        newBalance += transactionData.amount; // Restore expense
+      } else if (category.type == 'debt' || category.type == 'loan') {
+        newBalance += transactionData.amount; // Restore debt/loan
+      }
+
+      // Delete transaction
+      await _database.transactionDao.deleteTransaction(id);
+
+      // Update wallet balance
+      await _database.walletDao.updateWalletBalance(
+        transactionData.walletId,
+        newBalance,
+      );
+    });
   }
 
   @override
   Future<void> softDeleteTransaction(String id) async {
-    await _database.transactionDao.softDeleteTransaction(id);
+    await _database.transaction(() async {
+      // Get transaction to revert its effect on wallet
+      final transactionData = await _database.transactionDao.getTransactionById(
+        id,
+      );
+
+      if (transactionData == null) {
+        throw Exception('Transaction not found');
+      }
+
+      // Get category
+      final category = await _database.categoryDao.getCategoryById(
+        transactionData.categoryId,
+      );
+
+      if (category == null) {
+        throw Exception('Category not found');
+      }
+
+      // Get wallet
+      final wallet = await _database.walletDao.getWalletById(
+        transactionData.walletId,
+      );
+
+      if (wallet == null) {
+        throw Exception('Wallet not found');
+      }
+
+      // Revert transaction effect on wallet
+      double newBalance = wallet.balance;
+
+      if (category.type == 'income' || category.type == 'debt') {
+        newBalance -= transactionData.amount; // Remove income/debt
+      } else if (category.type == 'expense' || category.type == 'loan') {
+        newBalance += transactionData.amount; // Restore expense/loan
+      }
+
+      // Soft delete transaction
+      await _database.transactionDao.softDeleteTransaction(id);
+
+      // Update wallet balance
+      await _database.walletDao.updateWalletBalance(
+        transactionData.walletId,
+        newBalance,
+      );
+    });
   }
 
   // Query by Filters

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../../core/di/injector.dart';
 import '../../domain/entities/transaction.dart';
 import '../../data/models/transaction_item.dart';
-import '../viewmodels/transactions_viewmodel.dart';
-import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
 import '../../../categories/domain/entities/category.dart';
-import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
 import '../../../wallets/domain/entities/wallet.dart';
 import '../pages/transaction_details_page.dart';
 import 'transaction_summary_item.dart';
@@ -14,80 +10,36 @@ import 'transaction_item_card.dart';
 
 enum TabType { past, today, future }
 
-class TransactionsTabContent extends StatefulWidget {
+class TransactionsTabContent extends StatelessWidget {
   final TabType tabType;
-  final TransactionsViewModel viewModel;
+  final List<Transaction> transactions;
+  final Map<String, Category> categoriesCache;
+  final Map<String, Wallet> walletsCache;
+  final bool isLoading;
+  final String? error;
+  final VoidCallback onRetry;
+  final VoidCallback?
+  onTransactionChanged; // Add callback for when transaction is edited/deleted
 
   const TransactionsTabContent({
     super.key,
     required this.tabType,
-    required this.viewModel,
+    required this.transactions,
+    required this.categoriesCache,
+    required this.walletsCache,
+    required this.isLoading,
+    required this.error,
+    required this.onRetry,
+    this.onTransactionChanged, // Optional callback
   });
 
   @override
-  State<TransactionsTabContent> createState() => _TransactionsTabContentState();
-}
-
-class _TransactionsTabContentState extends State<TransactionsTabContent> {
-  late CategoriesViewModel _categoriesViewModel;
-  late WalletsViewModel _walletsViewModel;
-  Map<String, Category> _categoriesCache = {};
-  Map<String, Wallet> _walletsCache = {};
-
-  @override
-  void initState() {
-    super.initState();
-    widget.viewModel.addListener(_onViewModelChanged);
-    _categoriesViewModel = getIt<CategoriesViewModel>();
-    _walletsViewModel = getIt<WalletsViewModel>();
-    _loadData();
-  }
-
-  @override
-  void dispose() {
-    widget.viewModel.removeListener(_onViewModelChanged);
-    super.dispose();
-  }
-
-  void _onViewModelChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  Future<void> _loadData() async {
-    // Load transactions
-    await widget.viewModel.loadTransactions();
-
-    // Load categories and wallets for display
-    await _loadCategoriesAndWallets();
-  }
-
-  Future<void> _loadCategoriesAndWallets() async {
-    // Load categories
-    await _categoriesViewModel.loadCategories();
-    _categoriesCache = {
-      for (var cat in _categoriesViewModel.categories) cat.id: cat,
-    };
-
-    // Load wallets
-    await _walletsViewModel.loadWallets();
-    _walletsCache = {
-      for (var wallet in _walletsViewModel.wallets) wallet.id: wallet,
-    };
-
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.viewModel.isLoading) {
+    if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (widget.viewModel.error != null) {
+    if (error != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -104,24 +56,18 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
             ),
             const SizedBox(height: 8),
             Text(
-              widget.viewModel.error!,
+              error!,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => widget.viewModel.loadTransactions(),
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       );
     }
 
-    final transactionsByDate = _getGroupedTransactions(
-      widget.tabType,
-      widget.viewModel.transactions,
-    );
+    final transactionsByDate = _getGroupedTransactions(tabType, transactions);
 
     if (transactionsByDate.isEmpty) {
       return Center(
@@ -168,18 +114,24 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
         final transactions = entry.value;
 
         // Calculate totals for this date group
-        double totalIncome = 0;
-        double totalExpense = 0;
+        // Increased: Income + Debt
+        // Decreased: Expense + Loan
+        double totalIncreased = 0;
+        double totalDecreased = 0;
 
         for (final transaction in transactions) {
           if (transaction.type == TransactionType.income) {
-            totalIncome += transaction.amount;
-          } else {
-            totalExpense += transaction.amount;
+            totalIncreased += transaction.amount;
+          } else if (transaction.type == TransactionType.debt) {
+            totalIncreased += transaction.amount;
+          } else if (transaction.type == TransactionType.expense) {
+            totalDecreased += transaction.amount;
+          } else if (transaction.type == TransactionType.loan) {
+            totalDecreased += transaction.amount;
           }
         }
 
-        final netDifference = totalIncome - totalExpense;
+        final netDifference = totalIncreased - totalDecreased;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,8 +140,8 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
             _buildDateGroupHeader(
               context,
               dateGroup,
-              totalIncome,
-              totalExpense,
+              totalIncreased,
+              totalDecreased,
               netDifference,
             ),
             const SizedBox(height: 12),
@@ -212,8 +164,8 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
   Widget _buildDateGroupHeader(
     BuildContext context,
     String dateGroup,
-    double totalIncome,
-    double totalExpense,
+    double totalIncreased,
+    double totalDecreased,
     double netDifference,
   ) {
     return Container(
@@ -267,15 +219,15 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
             children: [
               TransactionSummaryItem(
                 icon: Icons.trending_up,
-                label: 'Income',
-                amount: totalIncome,
+                label: 'Increased',
+                amount: totalIncreased,
                 color: Colors.green,
               ),
               Container(width: 1, height: 40, color: Colors.grey.shade300),
               TransactionSummaryItem(
                 icon: Icons.trending_down,
-                label: 'Expense',
-                amount: totalExpense,
+                label: 'Decreased',
+                amount: totalDecreased,
                 color: Colors.red,
               ),
             ],
@@ -285,13 +237,21 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
     );
   }
 
-  void _onTransactionTap(BuildContext context, TransactionItem transaction) {
-    Navigator.push(
+  void _onTransactionTap(
+    BuildContext context,
+    TransactionItem transaction,
+  ) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TransactionDetailsPage(transaction: transaction),
       ),
     );
+
+    // If transaction was edited or deleted, trigger reload via callback
+    if (result == true) {
+      onTransactionChanged?.call();
+    }
   }
 
   Map<String, List<TransactionItem>> _getGroupedTransactions(
@@ -329,23 +289,28 @@ class _TransactionsTabContentState extends State<TransactionsTabContent> {
       }
 
       // Get category details
-      final category = _categoriesCache[transaction.categoryId];
+      final category = categoriesCache[transaction.categoryId];
       final categoryName = category?.name ?? 'Unknown Category';
       final categoryIcon = category?.icon ?? Icons.category;
       final categoryType = category?.type.name ?? 'expense';
 
       // Get wallet details
-      final wallet = _walletsCache[transaction.walletId];
+      final wallet = walletsCache[transaction.walletId];
       final walletName = wallet?.name ?? 'Unknown Wallet';
 
       // Determine transaction type from category
-      final transactionType = categoryType == 'income'
-          ? TransactionType.income
-          : TransactionType.expense;
+      final transactionType = switch (categoryType) {
+        'income' => TransactionType.income,
+        'expense' => TransactionType.expense,
+        'debt' => TransactionType.debt,
+        'loan' => TransactionType.loan,
+        _ => TransactionType.expense,
+      };
 
       // Convert Transaction to TransactionItem for UI
       grouped[dateLabel]!.add(
         TransactionItem(
+          id: transaction.id,
           description: transaction.note?.isNotEmpty == true
               ? transaction.note!
               : walletName,

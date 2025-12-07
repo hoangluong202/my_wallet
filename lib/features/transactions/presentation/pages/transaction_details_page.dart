@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/header/detail_header.dart';
-import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/widgets/dialogs/confirm_dialog.dart';
+import '../../../../core/widgets/notification_widget.dart';
 import '../../data/models/transaction_item.dart';
 import '../widgets/transaction_action_buttons.dart';
 import 'edit_transaction_page.dart';
+import '../../../../core/di/injector.dart';
+import '../viewmodels/transactions_viewmodel.dart';
 
 class TransactionDetailsPage extends StatelessWidget {
   final TransactionItem transaction;
@@ -33,8 +36,38 @@ class TransactionDetailsPage extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    final isExpense = transaction.type == TransactionType.expense;
-    final amountColor = isExpense ? Colors.red : Colors.green.shade700;
+    // Determine colors, icons, and labels based on transaction type
+    final Color amountColor;
+    final IconData typeIcon;
+    final String typeLabel;
+    final String amountPrefix;
+
+    switch (transaction.type) {
+      case TransactionType.income:
+        amountColor = Colors.green.shade700;
+        typeIcon = Icons.arrow_upward;
+        typeLabel = 'Income';
+        amountPrefix = '+';
+        break;
+      case TransactionType.expense:
+        amountColor = Colors.red;
+        typeIcon = Icons.arrow_downward;
+        typeLabel = 'Expense';
+        amountPrefix = '-';
+        break;
+      case TransactionType.debt:
+        amountColor = Colors.orange.shade700;
+        typeIcon = Icons.arrow_upward;
+        typeLabel = 'Debt';
+        amountPrefix = '+';
+        break;
+      case TransactionType.loan:
+        amountColor = Colors.purple.shade700;
+        typeIcon = Icons.arrow_downward;
+        typeLabel = 'Loan';
+        amountPrefix = '-';
+        break;
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -147,16 +180,10 @@ class TransactionDetailsPage extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    isExpense
-                                        ? Icons.arrow_downward
-                                        : Icons.arrow_upward,
-                                    color: Colors.white,
-                                    size: 12,
-                                  ),
+                                  Icon(typeIcon, color: Colors.white, size: 12),
                                   const SizedBox(width: 4),
                                   Text(
-                                    isExpense ? 'Expense' : 'Income',
+                                    typeLabel,
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
@@ -171,7 +198,7 @@ class TransactionDetailsPage extends StatelessWidget {
 
                             // Amount
                             Text(
-                              '${isExpense ? '-' : '+'}${CurrencyFormatter.formatVND(transaction.amount)}',
+                              '$amountPrefix${CurrencyFormatter.formatVND(transaction.amount)}',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
@@ -325,17 +352,23 @@ class TransactionDetailsPage extends StatelessWidget {
     return '${months[date.month]} ${date.day}, ${date.year}';
   }
 
-  void _onEditTransaction(BuildContext context) {
-    Navigator.push(
+  void _onEditTransaction(BuildContext context) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditTransactionPage(transaction: transaction),
       ),
     );
+
+    // Pop back to transactions list with result if edit was successful
+    if (result == true && context.mounted) {
+      Navigator.pop(context, true); // Return true to trigger reload
+    }
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
-    final confirmed = await context.showConfirmDialog(
+    final confirmed = await ConfirmDialog.show(
+      context: context,
       title: 'Delete Transaction?',
       content:
           'Are you sure you want to delete "${transaction.description}"?\n\n'
@@ -346,13 +379,35 @@ class TransactionDetailsPage extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      Navigator.pop(context); // Close detail page
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Transaction "${transaction.description}" deleted'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      try {
+        // Delete from database
+        final transactionsViewModel = getIt<TransactionsViewModel>();
+        await transactionsViewModel.deleteTransaction(transaction.id);
+
+        if (context.mounted) {
+          // Show success notification
+          SuccessNotification.show(
+            context: context,
+            message: 'Transaction "${transaction.description}" deleted',
+            duration: const Duration(seconds: 2),
+          );
+
+          // Wait a moment for notification to show, then pop with result = true
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          if (context.mounted) {
+            Navigator.pop(context, true); // Return true to trigger reload
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ErrorNotification.show(
+            context: context,
+            message: 'Failed to delete transaction: $e',
+            duration: const Duration(seconds: 3),
+          );
+        }
+      }
     }
   }
 }
