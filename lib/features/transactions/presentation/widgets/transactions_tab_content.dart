@@ -244,7 +244,8 @@ class TransactionsTabContent extends StatelessWidget {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TransactionDetailsPage(transaction: transaction),
+        builder: (context) =>
+            TransactionDetailsPage(initialTransaction: transaction),
       ),
     );
 
@@ -319,6 +320,7 @@ class TransactionsTabContent extends StatelessWidget {
           type: transactionType,
           categoryIcon: categoryIcon,
           date: transaction.transactionDate,
+          walletName: walletName,
         ),
       );
     }

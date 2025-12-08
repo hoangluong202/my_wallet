@@ -10,6 +10,7 @@ class TransactionItem {
   final TransactionType type;
   final IconData categoryIcon;
   final DateTime date;
+  final String walletName;
 
   TransactionItem({
     required this.id,
@@ -19,5 +20,6 @@ class TransactionItem {
     required this.type,
     required this.categoryIcon,
     required this.date,
+    required this.walletName,
   });
 }

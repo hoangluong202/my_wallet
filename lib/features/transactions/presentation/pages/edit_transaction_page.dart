@@ -5,6 +5,7 @@ import '../../data/models/transaction_item.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
 import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
@@ -214,21 +215,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         await _transactionsViewModel.updateTransaction(updatedTransaction);
 
         if (mounted) {
-          // Show success notification
-          SuccessNotification.show(
-            context: context,
-            message:
-                'Transaction "${_descriptionController.text}" updated successfully!',
-            duration: const Duration(seconds: 2),
-          );
-
-          // Wait a bit before popping to ensure notification is visible
-          await Future.delayed(const Duration(milliseconds: 300));
-
           // Pop back with result to trigger reload
-          if (mounted) {
-            Navigator.pop(context, true);
-          }
+          // Note: Success notification will be shown by parent page
+          Navigator.pop(context, true);
         }
       } catch (e) {
         if (mounted) {
@@ -655,13 +644,29 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              wallet.name,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  wallet.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${CurrencyFormatter.formatVND(wallet.balance)} đ',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: wallet.balance >= 0
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
           Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),

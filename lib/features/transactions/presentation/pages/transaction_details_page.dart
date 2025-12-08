@@ -4,32 +4,140 @@ import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/dialogs/confirm_dialog.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../data/models/transaction_item.dart';
+import '../../../categories/domain/entities/category.dart';
 import '../widgets/transaction_action_buttons.dart';
 import 'edit_transaction_page.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
+import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
 
-class TransactionDetailsPage extends StatelessWidget {
-  final TransactionItem transaction;
+class TransactionDetailsPage extends StatefulWidget {
+  final TransactionItem initialTransaction;
 
-  const TransactionDetailsPage({super.key, required this.transaction});
+  const TransactionDetailsPage({super.key, required this.initialTransaction});
+
+  @override
+  State<TransactionDetailsPage> createState() => _TransactionDetailsPageState();
+}
+
+class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
+  late TransactionItem transaction;
+  bool _hasChanges = false; // Track if transaction was edited
+  bool _isLoading = false;
+
+  // ViewModels
+  late TransactionsViewModel _transactionsViewModel;
+  late CategoriesViewModel _categoriesViewModel;
+  late WalletsViewModel _walletsViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    transaction = widget.initialTransaction;
+
+    // Initialize ViewModels
+    _transactionsViewModel = getIt<TransactionsViewModel>();
+    _categoriesViewModel = getIt<CategoriesViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
+  }
+
+  Future<void> _reloadTransaction() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Reload all data to ensure we have latest info
+      await Future.wait([
+        _transactionsViewModel.loadTransactions(),
+        _categoriesViewModel.loadCategories(),
+        _walletsViewModel.loadWallets(),
+      ]);
+
+      // Find the updated transaction
+      final updatedTransaction = _transactionsViewModel.transactions.firstWhere(
+        (t) => t.id == transaction.id,
+        orElse: () => _transactionsViewModel.transactions.first,
+      );
+
+      // Get category info
+      final category = _categoriesViewModel.categories.firstWhere(
+        (c) => c.id == updatedTransaction.categoryId,
+        orElse: () => _categoriesViewModel.categories.first,
+      );
+
+      // Get wallet info
+      final wallet = _walletsViewModel.wallets.firstWhere(
+        (w) => w.id == updatedTransaction.walletId,
+        orElse: () => _walletsViewModel.wallets.first,
+      );
+
+      // Map category type to transaction type
+      TransactionType transactionType;
+      switch (category.type) {
+        case CategoryType.income:
+          transactionType = TransactionType.income;
+          break;
+        case CategoryType.expense:
+          transactionType = TransactionType.expense;
+          break;
+        case CategoryType.debt:
+          transactionType = TransactionType.debt;
+          break;
+        case CategoryType.loan:
+          transactionType = TransactionType.loan;
+          break;
+      }
+
+      // Create updated TransactionItem
+      final updatedItem = TransactionItem(
+        id: updatedTransaction.id,
+        description: updatedTransaction.note ?? '',
+        category: category.name,
+        amount: updatedTransaction.amount,
+        type: transactionType,
+        categoryIcon: category.icon,
+        date: updatedTransaction.transactionDate,
+        walletName: wallet.name,
+      );
+
+      if (mounted) {
+        setState(() {
+          transaction = updatedItem;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            DetailHeader(
-              title: 'Transaction Details',
-              onBack: () => Navigator.pop(context),
-            ),
-            Expanded(child: _buildContent(context)),
-            TransactionActionButtons(
-              onEdit: () => _onEditTransaction(context),
-              onDelete: () => _showDeleteConfirmation(context),
-            ),
-          ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Return true to parent if transaction was edited
+        Navigator.pop(context, _hasChanges);
+        return false; // Prevent default pop
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    DetailHeader(
+                      title: 'Transaction Details',
+                      onBack: () => Navigator.pop(context, _hasChanges),
+                    ),
+                    Expanded(child: _buildContent(context)),
+                    TransactionActionButtons(
+                      onEdit: () => _onEditTransaction(context),
+                      onDelete: () => _showDeleteConfirmation(context),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -251,11 +359,11 @@ class TransactionDetailsPage extends StatelessWidget {
                       ),
                       const Divider(height: 24),
 
-                      // Wallet (if available)
+                      // Wallet
                       _buildInfoRow(
                         icon: Icons.account_balance_wallet_outlined,
                         label: 'Wallet',
-                        value: 'Main Wallet', // TODO: Get from transaction
+                        value: transaction.walletName,
                         iconColor: Colors.orange,
                       ),
                       const Divider(height: 24),
@@ -360,9 +468,22 @@ class TransactionDetailsPage extends StatelessWidget {
       ),
     );
 
-    // Pop back to transactions list with result if edit was successful
+    // If edit was successful, reload transaction data and show notification
     if (result == true && context.mounted) {
-      Navigator.pop(context, true); // Return true to trigger reload
+      // Reload transaction to get updated data
+      await _reloadTransaction();
+
+      setState(() {
+        _hasChanges = true; // Mark that changes were made
+      });
+
+      if (context.mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Transaction updated successfully',
+          duration: const Duration(seconds: 2),
+        );
+      }
     }
   }
 

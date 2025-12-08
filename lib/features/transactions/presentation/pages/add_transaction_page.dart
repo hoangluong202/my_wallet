@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
 import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
@@ -585,13 +586,29 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              wallet.name,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  wallet.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${CurrencyFormatter.formatVND(wallet.balance)} đ',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: wallet.balance >= 0
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
           Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
