@@ -34,6 +34,7 @@ import '../../features/categories/domain/usecases/delete_category_usecase.dart';
 import '../../features/categories/domain/usecases/sync_categories_usecase.dart';
 import '../../features/categories/presentation/viewmodels/categories_viewmodel.dart';
 import '../../features/transactions/data/services/transaction_local_service.dart';
+import '../../features/transactions/data/services/transaction_firebase_service.dart';
 import '../../features/transactions/presentation/viewmodels/transactions_viewmodel.dart';
 
 final getIt = GetIt.instance;
@@ -207,8 +208,19 @@ Future<void> setupDependencies() async {
     () => TransactionLocalServiceImpl(getIt<AppDatabase>()),
   );
 
+  getIt.registerLazySingleton<TransactionFirebaseService>(
+    () => TransactionFirebaseServiceImpl(
+      getIt<FirebaseFirestore>(),
+      getIt<AppDatabase>().transactionDao,
+      getIt<FirebaseAuth>(),
+    ),
+  );
+
   // Transactions - ViewModels
   getIt.registerFactory<TransactionsViewModel>(
-    () => TransactionsViewModel(getIt<TransactionLocalService>()),
+    () => TransactionsViewModel(
+      getIt<TransactionLocalService>(),
+      getIt<TransactionFirebaseService>(),
+    ),
   );
 }

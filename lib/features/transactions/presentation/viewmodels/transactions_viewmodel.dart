@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/transaction.dart';
 import '../../data/services/transaction_local_service.dart';
+import '../../data/services/transaction_firebase_service.dart';
 
 class TransactionsViewModel extends ChangeNotifier {
   final TransactionLocalService _transactionLocalService;
+  final TransactionFirebaseService _transactionFirebaseService;
 
   List<Transaction> _transactions = [];
   bool _isLoading = false;
+  bool _isSyncing = false;
   String? _error;
+  String? _syncMessage;
 
   // Filters
   String? _selectedWalletId;
@@ -19,14 +23,19 @@ class TransactionsViewModel extends ChangeNotifier {
   // Statistics
   double _totalAmount = 0.0;
 
-  TransactionsViewModel(this._transactionLocalService) {
+  TransactionsViewModel(
+    this._transactionLocalService,
+    this._transactionFirebaseService,
+  ) {
     loadTransactions();
   }
 
   // Getters
   List<Transaction> get transactions => _transactions;
   bool get isLoading => _isLoading;
+  bool get isSyncing => _isSyncing;
   String? get error => _error;
+  String? get syncMessage => _syncMessage;
   double get totalAmount => _totalAmount;
   int get transactionsCount => _transactions.length;
 
@@ -430,5 +439,49 @@ class TransactionsViewModel extends ChangeNotifier {
   // Get expense transactions
   List<Transaction> get expenseTransactions {
     return _transactions; // This needs category type info to filter properly
+  }
+
+  /// Bidirectional sync: Push local data to cloud (priority), then pull cloud data to local
+  Future<void> bidirectionalSync(String userId) async {
+    _isSyncing = true;
+    _syncMessage = 'Starting sync...';
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Step 1: Push local transactions to cloud (local data has priority)
+      _syncMessage = 'Uploading local data to cloud...';
+      notifyListeners();
+
+      await _transactionFirebaseService.syncTransactionsToCloud(userId);
+
+      // Step 2: Pull new/updated data from cloud to local
+      _syncMessage = 'Downloading updates from cloud...';
+      notifyListeners();
+
+      await _transactionFirebaseService.syncTransactionsFromCloud(userId);
+
+      // Step 3: Reload local data to reflect all changes
+      _syncMessage = 'Refreshing local data...';
+      notifyListeners();
+
+      await loadTransactions();
+
+      _syncMessage = 'Sync completed successfully!';
+      notifyListeners();
+
+      // Clear sync message after delay
+      await Future.delayed(const Duration(seconds: 2));
+      _syncMessage = null;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Sync failed: $e';
+      _syncMessage = null;
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
   }
 }

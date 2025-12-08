@@ -63,8 +63,8 @@ class WalletDetailPage extends StatelessWidget {
     final confirmed = await context.showConfirmDialog(
       title: 'Delete Wallet?',
       content:
-          'Are you sure you want to delete "${wallet.name}"? '
-          'All transactions associated with this wallet will also be deleted. '
+          'Are you sure you want to delete "${wallet.name}"?\n\n'
+          'Note: You can only delete a wallet if there are no transactions using it. '
           'This action cannot be undone.',
       confirmText: 'Delete',
       cancelText: 'Cancel',

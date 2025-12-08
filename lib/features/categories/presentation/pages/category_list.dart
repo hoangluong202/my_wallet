@@ -162,13 +162,23 @@ class CategoryList extends StatelessWidget {
     BuildContext context,
     Category category,
   ) async {
-    await viewModel.deleteCategory(category.id);
-    if (context.mounted) {
-      SuccessNotification.show(
-        context: context,
-        message: 'Category "${category.name}" deleted successfully!',
-        duration: const Duration(seconds: 2),
-      );
+    try {
+      await viewModel.deleteCategory(category.id);
+      if (context.mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Category "${category.name}" deleted successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ErrorNotification.show(
+          context: context,
+          message: 'Category have transactions, can not delete!',
+          duration: const Duration(seconds: 3),
+        );
+      }
     }
   }
 

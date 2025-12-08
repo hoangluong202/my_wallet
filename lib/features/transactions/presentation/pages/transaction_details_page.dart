@@ -56,19 +56,19 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       // Find the updated transaction
       final updatedTransaction = _transactionsViewModel.transactions.firstWhere(
         (t) => t.id == transaction.id,
-        orElse: () => _transactionsViewModel.transactions.first,
+        orElse: () => throw Exception('Transaction not found after reload'),
       );
 
       // Get category info
       final category = _categoriesViewModel.categories.firstWhere(
         (c) => c.id == updatedTransaction.categoryId,
-        orElse: () => _categoriesViewModel.categories.first,
+        orElse: () => throw Exception('Category not found'),
       );
 
       // Get wallet info
       final wallet = _walletsViewModel.wallets.firstWhere(
         (w) => w.id == updatedTransaction.walletId,
-        orElse: () => _walletsViewModel.wallets.first,
+        orElse: () => throw Exception('Wallet not found'),
       );
 
       // Map category type to transaction type
@@ -109,6 +109,11 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        ErrorNotification.show(
+          context: context,
+          message: 'Failed to reload transaction: $e',
+          duration: const Duration(seconds: 2),
+        );
       }
     }
   }
@@ -123,21 +128,28 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
       },
       child: Scaffold(
         body: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    DetailHeader(
-                      title: 'Transaction Details',
-                      onBack: () => Navigator.pop(context, _hasChanges),
-                    ),
-                    Expanded(child: _buildContent(context)),
-                    TransactionActionButtons(
-                      onEdit: () => _onEditTransaction(context),
-                      onDelete: () => _showDeleteConfirmation(context),
-                    ),
-                  ],
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  DetailHeader(
+                    title: 'Transaction Details',
+                    onBack: () => Navigator.pop(context, _hasChanges),
+                  ),
+                  Expanded(child: _buildContent(context)),
+                  TransactionActionButtons(
+                    onEdit: () => _onEditTransaction(context),
+                    onDelete: () => _showDeleteConfirmation(context),
+                  ),
+                ],
+              ),
+              if (_isLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
+            ],
+          ),
         ),
       ),
     );

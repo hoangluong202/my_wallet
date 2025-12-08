@@ -58,6 +58,16 @@ class WalletLocalServiceImpl implements WalletLocalService {
 
   @override
   Future<void> softDeleteWallet(String id) async {
+    // Check if there are any transactions using this wallet
+    final transactions = await _database.transactionDao
+        .getTransactionsByWalletId(id);
+
+    if (transactions.isNotEmpty) {
+      throw Exception(
+        'Cannot delete wallet: ${transactions.length} transaction(s) are using this wallet',
+      );
+    }
+
     await _database.walletDao.softDeleteWallet(id);
   }
 

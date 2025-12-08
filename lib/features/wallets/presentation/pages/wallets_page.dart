@@ -220,13 +220,23 @@ class _WalletsPageState extends State<WalletsPage> {
   }
 
   Future<void> _onDeleteWallet(Wallet wallet) async {
-    await _viewModel.deleteWallet(wallet.id);
-    if (mounted) {
-      SuccessNotification.show(
-        context: context,
-        message: 'Wallet "${wallet.name}" deleted successfully!',
-        duration: const Duration(seconds: 2),
-      );
+    try {
+      await _viewModel.deleteWallet(wallet.id);
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Wallet "${wallet.name}" deleted successfully!',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorNotification.show(
+          context: context,
+          message: e.toString().replaceFirst('Exception: ', ''),
+          duration: const Duration(seconds: 3),
+        );
+      }
     }
   }
 

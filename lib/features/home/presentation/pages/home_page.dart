@@ -6,6 +6,7 @@ import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../users/presentation/viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../../transactions/presentation/viewmodels/transactions_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _HomePageState extends State<HomePage> {
   late final UserViewModel _userViewModel;
   late final WalletsViewModel _walletsViewModel;
   late final CategoriesViewModel _categoriesViewModel;
+  late final TransactionsViewModel _transactionsViewModel;
 
   @override
   void initState() {
@@ -26,6 +28,7 @@ class _HomePageState extends State<HomePage> {
     _userViewModel = getIt<UserViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
     _categoriesViewModel = getIt<CategoriesViewModel>();
+    _transactionsViewModel = getIt<TransactionsViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
@@ -58,11 +61,15 @@ class _HomePageState extends State<HomePage> {
 
       final userId = currentUser.uid;
 
-      // Sync wallets, categories, and user data
+      // Sync wallets, categories, transactions, and user data
       await Future.wait([
         _walletsViewModel.bidirectionalSync(userId),
         _categoriesViewModel.bidirectionalSync(userId),
         _userViewModel.bidirectionalSync(userId),
+      ]);
+
+      await Future.wait([
+        _transactionsViewModel.bidirectionalSync(userId),
       ]);
 
       if (context.mounted) {

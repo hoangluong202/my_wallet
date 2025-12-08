@@ -206,27 +206,33 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  // Get unsynced transactions
-  Future<List<TransactionData>> getUnsyncedTransactions() async {
+  // Get dirty (unsynced, not deleted) transactions for cloud sync
+  Future<List<TransactionData>> getDirtyTransactions() async {
     return (select(transactions)
-          ..where((t) => t.isSynced.equals(false) & t.isDeleted.equals(false))
-          ..orderBy([
-            (t) => OrderingTerm(
-              expression: t.transactionDate,
-              mode: OrderingMode.desc,
-            ),
-          ]))
+          ..where((t) => t.isSynced.equals(false) & t.isDeleted.equals(false)))
         .get();
   }
 
+  // Get deleted transactions for cloud sync
+  Future<List<TransactionData>> getDeletedTransactions() async {
+    return (select(transactions)..where((t) => t.isDeleted.equals(true))).get();
+  }
+
   // Mark transaction as synced
-  Future<int> markTransactionAsSynced(String id) async {
+  Future<int> markAsSynced(String id) async {
     return (update(transactions)..where((t) => t.id.equals(id))).write(
-      TransactionsCompanion(
-        isSynced: const Value(true),
-        updatedAt: Value(DateTime.now()),
-      ),
+      const TransactionsCompanion(isSynced: Value(true)),
     );
+  }
+
+  // Get unsynced transactions (alias for getDirtyTransactions)
+  Future<List<TransactionData>> getUnsyncedTransactions() async {
+    return getDirtyTransactions();
+  }
+
+  // Mark transaction as synced (alias for markAsSynced)
+  Future<int> markTransactionAsSynced(String id) async {
+    return markAsSynced(id);
   }
 
   // Watch transactions by category ID (stream)

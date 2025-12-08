@@ -74,6 +74,16 @@ class CategoryLocalServiceImpl implements CategoryLocalService {
 
   @override
   Future<void> deleteCategory(String id) async {
+    // Check if there are any transactions using this category
+    final transactions = await _database.transactionDao
+        .getTransactionsByCategoryId(id);
+
+    if (transactions.isNotEmpty) {
+      throw Exception(
+        'Cannot delete category: ${transactions.length} transaction(s) are using this category',
+      );
+    }
+
     // Soft delete: mark as deleted instead of hard delete
     await _database.categoryDao.softDeleteCategory(id);
   }
