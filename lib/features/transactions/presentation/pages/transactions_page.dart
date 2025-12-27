@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
-import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../wallets/ui/viewmodels/wallets_viewmodel.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../wallets/domain/entities/wallet.dart';
 import '../../domain/entities/transaction.dart';

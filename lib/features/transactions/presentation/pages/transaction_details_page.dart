@@ -10,7 +10,7 @@ import 'edit_transaction_page.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
-import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../wallets/ui/viewmodels/wallets_viewmodel.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final TransactionItem initialTransaction;

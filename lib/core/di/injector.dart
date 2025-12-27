@@ -2,17 +2,9 @@ import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../database/app_database.dart';
-import '../../features/wallets/data/services/wallet_local_service.dart';
 import '../../features/wallets/data/services/wallet_firebase_service.dart';
 import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/data/repositories/wallet_repository.dart';
-import '../../features/wallets/domain/use_cases/get_wallets_use_case.dart';
-import '../../features/wallets/domain/use_cases/get_wallet_by_id_use_case.dart';
-import '../../features/wallets/domain/use_cases/create_wallet_use_case.dart';
-import '../../features/wallets/domain/use_cases/update_wallet_use_case.dart';
-import '../../features/wallets/domain/use_cases/delete_wallet_use_case.dart';
-import '../../features/wallets/domain/use_cases/get_total_balance_use_case.dart';
-import '../../features/wallets/domain/use_cases/sync_wallets_use_case.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../features/users/data/datasources/user_firebase_service.dart';
@@ -20,7 +12,7 @@ import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
-import '../../features/wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../features/wallets/ui/viewmodels/wallets_viewmodel.dart';
 import '../../features/categories/data/services/category_local_service.dart';
 import '../../features/categories/data/services/category_firebase_service.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
@@ -107,44 +99,7 @@ Future<void> setupDependencies() async {
   // Repositories
   getIt.registerLazySingleton<WalletRepository>(
     () => WalletRepositoryImpl(
-      getIt<WalletLocalService>(),
-      getIt<WalletFirebaseService>(),
-    ),
-  );
-
-  // Use Cases
-  getIt.registerLazySingleton<GetWalletsUseCase>(
-    () => GetWalletsUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<GetWalletByIdUseCase>(
-    () => GetWalletByIdUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<CreateWalletUseCase>(
-    () => CreateWalletUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<UpdateWalletUseCase>(
-    () => UpdateWalletUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<DeleteWalletUseCase>(
-    () => DeleteWalletUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<GetTotalBalanceUseCase>(
-    () => GetTotalBalanceUseCase(getIt<WalletRepository>()),
-  );
-  getIt.registerLazySingleton<SyncWalletsUseCase>(
-    () => SyncWalletsUseCase(getIt<WalletRepository>()),
-  );
-
-  // ViewModels
-  getIt.registerFactory<WalletsViewModel>(
-    () => WalletsViewModel(
-      getIt<GetWalletsUseCase>(),
-      getIt<GetWalletByIdUseCase>(),
-      getIt<CreateWalletUseCase>(),
-      getIt<UpdateWalletUseCase>(),
-      getIt<DeleteWalletUseCase>(),
-      getIt<GetTotalBalanceUseCase>(),
-      getIt<SyncWalletsUseCase>(),
+      getIt<AppDatabase>(),
     ),
   );
 

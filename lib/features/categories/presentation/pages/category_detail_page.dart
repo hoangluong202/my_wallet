@@ -3,7 +3,7 @@ import '../../../../core/widgets/header/detail_header.dart';
 import '../../domain/entities/category.dart';
 import '../widgets/category_icon_section.dart';
 import '../widgets/category_info_card.dart';
-import '../../../wallets/presentation/widgets/wallet_action_buttons.dart';
+import '../../../wallets/ui/widgets/wallet_action_buttons.dart';
 import '../../../../core/extensions/context_extensions.dart';
 
 class CategoryDetailPage extends StatelessWidget {

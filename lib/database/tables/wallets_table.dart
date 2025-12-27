@@ -4,15 +4,11 @@ import 'package:drift/drift.dart';
 class Wallets extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
-  RealColumn get balance => real().withDefault(const Constant(0.0))();
-  TextColumn get currency => text().withDefault(const Constant('VND (₫)'))();
+  IntColumn get balance => integer().withDefault(const Constant(0))();
   IntColumn get iconCode => integer()();
-  IntColumn get iconColor => integer()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
-
+  
   @override
   Set<Column> get primaryKey => {id};
 

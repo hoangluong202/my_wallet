@@ -4,7 +4,7 @@ import '../../../../core/widgets/bottom_navigation/custom_bottom_bar.dart';
 import '../../../../core/widgets/custom_fab.dart';
 import '../../../../core/di/injector.dart';
 import '../../../home/presentation/pages/home_page.dart';
-import '../../../wallets/presentation/pages/wallets_page.dart';
+import '../../../wallets/ui/view/wallets_page.dart';
 import '../../../transactions/presentation/pages/transactions_page.dart';
 import '../../../transactions/presentation/pages/add_transaction_page.dart';
 import '../../../transactions/presentation/viewmodels/transactions_viewmodel.dart';

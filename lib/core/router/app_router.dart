@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/main/presentation/pages/main_scaffold.dart';
 import '../../features/transactions/presentation/pages/add_transaction_page.dart';
-import '../../features/wallets/presentation/pages/add_wallet_page.dart';
-import '../../features/wallets/presentation/pages/edit_wallet_page.dart';
-import '../../features/wallets/presentation/pages/wallet_detail_page.dart';
-import '../../features/wallets/presentation/pages/wallet_history_page.dart';
+import '../../features/wallets/ui/view/add_wallet_page.dart';
+import '../../features/wallets/ui/view/edit_wallet_page.dart';
+import '../../features/wallets/ui/view/wallet_detail_page.dart';
+import '../../features/wallets/ui/view/wallet_history_page.dart';
 import '../../features/wallets/domain/entities/wallet.dart';
 import '../di/injector.dart';
 

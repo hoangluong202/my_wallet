@@ -8,7 +8,7 @@ import '../../../../core/di/injector.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../viewmodels/transactions_viewmodel.dart';
 import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
-import '../../../wallets/presentation/viewmodels/wallets_viewmodel.dart';
+import '../../../wallets/ui/viewmodels/wallets_viewmodel.dart';
 import '../../domain/entities/transaction.dart';
 import '../../../categories/domain/entities/category.dart';
 

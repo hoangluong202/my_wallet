@@ -1,49 +1,49 @@
-import '../../domain/entities/wallet.dart';
+import '../../../../database/app_database.dart';
+import './../domains/wallet_entity.dart';
 import 'wallet_repository.dart';
-import '../services/wallet_local_service.dart';
-import '../services/wallet_firebase_service.dart';
 import '../models/wallet_model.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
-  final WalletLocalService _localService;
-  final WalletFirebaseService _firebaseService;
+  final AppDatabase _database;
 
-  WalletRepositoryImpl(this._localService, this._firebaseService);
+  WalletRepositoryImpl(this._database);
 
   @override
-  Future<List<Wallet>> getAllWallets() async {
+  Future<List<WalletEntity>> getAllWallets() async {
     try {
-      return await _localService.getAllWallets();
+      final walletDataList = await _database.walletDao.getAllWallets();
+      return WalletModel.toEntityList(walletDataList);
     } catch (e) {
       throw Exception('Failed to get wallets: $e');
     }
   }
 
   @override
-  Future<Wallet?> getWalletById(String id) async {
+  Future<WalletEntity?> getWalletById(String id) async {
     try {
-      return await _localService.getWalletById(id);
+      final walletData = await _database.walletDao.getWalletById(id);
+      return walletData != null ? WalletModel.toEntity(walletData) : null;
     } catch (e) {
       throw Exception('Failed to get wallet: $e');
     }
   }
 
   @override
-  Future<String> createWallet(Wallet wallet) async {
+  Future<String> createWallet(WalletEntity wallet) async {
     try {
-      await _localService.insertWallet(wallet);
+      await _database.walletDao.insertWallet(WalletModel.toCompanion(wallet));
       return wallet.id;
     } catch (e) {
-      rethrow;
+      throw Exception('Failed to create wallet: $e');
     }
   }
 
   @override
-  Future<void> updateWallet(Wallet wallet) async {
+  Future<void> updateWallet(WalletEntity wallet) async {
     try {
-      await _localService.updateWallet(wallet);
+      await _database.walletDao.updateWallet(WalletModel.toCompanion(wallet));
     } catch (e) {
-      rethrow;
+      throw Exception('Failed to update wallet: $e');
     }
   }
 
@@ -51,102 +51,9 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<void> deleteWallet(String id) async {
     try {
       // Use soft delete for sync compatibility
-      await _localService.softDeleteWallet(id);
+      await _database.walletDao.deleteWallet(id);
     } catch (e) {
-      rethrow;
+      throw Exception('Failed to delete wallet: $e');
     }
-  }
-
-  Future<void> softDeleteWallet(String id) async {
-    try {
-      await _localService.softDeleteWallet(id);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> restoreDeletedWallet(String id) async {
-    try {
-      await _localService.restoreDeletedWallet(id);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @override
-  Future<double> getTotalBalance() async {
-    try {
-      final wallets = await _localService.getAllWallets();
-      return wallets.fold<double>(0.0, (sum, w) => sum + w.balance);
-    } catch (e) {
-      throw Exception('Failed to get total balance: $e');
-    }
-  }
-
-  @override
-  Future<int> getWalletsCount() async {
-    try {
-      final wallets = await _localService.getAllWallets();
-      return wallets.length;
-    } catch (e) {
-      throw Exception('Failed to get wallets count: $e');
-    }
-  }
-
-  @override
-  Future<List<Wallet>> searchWallets(String query) async {
-    try {
-      return await _localService.searchWallets(query);
-    } catch (e) {
-      throw Exception('Failed to search wallets: $e');
-    }
-  }
-
-  @override
-  Future<void> syncToCloud(String userId) async {
-    try {
-      await _firebaseService.syncWalletsToCloud(userId);
-      // Mark all synced wallets
-      final dirtyWallets = await _localService.getDirtyWallets();
-      for (final wallet in dirtyWallets) {
-        await _localService.markAsSynced(wallet.id);
-      }
-    } catch (e) {
-      throw Exception('Failed to sync to cloud: $e');
-    }
-  }
-
-  @override
-  Future<void> pullFromCloud(String userId) async {
-    try {
-      final cloudWallets = await _firebaseService.getWalletsFromCloud(userId);
-
-      // For each cloud wallet, check if it exists locally
-      for (final cloudData in cloudWallets) {
-        final cloudWallet = WalletModel.fromDrift(cloudData);
-        final localWallet = await _localService.getWalletById(cloudWallet.id);
-
-        if (localWallet == null) {
-          // If not exist locally, insert from cloud
-          await _localService.insertWallet(cloudWallet);
-        } else {
-          // If exists, only update if cloud version is newer
-          if (cloudWallet.lastUpdated.isAfter(localWallet.lastUpdated)) {
-            await _localService.updateWallet(cloudWallet);
-          }
-          // If local is newer or same, do nothing (local data takes priority)
-        }
-      }
-    } catch (e) {
-      throw Exception('Failed to pull from cloud: $e');
-    }
-  }
-
-  Stream<List<Wallet>> watchAllWallets() {
-    return _localService.watchAllWallets();
-  }
-
-  Stream<Wallet?> watchWalletById(String id) {
-    return _localService.watchWalletById(id);
   }
 }

@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -37,27 +37,14 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle migrations here
-        if (from < 2) {
-          await m.createTable(users);
-        }
-        if (from < 3) {
-          await m.createTable(categories);
-        }
-        if (from < 4) {
-          // Add isSynced and isDeleted columns to categories
-          await m.addColumn(categories, categories.isSynced);
-          await m.addColumn(categories, categories.isDeleted);
-        }
-        if (from < 5) {
-          // Add isSynced and isDeleted columns to wallets
-          await m.addColumn(wallets, wallets.isSynced);
-          await m.addColumn(wallets, wallets.isDeleted);
-        }
-        if (from < 6) {
-          // Add transactions table
-          await m.createTable(transactions);
-        }
+        // Drop all tables and recreate from scratch
+        await m.drop(transactions);
+        await m.drop(categories);
+        await m.drop(wallets);
+        await m.drop(users);
+
+        // Recreate all tables
+        await m.createAll();
       },
       beforeOpen: (details) async {
         // Enable foreign keys

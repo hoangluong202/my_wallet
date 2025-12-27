@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../wallets/presentation/widgets/wallet_action_button.dart';
+import '../../../wallets/ui/widgets/wallet_action_button.dart';
 
 class TransactionActionButtons extends StatelessWidget {
   final VoidCallback onEdit;
