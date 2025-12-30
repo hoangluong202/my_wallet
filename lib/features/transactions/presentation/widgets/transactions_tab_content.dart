@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../domain/entities/transaction.dart';
+import '../../domain/transaction.dart';
 import '../../data/models/transaction_item.dart';
 import '../../../categories/domain/entities/category.dart';
 import '../../../wallets/domain/entities/wallet.dart';
 import '../pages/transaction_details_page.dart';
 import 'transaction_summary_item.dart';
-import 'transaction_item_card.dart';
+import '../list/transaction_item_card.dart';
 
 enum TabType { past, today, future }
 

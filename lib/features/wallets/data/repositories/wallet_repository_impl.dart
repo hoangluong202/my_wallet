@@ -1,5 +1,5 @@
 import '../../../../database/app_database.dart';
-import './../domains/wallet_entity.dart';
+import '../../domain/wallet.dart';
 import 'wallet_repository.dart';
 import '../models/wallet_model.dart';
 
@@ -9,7 +9,7 @@ class WalletRepositoryImpl implements WalletRepository {
   WalletRepositoryImpl(this._database);
 
   @override
-  Future<List<WalletEntity>> getAllWallets() async {
+  Future<List<Wallet>> getAllWallets() async {
     try {
       final walletDataList = await _database.walletDao.getAllWallets();
       return WalletModel.toEntityList(walletDataList);
@@ -19,7 +19,18 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<WalletEntity?> getWalletById(String id) async {
+  Stream<List<Wallet>> watchAllWallets() {
+    try {
+      return _database.walletDao.watchAllWallets().map(
+        WalletModel.toEntityList,
+      );
+    } catch (e) {
+      throw Exception('Failed to watch wallets: $e');
+    }
+  }
+
+  @override
+  Future<Wallet?> getWalletById(String id) async {
     try {
       final walletData = await _database.walletDao.getWalletById(id);
       return walletData != null ? WalletModel.toEntity(walletData) : null;
@@ -29,7 +40,21 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<String> createWallet(WalletEntity wallet) async {
+  Stream<Wallet?> watchWalletById(String id) {
+    try {
+      return _database.walletDao
+          .watchWalletById(id)
+          .map(
+            (walletData) =>
+                walletData != null ? WalletModel.toEntity(walletData) : null,
+          );
+    } catch (e) {
+      throw Exception('Failed to watch wallet: $e');
+    }
+  }
+
+  @override
+  Future<String> createWallet(Wallet wallet) async {
     try {
       await _database.walletDao.insertWallet(WalletModel.toCompanion(wallet));
       return wallet.id;
@@ -39,7 +64,7 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<void> updateWallet(WalletEntity wallet) async {
+  Future<void> updateWallet(Wallet wallet) async {
     try {
       await _database.walletDao.updateWallet(WalletModel.toCompanion(wallet));
     } catch (e) {

@@ -5,12 +5,12 @@ import '../../../../core/widgets/dialogs/confirm_dialog.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../data/models/transaction_item.dart';
 import '../../../categories/domain/entities/category.dart';
-import '../widgets/transaction_action_buttons.dart';
+import '../detail/transaction_action_buttons.dart';
 import 'edit_transaction_page.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodels/transactions_viewmodel.dart';
-import '../../../categories/presentation/viewmodels/categories_viewmodel.dart';
-import '../../../wallets/ui/viewmodels/wallets_viewmodel.dart';
+import '../../../categories/presentation/list/categories_viewmodel.dart';
+import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 
 class TransactionDetailsPage extends StatefulWidget {
   final TransactionItem initialTransaction;

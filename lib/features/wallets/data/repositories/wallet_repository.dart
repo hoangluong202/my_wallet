@@ -1,9 +1,11 @@
-import './../domains/wallet_entity.dart';
+import '../../domain/wallet.dart';
 
 abstract class WalletRepository {
-  Future<List<WalletEntity>> getAllWallets();
-  Future<WalletEntity?> getWalletById(String id);
-  Future<String> createWallet(WalletEntity wallet);
-  Future<void> updateWallet(WalletEntity wallet);
+  Future<List<Wallet>> getAllWallets();
+  Stream<List<Wallet>> watchAllWallets();
+  Future<Wallet?> getWalletById(String id);
+  Stream<Wallet?> watchWalletById(String id);
+  Future<String> createWallet(Wallet wallet);
+  Future<void> updateWallet(Wallet wallet);
   Future<void> deleteWallet(String id);
 }

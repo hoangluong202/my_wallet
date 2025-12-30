@@ -21,6 +21,16 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Stream<List<TransactionData>> watchAllTransactions() {
+    return (select(transactions)..orderBy([
+          (t) => OrderingTerm(
+            expression: t.transactionDate,
+            mode: OrderingMode.desc,
+          ),
+        ]))
+        .watch();
+  }
+
   Future<List<TransactionData>> getTransactionsByDateRange(
     DateTime startDate,
     DateTime endDate,
@@ -38,6 +48,25 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
             ),
           ]))
         .get();
+  }
+
+  Stream<List<TransactionData>> watchTransactionsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return (select(transactions)
+          ..where(
+            (t) =>
+                t.transactionDate.isBiggerOrEqualValue(startDate) &
+                t.transactionDate.isSmallerOrEqualValue(endDate),
+          )
+          ..orderBy([
+            (t) => OrderingTerm(
+              expression: t.transactionDate,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+        .watch();
   }
 
   Future<List<TransactionData>> getTransactionsByWalletId(

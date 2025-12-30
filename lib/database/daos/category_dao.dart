@@ -47,6 +47,12 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  Stream<CategoryData?> watchCategoryById(String id) {
+    return (select(
+      categories,
+    )..where((t) => t.id.equals(id))).watchSingleOrNull();
+  }
+
   Future<int> insertCategory(CategoriesCompanion category) async {
     return into(categories).insert(category);
   }

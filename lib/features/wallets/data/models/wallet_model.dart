@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
 import '../../../../database/app_database.dart';
-import '../domains/wallet_entity.dart';
+import '../../domain/wallet.dart';
 
 class WalletModel {
-  static WalletEntity toEntity(WalletData data) {
-    return WalletEntity(
+  static Wallet toEntity(WalletData data) {
+    return Wallet(
       id: data.id,
       name: data.name,
       balance: data.balance,
@@ -14,7 +14,7 @@ class WalletModel {
     );
   }
 
-  static WalletsCompanion toCompanion(WalletEntity entity) {
+  static WalletsCompanion toCompanion(Wallet entity) {
     return WalletsCompanion(
       id: Value(entity.id),
       name: Value(entity.name),
@@ -25,11 +25,11 @@ class WalletModel {
     );
   }
 
-  static List<WalletEntity> toEntityList(List<WalletData> dataList) {
+  static List<Wallet> toEntityList(List<WalletData> dataList) {
     return dataList.map((data) => toEntity(data)).toList();
   }
 
-  static List<WalletsCompanion> toCompanionList(List<WalletEntity> entityList) {
+  static List<WalletsCompanion> toCompanionList(List<Wallet> entityList) {
     return entityList.map((entity) => toCompanion(entity)).toList();
   }
 

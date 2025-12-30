@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/transaction.dart';
+import '../../domain/transaction.dart';
 import '../../data/services/transaction_local_service.dart';
 import '../../data/services/transaction_firebase_service.dart';
 

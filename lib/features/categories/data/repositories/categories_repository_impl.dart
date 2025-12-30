@@ -1,54 +1,72 @@
-import '../../domain/entities/category.dart';
+import '../../domain/category.dart';
 import 'categories_repository.dart';
-import '../services/category_local_service.dart';
-import '../services/category_firebase_service.dart';
 import '../models/category_model.dart';
+import '../../../../database/app_database.dart';
 
 class CategoriesRepositoryImpl implements CategoriesRepository {
-  final CategoryLocalService localService;
-  final CategoryFirebaseService firebaseService;
+  final AppDatabase _database;
 
-  CategoriesRepositoryImpl(this.localService, this.firebaseService);
+  CategoriesRepositoryImpl(this._database);
 
   @override
   Future<List<Category>> getCategories() async {
-    return await localService.getCategories();
+    final categoriesData = await _database.categoryDao.getAllCategories();
+    return CategoryModel.toEntityList(categoriesData);
+  }
+
+  @override
+  Stream<List<Category>> watchCategories() {
+    return _database.categoryDao.watchAllCategories().map(
+      CategoryModel.toEntityList,
+    );
   }
 
   @override
   Future<List<Category>> getCategoriesByType(CategoryType type) async {
-    return await localService.getCategoriesByType(type);
+    final categoriesData = await _database.categoryDao.getCategoriesByType(
+      type.toString().split('.').last,
+    );
+    return CategoryModel.toEntityList(categoriesData);
   }
 
   @override
-  Future<Category> getCategoryById(String id) async {
-    return await localService.getCategoryById(id);
+  Stream<List<Category>> watchCategoriesByType(CategoryType type) {
+    return _database.categoryDao
+        .watchCategoriesByType(type.toString().split('.').last)
+        .map(CategoryModel.toEntityList);
+  }
+
+  @override
+  Stream<Category?> watchCategoryById(String id) {
+    return _database.categoryDao
+        .watchCategoryById(id)
+        .map(
+          (categoryData) => categoryData != null
+              ? CategoryModel.toEntity(categoryData)
+              : null,
+        );
+  }
+
+  @override
+  Future<Category?> getCategoryById(String id) async {
+    final categoryData = await _database.categoryDao.getCategoryById(id);
+    return categoryData != null ? CategoryModel.toEntity(categoryData) : null;
   }
 
   @override
   Future<void> addCategory(Category category) async {
-    final model = CategoryModel.fromEntity(category);
-    await localService.addCategory(model);
+    final model = CategoryModel.toCompanion(category);
+    await _database.categoryDao.insertCategory(model);
   }
 
   @override
   Future<void> updateCategory(Category category) async {
-    final model = CategoryModel.fromEntity(category);
-    await localService.updateCategory(model);
+    final model = CategoryModel.toCompanion(category);
+    await _database.categoryDao.updateCategory(model);
   }
 
   @override
   Future<void> deleteCategory(String id) async {
-    await localService.deleteCategory(id);
-  }
-
-  @override
-  Future<void> syncToCloud(String userId) async {
-    await firebaseService.syncCategoriesToCloud(userId);
-  }
-
-  @override
-  Future<void> pullFromCloud(String userId) async {
-    await firebaseService.syncCategoriesFromCloud(userId);
+    await _database.categoryDao.deleteCategory(id);
   }
 }

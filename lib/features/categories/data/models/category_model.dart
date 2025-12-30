@@ -1,91 +1,76 @@
-import 'package:flutter/material.dart';
+import 'package:drift/drift.dart';
 import '../../../../database/app_database.dart';
-import '../../domain/entities/category.dart';
+import '../../domain/category.dart';
 
-class CategoryModel extends Category {
-  CategoryModel({
-    required super.id,
-    required super.name,
-    required super.icon,
-    required super.color,
-    required super.type,
-    required super.createdAt,
-    required super.updatedAt,
-    super.isSynced = false,
-    super.isDeleted = false,
-  });
-
-  factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    return CategoryModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      icon: IconData(json['iconCode'] as int, fontFamily: 'MaterialIcons'),
-      color: Color(json['colorValue'] as int),
-      type: CategoryType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => CategoryType.expense,
-      ),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      isSynced: json['isSynced'] as bool? ?? false,
-      isDeleted: json['isDeleted'] as bool? ?? false,
-    );
+class CategoryModel {
+  
+  static CategoryType _getCategoryType(String type) {
+    return CategoryType.values.firstWhere((e) => e.toString().split('.').last == type);
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'iconCode': icon.codePoint,
-      'colorValue': color.value,
-      'type': type.name,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'isSynced': isSynced,
-      'isDeleted': isDeleted,
-    };
-  }
-
-  factory CategoryModel.fromDrift(CategoryData data) {
-    return CategoryModel(
+  static Category toEntity(CategoryData data) {
+    return Category(
       id: data.id,
       name: data.name,
-      icon: IconData(data.iconCode, fontFamily: 'MaterialIcons'),
-      color: Color(data.iconColor),
-      type: _categoryTypeFromString(data.type),
+      type: _getCategoryType(data.type),
+      iconCode: data.iconCode,
+      description: data.description,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
-      isSynced: data.isSynced,
-      isDeleted: data.isDeleted,
     );
   }
 
-  factory CategoryModel.fromEntity(Category category) {
-    return CategoryModel(
-      id: category.id,
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-      type: category.type,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-      isSynced: category.isSynced,
-      isDeleted: category.isDeleted,
+  static CategoriesCompanion toCompanion(Category entity) {
+    return CategoriesCompanion(
+      id: Value(entity.id),
+      name: Value(entity.name),
+      type: Value(entity.type.toString().split('.').last),
+      iconCode: Value(entity.iconCode),
+      description: Value(entity.description),
+      createdAt: Value(entity.createdAt),
+      updatedAt: Value(entity.updatedAt),
     );
   }
 
-  static CategoryType _categoryTypeFromString(String type) {
-    switch (type) {
-      case 'expense':
-        return CategoryType.expense;
-      case 'income':
-        return CategoryType.income;
-      case 'debt':
-        return CategoryType.debt;
-      case 'loan':
-        return CategoryType.loan;
-      default:
-        return CategoryType.expense;
-    }
+  static List<Category> toEntityList(List<CategoryData> dataList) {
+    return dataList.map((data) => toEntity(data)).toList();
+  }
+
+  static List<CategoriesCompanion> toCompanionList(List<Category> entityList) {
+    return entityList.map((entity) => toCompanion(entity)).toList();
+  }
+
+  static CategoriesCompanion createNew({
+    required String id,
+    required String name,
+    required String type,
+    required int iconCode,
+    String? description,
+  }) {
+    final now = DateTime.now();
+    return CategoriesCompanion.insert(
+      id: id,
+      name: name,
+      type: type,
+      iconCode: iconCode,
+      description: Value(description),
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  static CategoriesCompanion updateCompanion({
+    String? name,
+    String? type,
+    int? iconCode,
+    String? description,
+  }) {
+    return CategoriesCompanion(
+      name: name != null ? Value(name) : const Value.absent(),
+      type: type != null ? Value(type) : const Value.absent(),
+      iconCode: iconCode != null ? Value(iconCode) : const Value.absent(),
+      description: description != null ? Value(description) : const Value.absent(),
+      updatedAt: Value(DateTime.now()),
+    );
   }
 }

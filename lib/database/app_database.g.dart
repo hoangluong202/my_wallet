@@ -865,6 +865,17 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -893,6 +904,7 @@ class $CategoriesTable extends Categories
     name,
     iconCode,
     type,
+    description,
     createdAt,
     updatedAt,
   ];
@@ -937,6 +949,15 @@ class $CategoriesTable extends Categories
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -978,6 +999,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1000,6 +1025,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
   final String name;
   final int iconCode;
   final String type;
+  final String? description;
   final DateTime createdAt;
   final DateTime updatedAt;
   const CategoryData({
@@ -1007,6 +1033,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     required this.name,
     required this.iconCode,
     required this.type,
+    this.description,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1017,6 +1044,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     map['name'] = Variable<String>(name);
     map['icon_code'] = Variable<int>(iconCode);
     map['type'] = Variable<String>(type);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1028,6 +1058,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       name: Value(name),
       iconCode: Value(iconCode),
       type: Value(type),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1043,6 +1076,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       name: serializer.fromJson<String>(json['name']),
       iconCode: serializer.fromJson<int>(json['iconCode']),
       type: serializer.fromJson<String>(json['type']),
+      description: serializer.fromJson<String?>(json['description']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1055,6 +1089,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       'name': serializer.toJson<String>(name),
       'iconCode': serializer.toJson<int>(iconCode),
       'type': serializer.toJson<String>(type),
+      'description': serializer.toJson<String?>(description),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1065,6 +1100,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     String? name,
     int? iconCode,
     String? type,
+    Value<String?> description = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => CategoryData(
@@ -1072,6 +1108,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     name: name ?? this.name,
     iconCode: iconCode ?? this.iconCode,
     type: type ?? this.type,
+    description: description.present ? description.value : this.description,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1081,6 +1118,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       name: data.name.present ? data.name.value : this.name,
       iconCode: data.iconCode.present ? data.iconCode.value : this.iconCode,
       type: data.type.present ? data.type.value : this.type,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1093,6 +1133,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
           ..write('name: $name, ')
           ..write('iconCode: $iconCode, ')
           ..write('type: $type, ')
+          ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1101,7 +1142,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
 
   @override
   int get hashCode =>
-      Object.hash(id, name, iconCode, type, createdAt, updatedAt);
+      Object.hash(id, name, iconCode, type, description, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1110,6 +1151,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
           other.name == this.name &&
           other.iconCode == this.iconCode &&
           other.type == this.type &&
+          other.description == this.description &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1119,6 +1161,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
   final Value<String> name;
   final Value<int> iconCode;
   final Value<String> type;
+  final Value<String?> description;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1127,6 +1170,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     this.name = const Value.absent(),
     this.iconCode = const Value.absent(),
     this.type = const Value.absent(),
+    this.description = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1136,6 +1180,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     required String name,
     required int iconCode,
     required String type,
+    this.description = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1150,6 +1195,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     Expression<String>? name,
     Expression<int>? iconCode,
     Expression<String>? type,
+    Expression<String>? description,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1159,6 +1205,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
       if (name != null) 'name': name,
       if (iconCode != null) 'icon_code': iconCode,
       if (type != null) 'type': type,
+      if (description != null) 'description': description,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1170,6 +1217,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     Value<String>? name,
     Value<int>? iconCode,
     Value<String>? type,
+    Value<String?>? description,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1179,6 +1227,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
       name: name ?? this.name,
       iconCode: iconCode ?? this.iconCode,
       type: type ?? this.type,
+      description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1200,6 +1249,9 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1219,6 +1271,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
           ..write('name: $name, ')
           ..write('iconCode: $iconCode, ')
           ..write('type: $type, ')
+          ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2201,6 +2254,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required String name,
       required int iconCode,
       required String type,
+      Value<String?> description,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -2211,6 +2265,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<int> iconCode,
       Value<String> type,
+      Value<String?> description,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -2242,6 +2297,11 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2285,6 +2345,11 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2316,6 +2381,11 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2359,6 +2429,7 @@ class $$CategoriesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<int> iconCode = const Value.absent(),
                 Value<String> type = const Value.absent(),
+                Value<String?> description = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2367,6 +2438,7 @@ class $$CategoriesTableTableManager
                 name: name,
                 iconCode: iconCode,
                 type: type,
+                description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -2377,6 +2449,7 @@ class $$CategoriesTableTableManager
                 required String name,
                 required int iconCode,
                 required String type,
+                Value<String?> description = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -2385,6 +2458,7 @@ class $$CategoriesTableTableManager
                 name: name,
                 iconCode: iconCode,
                 type: type,
+                description: description,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

@@ -2,7 +2,6 @@ import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../database/app_database.dart';
-import '../../features/wallets/data/services/wallet_firebase_service.dart';
 import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
@@ -12,7 +11,7 @@ import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
-import '../../features/wallets/ui/viewmodels/wallets_viewmodel.dart';
+import '../../features/wallets/presentation/list/wallets_viewmodel.dart';
 import '../../features/categories/data/services/category_local_service.dart';
 import '../../features/categories/data/services/category_firebase_service.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
@@ -24,7 +23,7 @@ import '../../features/categories/domain/usecases/add_category_usecase.dart';
 import '../../features/categories/domain/usecases/update_category_usecase.dart';
 import '../../features/categories/domain/usecases/delete_category_usecase.dart';
 import '../../features/categories/domain/usecases/sync_categories_usecase.dart';
-import '../../features/categories/presentation/viewmodels/categories_viewmodel.dart';
+import '../../features/categories/presentation/list/categories_viewmodel.dart';
 import '../../features/transactions/data/services/transaction_local_service.dart';
 import '../../features/transactions/data/services/transaction_firebase_service.dart';
 import '../../features/transactions/presentation/viewmodels/transactions_viewmodel.dart';
@@ -69,7 +68,7 @@ Future<void> setupDependencies() async {
     () => UserService(getIt<UserRepository>()),
   );
 
-  // Auth ViewModel
+  // View Model
   getIt.registerSingleton<AuthViewModel>(
     AuthViewModel(
       getIt<AuthRepository>(),
@@ -77,30 +76,33 @@ Future<void> setupDependencies() async {
       getIt<AppDatabase>(),
     ),
   );
-
-  // User ViewModel
   getIt.registerLazySingleton<UserViewModel>(
     () => UserViewModel(getIt<UserRepository>()),
   );
-
-  // Wallet Services
-  getIt.registerLazySingleton<WalletLocalService>(
-    () => WalletLocalServiceImpl(getIt<AppDatabase>()),
+  getIt.registerFactory<TransactionsViewModel>(
+    () => TransactionsViewModel(
+      getIt<TransactionLocalService>(),
+      getIt<TransactionFirebaseService>(),
+    ),
   );
-
-  getIt.registerLazySingleton<WalletFirebaseService>(
-    () => WalletFirebaseServiceImpl(
-      getIt<FirebaseFirestore>(),
-      getIt<AppDatabase>().walletDao,
-      getIt<FirebaseAuth>(),
+  getIt.registerFactory<CategoriesViewModel>(
+    () => CategoriesViewModel(
+      getIt<GetCategoriesUseCase>(),
+      getIt<AddCategoryUseCase>(),
+      getIt<UpdateCategoryUseCase>(),
+      getIt<DeleteCategoryUseCase>(),
+      getIt<SyncCategoriesUseCase>(),
+    ),
+  );
+    getIt.registerFactory<WalletsViewModel>(
+    () => WalletsViewModel(
+      getIt<WalletRepository>(),
     ),
   );
 
   // Repositories
   getIt.registerLazySingleton<WalletRepository>(
-    () => WalletRepositoryImpl(
-      getIt<AppDatabase>(),
-    ),
+    () => WalletRepositoryImpl(getIt<AppDatabase>()),
   );
 
   // Categories - Services
@@ -147,16 +149,7 @@ Future<void> setupDependencies() async {
     () => SyncCategoriesUseCase(getIt<CategoriesRepository>()),
   );
 
-  // Categories - ViewModels
-  getIt.registerFactory<CategoriesViewModel>(
-    () => CategoriesViewModel(
-      getIt<GetCategoriesUseCase>(),
-      getIt<AddCategoryUseCase>(),
-      getIt<UpdateCategoryUseCase>(),
-      getIt<DeleteCategoryUseCase>(),
-      getIt<SyncCategoriesUseCase>(),
-    ),
-  );
+
 
   // Transactions - Services
   getIt.registerLazySingleton<TransactionLocalService>(
@@ -168,14 +161,6 @@ Future<void> setupDependencies() async {
       getIt<FirebaseFirestore>(),
       getIt<AppDatabase>().transactionDao,
       getIt<FirebaseAuth>(),
-    ),
-  );
-
-  // Transactions - ViewModels
-  getIt.registerFactory<TransactionsViewModel>(
-    () => TransactionsViewModel(
-      getIt<TransactionLocalService>(),
-      getIt<TransactionFirebaseService>(),
     ),
   );
 }

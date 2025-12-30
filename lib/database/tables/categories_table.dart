@@ -6,6 +6,7 @@ class Categories extends Table {
   TextColumn get name => text().withLength(min: 2, max: 100)();
   IntColumn get iconCode => integer()();
   TextColumn get type => text()(); // expense, income, debt, loan
+  TextColumn get description => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
