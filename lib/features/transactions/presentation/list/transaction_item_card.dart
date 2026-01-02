@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import './../../domain/transaction.dart';
 import '../constants/transaction_type.dart';
+import '../model/transaction_view_data.dart';
 
 class TransactionItemCard extends StatelessWidget {
-  final Transaction transaction;
+  final TransactionViewData transaction;
   final VoidCallback onTap;
 
   const TransactionItemCard({
@@ -15,7 +15,7 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = TransactionTypeConstants.getStyle(transaction.type);
+    final style = TransactionTypeConstants.getStyle(transaction.category.type);
 
     return GestureDetector(
       onTap: onTap,
@@ -45,7 +45,7 @@ class TransactionItemCard extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.all(10),
                 child: Icon(
-                  transaction.categoryIcon,
+                  transaction.category.icon,
                   color: style.amountColor,
                   size: 26,
                 ),
@@ -58,7 +58,7 @@ class TransactionItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.category,
+                      transaction.category.type.name,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -67,7 +67,7 @@ class TransactionItemCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      transaction.description,
+                      transaction.note ?? '',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey.shade600,

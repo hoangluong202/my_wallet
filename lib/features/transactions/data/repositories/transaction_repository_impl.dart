@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:drift/drift.dart';
 import '../../domain/transaction.dart';
+import '../../../wallets/domain/wallet.dart';
+import '../../../categories/domain/category.dart';
 import '../../../../database/app_database.dart';
-import '../models/transaction_model.dart';
 import 'transaction_repository.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
@@ -9,12 +11,70 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
   TransactionRepositoryImpl(this._database);
 
+  // Private helper methods to map TransactionJoinedModel to Transaction domain
+  Transaction _mapToDomain(TransactionJoinedModel joinedData) {
+    final wallet = Wallet(
+      id: joinedData.wallet.id,
+      name: joinedData.wallet.name,
+      balance: joinedData.wallet.balance,
+      iconCode: joinedData.wallet.iconCode,
+      createdAt: joinedData.wallet.createdAt,
+      updatedAt: joinedData.wallet.updatedAt,
+    );
+
+    // Convert string type to CategoryType enum
+    final categoryType = CategoryType.values.firstWhere(
+      (e) => e.name == joinedData.category.type,
+      orElse: () => CategoryType.expense,
+    );
+
+    final category = Category(
+      id: joinedData.category.id,
+      name: joinedData.category.name,
+      type: categoryType,
+      iconCode: joinedData.category.iconCode,
+      createdAt: joinedData.category.createdAt,
+      updatedAt: joinedData.category.updatedAt,
+    );
+
+    return Transaction(
+      id: joinedData.transaction.id,
+      amount: joinedData.transaction.amount,
+      note: joinedData.transaction.note,
+      transactionDate: joinedData.transaction.transactionDate,
+      wallet: wallet,
+      category: category,
+      createdAt: joinedData.transaction.createdAt,
+      updatedAt: joinedData.transaction.updatedAt,
+    );
+  }
+
+  List<Transaction> _mapToDomainList(
+    List<TransactionJoinedModel> joinedDataList,
+  ) {
+    return joinedDataList.map(_mapToDomain).toList();
+  }
+
+  // Convert Transaction domain to TransactionsCompanion for insert/update
+  TransactionsCompanion _toCompanion(Transaction transaction) {
+    return TransactionsCompanion(
+      id: Value(transaction.id),
+      categoryId: Value(transaction.category.id),
+      walletId: Value(transaction.wallet.id),
+      amount: Value(transaction.amount),
+      note: Value(transaction.note),
+      transactionDate: Value(transaction.transactionDate),
+      createdAt: Value(transaction.createdAt),
+      updatedAt: Value(transaction.updatedAt),
+    );
+  }
+
   @override
   Future<List<Transaction>> getAllTransactions() async {
     try {
-      final transactionDataList = await _database.transactionDao
+      final joinedDataList = await _database.transactionDao
           .getAllTransactions();
-      return TransactionModel.toEntityList(transactionDataList);
+      return _mapToDomainList(joinedDataList);
     } catch (e) {
       throw Exception('Failed to get transactions: $e');
     }
@@ -24,7 +84,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Stream<List<Transaction>> watchAllTransactions() {
     try {
       return _database.transactionDao.watchAllTransactions().map(
-        TransactionModel.toEntityList,
+        _mapToDomainList,
       );
     } catch (e) {
       throw Exception('Failed to watch transactions: $e');
@@ -37,9 +97,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
     DateTime endDate,
   ) async {
     try {
-      final transactionDataList = await _database.transactionDao
+      final joinedDataList = await _database.transactionDao
           .getTransactionsByDateRange(startDate, endDate);
-      return TransactionModel.toEntityList(transactionDataList);
+      return _mapToDomainList(joinedDataList);
     } catch (e) {
       throw Exception('Failed to get transactions by date range: $e');
     }
@@ -53,7 +113,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       return _database.transactionDao
           .watchTransactionsByDateRange(startDate, endDate)
-          .map(TransactionModel.toEntityList);
+          .map(_mapToDomainList);
     } catch (e) {
       throw Exception('Failed to watch transactions by date range: $e');
     }
@@ -62,12 +122,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<Transaction?> getTransactionById(String id) async {
     try {
-      final transactionData = await _database.transactionDao.getTransactionById(
-        id,
-      );
-      return transactionData != null
-          ? TransactionModel.toEntity(transactionData)
-          : null;
+      final joinedData = await _database.transactionDao.getTransactionById(id);
+      return joinedData != null ? _mapToDomain(joinedData) : null;
     } catch (e) {
       throw Exception('Failed to get transaction: $e');
     }
@@ -79,9 +135,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
       return _database.transactionDao
           .watchTransactionById(id)
           .map(
-            (transactionData) => transactionData != null
-                ? TransactionModel.toEntity(transactionData)
-                : null,
+            (joinedData) =>
+                joinedData != null ? _mapToDomain(joinedData) : null,
           );
     } catch (e) {
       throw Exception('Failed to watch transaction: $e');
@@ -92,7 +147,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<String> createTransaction(Transaction transaction) async {
     try {
       await _database.transactionDao.insertTransaction(
-        TransactionModel.toCompanion(transaction),
+        _toCompanion(transaction),
       );
       return transaction.id;
     } catch (e) {
@@ -104,7 +159,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<void> updateTransaction(Transaction transaction) async {
     try {
       await _database.transactionDao.updateTransaction(
-        TransactionModel.toCompanion(transaction),
+        _toCompanion(transaction),
       );
     } catch (e) {
       throw Exception('Failed to update transaction: $e');

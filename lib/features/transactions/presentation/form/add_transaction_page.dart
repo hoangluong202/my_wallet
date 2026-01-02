@@ -6,7 +6,7 @@ import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../viewmodels/transactions_viewmodel.dart';
+import '../list/transactions_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../domain/transaction.dart';

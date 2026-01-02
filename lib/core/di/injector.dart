@@ -26,7 +26,7 @@ import '../../features/categories/domain/usecases/sync_categories_usecase.dart';
 import '../../features/categories/presentation/list/categories_viewmodel.dart';
 import '../../features/transactions/data/services/transaction_local_service.dart';
 import '../../features/transactions/data/services/transaction_firebase_service.dart';
-import '../../features/transactions/presentation/viewmodels/transactions_viewmodel.dart';
+import '../../features/transactions/presentation/list/transactions_viewmodel.dart';
 
 final getIt = GetIt.instance;
 

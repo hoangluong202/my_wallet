@@ -4,7 +4,7 @@ import '../../../../core/utils/currency_formatter.dart';
 class TransactionSummaryItem extends StatelessWidget {
   final IconData icon;
   final String label;
-  final double amount;
+  final int amount;
   final Color color;
 
   const TransactionSummaryItem({

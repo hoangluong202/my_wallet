@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_wallet/features/transactions/data/repositories/transaction_repository.dart';
 import '../../domain/transaction.dart';
-import '../../data/services/transaction_local_service.dart';
-import '../../data/services/transaction_firebase_service.dart';
 
 class TransactionsViewModel extends ChangeNotifier {
-  final TransactionLocalService _transactionLocalService;
-  final TransactionFirebaseService _transactionFirebaseService;
-
   List<Transaction> _transactions = [];
   bool _isLoading = false;
   bool _isSyncing = false;
@@ -23,11 +19,12 @@ class TransactionsViewModel extends ChangeNotifier {
   // Statistics
   double _totalAmount = 0.0;
 
+  final TransactionRepository _transactionRepo;
+
   TransactionsViewModel(
-    this._transactionLocalService,
-    this._transactionFirebaseService,
+    
   ) {
-    loadTransactions();
+    
   }
 
   // Getters

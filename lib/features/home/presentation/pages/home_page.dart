@@ -6,7 +6,7 @@ import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../users/presentation/viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
-import '../../../transactions/presentation/viewmodels/transactions_viewmodel.dart';
+import '../../../transactions/presentation/list/transactions_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {

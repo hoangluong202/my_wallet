@@ -6,93 +6,130 @@ import '../tables/wallets_table.dart';
 
 part 'transaction_dao.g.dart';
 
+class TransactionJoinedModel {
+  final TransactionData transaction;
+  final CategoryData category;
+  final WalletData wallet;
+
+  TransactionJoinedModel({
+    required this.transaction,
+    required this.category,
+    required this.wallet,
+  });
+}
+
 @DriftAccessor(tables: [Transactions, Categories, Wallets])
 class TransactionDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionDaoMixin {
   TransactionDao(super.db);
 
-  Future<List<TransactionData>> getAllTransactions() async {
-    return (select(transactions)..orderBy([
-          (t) => OrderingTerm(
-            expression: t.transactionDate,
-            mode: OrderingMode.desc,
-          ),
-        ]))
-        .get();
+  // Private helper methods to reduce code duplication
+  JoinedSelectStatement _baseJoinQuery() {
+    return select(transactions).join([
+      innerJoin(categories, categories.id.equalsExp(transactions.categoryId)),
+      innerJoin(wallets, wallets.id.equalsExp(transactions.walletId)),
+    ]);
   }
 
-  Stream<List<TransactionData>> watchAllTransactions() {
-    return (select(transactions)..orderBy([
-          (t) => OrderingTerm(
-            expression: t.transactionDate,
-            mode: OrderingMode.desc,
-          ),
-        ]))
-        .watch();
+  void _applyDefaultOrdering(JoinedSelectStatement query) {
+    query.orderBy([
+      OrderingTerm(
+        expression: transactions.transactionDate,
+        mode: OrderingMode.desc,
+      ),
+    ]);
   }
 
-  Future<List<TransactionData>> getTransactionsByDateRange(
+  TransactionJoinedModel _mapRowToDetails(TypedResult row) {
+    return TransactionJoinedModel(
+      transaction: row.readTable(transactions),
+      category: row.readTable(categories),
+      wallet: row.readTable(wallets),
+    );
+  }
+
+  List<TransactionJoinedModel> _mapResultsToDetails(List<TypedResult> results) {
+    return results.map(_mapRowToDetails).toList();
+  }
+
+  // Get all transactions with category and wallet details
+  Future<List<TransactionJoinedModel>> getAllTransactions() async {
+    final query = _baseJoinQuery();
+    _applyDefaultOrdering(query);
+    final results = await query.get();
+    return _mapResultsToDetails(results);
+  }
+
+  // Watch all transactions with category and wallet details
+  Stream<List<TransactionJoinedModel>> watchAllTransactions() {
+    final query = _baseJoinQuery();
+    _applyDefaultOrdering(query);
+    return query.watch().map(_mapResultsToDetails);
+  }
+
+  // Get transaction by ID with category and wallet details
+  Future<TransactionJoinedModel?> getTransactionById(String id) async {
+    final query = _baseJoinQuery()..where(transactions.id.equals(id));
+    final result = await query.getSingleOrNull();
+    return result != null ? _mapRowToDetails(result) : null;
+  }
+
+  // Watch transaction by ID with category and wallet details
+  Stream<TransactionJoinedModel?> watchTransactionById(String id) {
+    final query = _baseJoinQuery()..where(transactions.id.equals(id));
+    return query.watchSingleOrNull().map(
+      (result) => result != null ? _mapRowToDetails(result) : null,
+    );
+  }
+
+  // Get transactions by date range with details
+  Future<List<TransactionJoinedModel>> getTransactionsByDateRange(
     DateTime startDate,
     DateTime endDate,
   ) async {
-    return (select(transactions)
-          ..where(
-            (t) =>
-                t.transactionDate.isBiggerOrEqualValue(startDate) &
-                t.transactionDate.isSmallerOrEqualValue(endDate),
-          )
-          ..orderBy([
-            (t) => OrderingTerm(
-              expression: t.transactionDate,
-              mode: OrderingMode.desc,
-            ),
-          ]))
-        .get();
+    final query = _baseJoinQuery()
+      ..where(
+        transactions.transactionDate.isBiggerOrEqualValue(startDate) &
+            transactions.transactionDate.isSmallerOrEqualValue(endDate),
+      );
+    _applyDefaultOrdering(query);
+    final results = await query.get();
+    return _mapResultsToDetails(results);
   }
 
-  Stream<List<TransactionData>> watchTransactionsByDateRange(
+  // Watch transactions by date range with details
+  Stream<List<TransactionJoinedModel>> watchTransactionsByDateRange(
     DateTime startDate,
     DateTime endDate,
   ) {
-    return (select(transactions)
-          ..where(
-            (t) =>
-                t.transactionDate.isBiggerOrEqualValue(startDate) &
-                t.transactionDate.isSmallerOrEqualValue(endDate),
-          )
-          ..orderBy([
-            (t) => OrderingTerm(
-              expression: t.transactionDate,
-              mode: OrderingMode.desc,
-            ),
-          ]))
-        .watch();
+    final query = _baseJoinQuery()
+      ..where(
+        transactions.transactionDate.isBiggerOrEqualValue(startDate) &
+            transactions.transactionDate.isSmallerOrEqualValue(endDate),
+      );
+    _applyDefaultOrdering(query);
+    return query.watch().map(_mapResultsToDetails);
   }
 
-  Future<List<TransactionData>> getTransactionsByWalletId(
+  // Get transactions by wallet ID with details
+  Future<List<TransactionJoinedModel>> getTransactionsByWalletId(
     String walletId,
   ) async {
-    return (select(transactions)
-          ..where((t) => t.walletId.equals(walletId))
-          ..orderBy([
-            (t) => OrderingTerm(
-              expression: t.transactionDate,
-              mode: OrderingMode.desc,
-            ),
-          ]))
-        .get();
+    final query = _baseJoinQuery()
+      ..where(transactions.walletId.equals(walletId));
+    _applyDefaultOrdering(query);
+    final results = await query.get();
+    return _mapResultsToDetails(results);
   }
 
-  Future<TransactionData?> getTransactionById(String id) async {
-    return (select(
-      transactions,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-  }
-
-  Stream<TransactionData?> watchTransactionById(String id) {
-    return (select(
-      transactions,
-    )..where((t) => t.id.equals(id))).watchSingleOrNull();
+  // Watch transactions by wallet ID with details
+  Stream<List<TransactionJoinedModel>> watchTransactionsByWalletId(
+    String walletId,
+  ) {
+    final query = _baseJoinQuery()
+      ..where(transactions.walletId.equals(walletId));
+    _applyDefaultOrdering(query);
+    return query.watch().map(_mapResultsToDetails);
   }
 
   Future<int> insertTransaction(TransactionsCompanion transaction) async {

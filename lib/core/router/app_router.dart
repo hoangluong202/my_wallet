@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/main/presentation/pages/main_scaffold.dart';
-import '../../features/transactions/presentation/pages/add_transaction_page.dart';
+import '../../features/transactions/presentation/form/add_transaction_page.dart';
 import '../../features/wallets/presentation/form/add_wallet_page.dart';
 import '../../features/wallets/presentation/form/edit_wallet_page.dart';
 import '../../features/wallets/presentation/detail/wallet_detail_page.dart';
