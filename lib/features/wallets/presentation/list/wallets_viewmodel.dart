@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../../domain/wallet.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletsViewModel extends ChangeNotifier {
   WalletsViewModel(this._repository);
@@ -14,8 +15,9 @@ class WalletsViewModel extends ChangeNotifier {
 
   StreamSubscription<List<Wallet>>? _subscription;
 
-  Stream<List<Wallet>> get walletsStream => _repository.watchAllWallets();
-
+  Stream<List<WalletViewData>> get walletsStream => _repository.watchAllWallets().map(
+    (wallets) => wallets.map((wallet) => WalletViewData.fromDomain(wallet)).toList(),
+  );
   Stream<int> get totalBalanceStream => walletsStream.map(
     (wallets) => wallets.fold(0, (sum, wallet) => sum + wallet.balance),
   );

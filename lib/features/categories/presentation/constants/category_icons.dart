@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/category.dart';
 
 class CategoryIconData {
   final IconData icon;
@@ -55,11 +56,35 @@ class CategoryIcons {
     ),
   ];
 
-  /// Get icon data by codePoint
   static CategoryIconData getIconByCodePoint(int codePoint) {
     final index = icons.indexWhere(
       (iconData) => iconData.icon.codePoint == codePoint,
     );
     return index != -1 ? icons[index] : icons[0];
+  }
+}
+
+class CategoryTypeIcons {
+  static const Map<CategoryType, CategoryIconData> typeIcons = {
+    CategoryType.expense: CategoryIconData(
+      icon: Icons.remove_circle,
+      color: Colors.red,
+    ),
+    CategoryType.income: CategoryIconData(
+      icon: Icons.add_circle,
+      color: Colors.green,
+    ),
+    CategoryType.debt: CategoryIconData(
+      icon: Icons.account_balance,
+      color: Colors.orange,
+    ),
+    CategoryType.loan: CategoryIconData(
+      icon: Icons.savings,
+      color: Colors.purple,
+    ),
+  };
+
+  static CategoryIconData getIconByType(CategoryType type) {
+    return typeIcons[type]!;
   }
 }

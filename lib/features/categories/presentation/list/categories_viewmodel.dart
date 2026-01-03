@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/repositories/categories_repository.dart';
 import '../../domain/category.dart';
+import '../model/category_view_data.dart';
 
 class CategoriesViewModel extends ChangeNotifier {
   final CategoriesRepository _repository;
@@ -10,7 +11,12 @@ class CategoriesViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  Stream<List<Category>> get categoriesStream => _repository.watchCategories();
+  Stream<List<CategoryViewData>> get categoriesStream =>
+      _repository.watchCategories().map(
+        (categories) => categories
+            .map((category) => CategoryViewData.fromDomain(category))
+            .toList(),
+      );
 
   void clearError() {
     _error = null;

@@ -1,4 +1,5 @@
 import './../../domain/transaction.dart';
+import '../../presentation/form/transaction_payload.dart';
 
 abstract class TransactionRepository {
   Future<List<Transaction>> getAllTransactions();
@@ -13,7 +14,7 @@ abstract class TransactionRepository {
     DateTime startDate,
     DateTime endDate,
   );
-  Future<String> createTransaction(Transaction transaction);
+  Future<String> createTransaction(TransactionPayload transaction);
   Future<void> updateTransaction(Transaction transaction);
   Future<void> deleteTransaction(String id);
 }

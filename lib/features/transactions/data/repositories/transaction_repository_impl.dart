@@ -5,6 +5,7 @@ import '../../../wallets/domain/wallet.dart';
 import '../../../categories/domain/category.dart';
 import '../../../../database/app_database.dart';
 import 'transaction_repository.dart';
+import '../../presentation/form/transaction_payload.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final AppDatabase _database;
@@ -55,7 +56,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return joinedDataList.map(_mapToDomain).toList();
   }
 
-  // Convert Transaction domain to TransactionsCompanion for insert/update
   TransactionsCompanion _toCompanion(Transaction transaction) {
     return TransactionsCompanion(
       id: Value(transaction.id),
@@ -66,6 +66,19 @@ class TransactionRepositoryImpl implements TransactionRepository {
       transactionDate: Value(transaction.transactionDate),
       createdAt: Value(transaction.createdAt),
       updatedAt: Value(transaction.updatedAt),
+    );
+  }
+
+  TransactionsCompanion _payloadToCompanion(TransactionPayload payload) {
+    return TransactionsCompanion(
+      id: Value(payload.id),
+      categoryId: Value(payload.categoryId),
+      walletId: Value(payload.walletId),
+      amount: Value(payload.amount),
+      note: Value(payload.note),
+      transactionDate: Value(payload.transactionDate),
+      createdAt: Value(payload.createdAt),
+      updatedAt: Value(payload.updatedAt),
     );
   }
 
@@ -144,17 +157,17 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<String> createTransaction(Transaction transaction) async {
+  Future<String> createTransaction(TransactionPayload transaction) async {
     try {
       await _database.transactionDao.insertTransaction(
-        _toCompanion(transaction),
+        _payloadToCompanion(transaction),
       );
       return transaction.id;
     } catch (e) {
       throw Exception('Failed to create transaction: $e');
     }
   }
-
+  
   @override
   Future<void> updateTransaction(Transaction transaction) async {
     try {

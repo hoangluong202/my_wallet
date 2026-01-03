@@ -1,51 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../list/transactions_viewmodel.dart';
+import '../viewmodel/transaction_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
-import '../../domain/transaction.dart';
-import '../../../categories/domain/entities/category.dart';
-
-// Custom formatter for thousand separator
-class ThousandSeparatorInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue;
-    }
-
-    // Remove all dots (thousand separators)
-    String text = newValue.text.replaceAll('.', '');
-
-    // Only allow digits
-    if (!RegExp(r'^\d+$').hasMatch(text)) {
-      return oldValue;
-    }
-
-    // Format with thousand separators
-    final number = int.tryParse(text);
-    if (number == null) {
-      return oldValue;
-    }
-
-    final formatter = NumberFormat('#,##0', 'en_US');
-    final formatted = formatter.format(number).replaceAll(',', '.');
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
+import '../../../categories/domain/category.dart';
+import 'transaction_form_state.dart';
+import '../../../categories/presentation/constants/category_icons.dart';
+import '../../../categories/presentation/helpers/label.dart';
+import '../../../categories/presentation/model/category_view_data.dart';
+import '../../../wallets/presentation/model/wallet_view_data.dart';
+import '../../../../core/utils/thousand_separator_input_formatter.dart';
+import 'transaction_payload.dart';
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -57,403 +26,80 @@ class AddTransactionPage extends StatefulWidget {
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Form controllers
   late TextEditingController _amountController;
-  late TextEditingController _descriptionController;
+  late TextEditingController _noteController;
 
-  // ViewModels
-  late TransactionsViewModel _transactionsViewModel;
+  late TransactionViewModel _transactionViewModel;
   late CategoriesViewModel _categoriesViewModel;
   late WalletsViewModel _walletsViewModel;
 
-  // Selected values
-  String? _selectedWalletId;
-  String? _selectedCategoryId;
-  String _selectedCategoryType = 'Expense'; // Default to Expense
-  DateTime _selectedDate = DateTime.now(); // Default to today
-
-  bool _isLoading = true;
+  late TransactionFormState _formState;
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
-    _descriptionController = TextEditingController();
 
-    // Initialize ViewModels
-    _transactionsViewModel = getIt<TransactionsViewModel>();
+    _amountController = TextEditingController();
+    _noteController = TextEditingController();
+
+    _transactionViewModel = getIt<TransactionViewModel>();
     _categoriesViewModel = getIt<CategoriesViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
 
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    // Load categories and wallets
-    await Future.wait([
-      _categoriesViewModel.loadCategories(),
-      _walletsViewModel.loadWallets(),
-    ]);
-
-    // Set default selections
-    if (_walletsViewModel.wallets.isNotEmpty) {
-      _selectedWalletId = _walletsViewModel.wallets.first.id;
-    }
-
-    // Set default category based on type
-    final expenseCategories = _categoriesViewModel.categories
-        .where((cat) => cat.type.name == 'expense')
-        .toList();
-    if (expenseCategories.isNotEmpty) {
-      _selectedCategoryId = expenseCategories.first.id;
-    }
-
-    setState(() => _isLoading = false);
-  }
-
-  // Parse amount from formatted string (30.000 -> 30000)
-  double _parseAmount(String text) {
-    // Remove thousand separators (dots) and parse
-    final cleanText = text.replaceAll('.', '');
-    return double.tryParse(cleanText) ?? 0.0;
+    _formState = TransactionFormState.initial();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _descriptionController.dispose();
+    _noteController.dispose();
     super.dispose();
-  }
-
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      if (_selectedWalletId == null || _selectedCategoryId == null) {
-        ErrorNotification.show(
-          context: context,
-          message: 'Please select wallet and category',
-          duration: const Duration(seconds: 2),
-        );
-        return;
-      }
-
-      try {
-        // Create transaction entity
-        final transaction = Transaction(
-          id: const Uuid().v4(),
-          categoryId: _selectedCategoryId!,
-          walletId: _selectedWalletId!,
-          amount: _parseAmount(_amountController.text),
-          note: _descriptionController.text.isEmpty
-              ? null
-              : _descriptionController.text,
-          transactionDate: _selectedDate,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        // Save transaction
-        await _transactionsViewModel.addTransaction(transaction);
-
-        // Show success notification and wait before popping
-        if (mounted) {
-          SuccessNotification.show(
-            context: context,
-            message: 'Transaction added successfully!',
-            duration: const Duration(seconds: 2),
-          );
-
-          // Wait a bit to ensure listener updates before popping
-          await Future.delayed(const Duration(milliseconds: 300));
-
-          // Pop back with success result
-          if (mounted) {
-            Navigator.pop(context, true);
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ErrorNotification.show(
-            context: context,
-            message: 'Failed to add transaction: $e',
-            duration: const Duration(seconds: 3),
-          );
-        }
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: Column(
           children: [
-            DetailHeader(
-              title: 'Add Transaction',
-              onBack: () => Navigator.pop(context),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category Type Selector - Prominent at top
-                      _buildCategoryTypeSelector(),
-                      const SizedBox(height: 16),
-
-                      // Main Form Card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Category Section
-                            _buildCardSection(
-                              title: 'Category',
-                              icon: Icons.category_outlined,
-                              child: _buildCategorySelector(),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Amount Section
-                            _buildCardSection(
-                              title: 'Amount',
-                              icon: Icons.payments_outlined,
-                              child: TextFormField(
-                                controller: _amountController,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  ThousandSeparatorInputFormatter(),
-                                ],
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  hintStyle: TextStyle(
-                                    fontSize: 24,
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  suffixIcon: Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 12.0,
-                                      top: 12,
-                                    ),
-                                    child: Text(
-                                      '₫',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                  suffixIconConstraints: const BoxConstraints(
-                                    minWidth: 0,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter an amount';
-                                  }
-                                  final amount = _parseAmount(value);
-                                  if (amount <= 0) {
-                                    return 'Please enter a valid amount greater than 0';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Wallet Section
-                            _buildCardSection(
-                              title: 'Wallet',
-                              icon: Icons.account_balance_wallet_outlined,
-                              child: _buildWalletSelector(),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Date Section
-                            _buildCardSection(
-                              title: 'Date',
-                              icon: Icons.calendar_today_outlined,
-                              child: _buildDateSelector(),
-                            ),
-
-                            Divider(height: 1, color: Colors.grey.shade200),
-
-                            // Note Section
-                            _buildCardSection(
-                              title: 'Note',
-                              icon: Icons.notes_outlined,
-                              child: TextFormField(
-                                controller: _descriptionController,
-                                keyboardType: TextInputType.text,
-                                maxLines: 3,
-                                decoration: InputDecoration(
-                                  hintText: 'Add a note (optional)',
-                                  hintStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Submit Button
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.blue.shade600,
-                              Colors.blue.shade700,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            'Save Transaction',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            _buildHeader(),
+            Expanded(child: _buildForm()),
           ],
         ),
       ),
     );
   }
 
-  List<Category> _getFilteredCategories() {
-    return _categoriesViewModel.categories
-        .where((cat) => cat.type.name == _selectedCategoryType.toLowerCase())
-        .toList();
+  Widget _buildHeader() {
+    return DetailHeader(
+      title: 'Add Transaction',
+      onBack: () => Navigator.pop(context),
+    );
   }
 
-  Widget _buildDateSelector() {
-    return GestureDetector(
-      onTap: () async {
-        final now = DateTime.now();
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: _selectedDate,
-          firstDate: DateTime(now.year - 10),
-          lastDate: DateTime(now.year + 10),
-        );
-        if (picked != null) {
-          setState(() {
-            _selectedDate = picked;
-          });
-        }
-      },
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.calendar_month,
-              color: Colors.blue.shade700,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const Spacer(),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
+  Widget _buildForm() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCategoryTypeSelector(),
+            const SizedBox(height: 16),
+            _buildFormCard(),
+            const SizedBox(height: 20),
+            _buildSubmitButton(),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCategoryTypeSelector() {
-    final categoryTypes = [
-      {'type': 'Expense', 'icon': Icons.remove_circle, 'color': Colors.red},
-      {'type': 'Income', 'icon': Icons.add_circle, 'color': Colors.green},
-      {'type': 'Debt', 'icon': Icons.account_balance, 'color': Colors.orange},
-      {'type': 'Loan', 'icon': Icons.savings, 'color': Colors.purple},
-    ];
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -468,241 +114,154 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ),
       padding: const EdgeInsets.all(12),
       child: Row(
-        children: List.generate(categoryTypes.length, (index) {
-          final item = categoryTypes[index];
-          final type = item['type'] as String;
-          final icon = item['icon'] as IconData;
-          final color = item['color'] as Color;
-          final isSelected = _selectedCategoryType == type;
-
+        children: CategoryTypeIcons.typeIcons.entries.map((entry) {
+          final type = entry.key;
+          final isSelected = _formState.selectedType == type;
+          final typeIcon = entry.value;
+          final label = LabelHelper.getCategoryLabel(type);
           return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedCategoryType = type;
-                  // Reset category selection to first category of new type
-                  final filteredCategories = _getFilteredCategories();
-                  if (filteredCategories.isNotEmpty) {
-                    _selectedCategoryId = filteredCategories[0].id;
-                  }
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(
-                  right: index == categoryTypes.length - 1 ? 0 : 8,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withOpacity(0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? color : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      color: isSelected ? color : Colors.grey.shade400,
-                      size: 24,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      type,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isSelected ? color : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            child: _buildTypeChip(
+              typeIcon: typeIcon,
+              label: label,
+              isSelected: isSelected,
+              onTap: () => _onTypeChanged(type),
             ),
           );
-        }),
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildWalletSelector() {
-    return _selectedWalletId == null
-        ? _buildWalletSelectionGrid()
-        : _buildSelectedWalletCard();
-  }
-
-  Widget _buildWalletSelectionGrid() {
+  Widget _buildTypeChip({
+    required CategoryIconData typeIcon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
-      onTap: _showWalletPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? typeIcon.color.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? typeIcon.color : Colors.transparent,
+            width: 2,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a wallet',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectedWalletCard() {
-    final wallet = _walletsViewModel.wallets.firstWhere(
-      (w) => w.id == _selectedWalletId,
-    );
-    return GestureDetector(
-      onTap: _showWalletPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: wallet.iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(wallet.icon, color: wallet.iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  wallet.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${CurrencyFormatter.formatVND(wallet.balance)} đ',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: wallet.balance >= 0
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-
-  void _showWalletPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
         ),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+            Icon(
+              typeIcon.icon,
+              color: isSelected ? typeIcon.color : Colors.grey.shade400,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? typeIcon.color : Colors.grey.shade600,
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Select Wallet',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ...List.generate(_walletsViewModel.wallets.length, (index) {
-              final wallet = _walletsViewModel.wallets[index];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedWalletId = wallet.id;
-                  });
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: wallet.iconColor.withOpacity(0.2),
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: wallet.iconColor.withOpacity(0.2),
-                        child: Icon(
-                          wallet.icon,
-                          color: wallet.iconColor,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        wallet.name,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategorySelector() {
-    return _selectedCategoryId == null
-        ? _buildCategorySelectionGrid()
-        : _buildSelectedCategoryCard();
+  Widget _buildFormCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildCategorySection(),
+          _buildDivider(),
+
+          _buildAmountSection(),
+          _buildDivider(),
+
+          _buildWalletSection(),
+          _buildDivider(),
+
+          _buildDateSection(),
+          _buildDivider(),
+
+          _buildNoteSection(),
+        ],
+      ),
+    );
   }
 
-  Widget _buildCategorySelectionGrid() {
+  Widget _buildDivider() {
+    return Divider(height: 1, color: Colors.grey.shade200);
+  }
+
+  Widget _buildCategorySection() {
+    return _buildCardSection(
+      title: 'Category',
+      icon: Icons.category_outlined,
+      child: StreamBuilder<List<CategoryViewData>>(
+        stream: _categoriesViewModel.categoriesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Text(
+              'Error loading categories',
+              style: TextStyle(color: Colors.red, fontSize: 14),
+            );
+          }
+
+          final categories = snapshot.data ?? [];
+          final filteredCategories = categories
+              .where((cat) => cat.type == _formState.selectedType)
+              .toList();
+
+          if (_formState.selectedCategoryId == null &&
+              filteredCategories.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _onCategoryChanged(filteredCategories.first.id);
+            });
+          }
+
+          return _formState.selectedCategoryId == null
+              ? _buildCategoryPlaceholder()
+              : _buildSelectedCategory(
+                  categories.firstWhere(
+                    (c) => c.id == _formState.selectedCategoryId,
+                  ),
+                );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryPlaceholder() {
     return GestureDetector(
       onTap: _showCategoryPicker,
       child: Row(
@@ -732,10 +291,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
   }
 
-  Widget _buildSelectedCategoryCard() {
-    final category = _categoriesViewModel.categories.firstWhere(
-      (c) => c.id == _selectedCategoryId,
-    );
+  Widget _buildSelectedCategory(CategoryViewData category) {
     return GestureDetector(
       onTap: _showCategoryPicker,
       child: Row(
@@ -769,97 +325,563 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Select Category',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _getFilteredCategories().length,
-                itemBuilder: (context, index) {
-                  final category = _getFilteredCategories()[index];
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryId = category.id;
-                      });
-                      Navigator.pop(context);
+      builder: (context) => StreamBuilder<List<CategoryViewData>>(
+        stream: _categoriesViewModel.categoriesStream,
+        builder: (context, snapshot) {
+          final categories = snapshot.data ?? [];
+          final filtered = categories
+              .where((c) => c.type == _formState.selectedType)
+              .toList();
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  'Select Category',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+
+                // List
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final category = filtered[index];
+                      return _buildCategoryPickerItem(category);
                     },
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      margin: const EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: category.color.withOpacity(0.2),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: category.color.withOpacity(0.2),
-                            child: Icon(
-                              category.icon,
-                              color: category.color,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  category.type.name.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                Text(
-                                  category.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategoryPickerItem(CategoryViewData category) {
+    return GestureDetector(
+      onTap: () {
+        _onCategoryChanged(category.id);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: category.color.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: category.color.withOpacity(0.2),
+              child: Icon(category.icon, color: category.color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                category.name,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAmountSection() {
+    return _buildCardSection(
+      title: 'Amount',
+      icon: Icons.payments_outlined,
+      child: TextFormField(
+        controller: _amountController,
+        keyboardType: TextInputType.number,
+        inputFormatters: [ThousandSeparatorInputFormatter()],
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          hintText: '0',
+          hintStyle: TextStyle(fontSize: 24, color: Colors.grey.shade300),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 12.0, top: 12),
+            child: Text(
+              '₫',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter an amount';
+          }
+          final amount = int.tryParse(value.replaceAll(',', '')) ?? 0;
+          if (amount <= 0) {
+            return 'Amount must be greater than 0';
+          }
+          return null;
+        },
+        onChanged: (value) {
+          setState(() {
+            _formState = _formState.copyWith(amount: value);
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade600, Colors.blue.shade700],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _submitForm,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: const Text(
+          'Save Transaction',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWalletSection() {
+    return _buildCardSection(
+      title: 'Wallet',
+      icon: Icons.account_balance_wallet_outlined,
+      child: StreamBuilder<List<WalletViewData>>(
+        stream: _walletsViewModel.walletsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return Text(
+              'Error loading wallets',
+              style: TextStyle(color: Colors.red, fontSize: 14),
+            );
+          }
+
+          final wallets = snapshot.data ?? [];
+
+          // Auto-select first wallet if none selected
+          if (_formState.selectedWalletId == null && wallets.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _onWalletChanged(wallets.first.id);
+            });
+          }
+
+          return _formState.selectedWalletId == null
+              ? _buildWalletPlaceholder()
+              : _buildSelectedWallet(
+                  wallets.firstWhere(
+                    (w) => w.id == _formState.selectedWalletId,
+                  ),
+                );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWalletPlaceholder() {
+    return GestureDetector(
+      onTap: _showWalletPicker,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Select a wallet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedWallet(WalletViewData wallet) {
+    return GestureDetector(
+      onTap: _showWalletPicker,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: wallet.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(wallet.icon, color: wallet.color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  wallet.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  CurrencyFormatter.formatVND(wallet.balance),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: wallet.balance >= 0
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+        ],
+      ),
+    );
+  }
+
+  void _showWalletPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StreamBuilder<List<WalletViewData>>(
+        stream: _walletsViewModel.walletsStream,
+        builder: (context, snapshot) {
+          final wallets = snapshot.data ?? [];
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Title
+                Text(
+                  'Select Wallet',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+
+                // List
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: wallets.length,
+                    itemBuilder: (context, index) {
+                      final wallet = wallets[index];
+                      return _buildWalletPickerItem(wallet);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWalletPickerItem(WalletViewData wallet) {
+    final isSelected = _formState.selectedWalletId == wallet.id;
+
+    return GestureDetector(
+      onTap: () {
+        _onWalletChanged(wallet.id);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? wallet.color : wallet.color.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? wallet.color.withOpacity(0.05)
+              : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            // Icon
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: wallet.color.withOpacity(0.2),
+              child: Icon(wallet.icon, color: wallet.color, size: 22),
+            ),
+            const SizedBox(width: 12),
+
+            // Name & Balance
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    wallet.name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? wallet.color : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    CurrencyFormatter.formatVND(wallet.balance),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: wallet.balance >= 0
+                          ? Colors.green.shade600
+                          : Colors.red.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Selected indicator
+            if (isSelected)
+              Icon(Icons.check_circle, color: wallet.color, size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateSection() {
+    return _buildCardSection(
+      title: 'Date',
+      icon: Icons.calendar_today_outlined,
+      child: GestureDetector(
+        onTap: _showDatePicker,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.calendar_month,
+                color: Colors.blue.shade700,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              DateFormat('dd/MM/yyyy').format(_formState.selectedDate),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey.shade400,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+Future<void> _showDatePicker() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _formState.selectedDate,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 10),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue.shade700,
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.blue.shade700,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _formState.selectedDate) {
+      setState(() {
+        _formState = _formState.copyWith(selectedDate: picked);
+      });
+    }
+  }
+  Widget _buildNoteSection() {
+    return _buildCardSection(
+      title: 'Note',
+      icon: Icons.notes_outlined,
+      child: TextFormField(
+        controller: _noteController,
+        maxLines: 3,
+        decoration: InputDecoration(
+          hintText: 'Add a note (optional)',
+          hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        onChanged: (value) {
+          setState(() {
+            _formState = _formState.copyWith(note: value);
+          });
+        },
+      ),
+    );
+  }
+
+  void _onTypeChanged(CategoryType type) {
+    setState(() {
+      _formState = _formState.copyWith(
+        selectedType: type,
+        selectedCategoryId: null,
+      );
+    });
+  }
+
+  void _onCategoryChanged(String categoryId) {
+    setState(() {
+      _formState = _formState.copyWith(selectedCategoryId: categoryId);
+    });
+  }
+
+  void _onWalletChanged(String walletId) {
+    setState(() {
+      _formState = _formState.copyWith(selectedWalletId: walletId);
+    });
+  }
+
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_formState.isValid) return;
+
+    try {
+      final transaction = TransactionPayload.fromFormState(_formState);
+
+      await _transactionViewModel.addTransaction(transaction);
+
+      if (mounted) {
+        SuccessNotification.show(
+          context: context,
+          message: 'Transaction added successfully!',
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorNotification.show(
+          context: context,
+          message: 'Failed to add transaction: $e',
+        );
+      }
+    }
   }
 
   Widget _buildCardSection({

@@ -18,13 +18,13 @@ class TransactionDetailsPage extends StatefulWidget {
 }
 
 class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
-  late TransactionViewmodel _viewModel;
+  late TransactionViewModel _viewModel;
   bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = getIt<TransactionViewmodel>();
+    _viewModel = getIt<TransactionViewModel>();
   }
 
   @override

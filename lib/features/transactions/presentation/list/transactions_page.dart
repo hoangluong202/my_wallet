@@ -10,7 +10,7 @@ class TransactionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = getIt<TransactionViewmodel>();
+    final viewModel = getIt<TransactionViewModel>();
 
     return DefaultTabController(
       length: 3,

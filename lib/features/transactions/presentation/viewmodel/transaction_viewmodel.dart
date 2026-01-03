@@ -1,10 +1,11 @@
 import '../model/transaction_view_data.dart';
 import '../../data/repositories/transaction_repository.dart';
+import '../form/transaction_payload.dart';
 
-class TransactionViewmodel {
+class TransactionViewModel {
   final TransactionRepository _transactionRepository;
 
-  TransactionViewmodel(this._transactionRepository);
+  TransactionViewModel(this._transactionRepository);
 
   Stream<List<TransactionViewData>> watchAllTransactions() {
     return _transactionRepository.watchAllTransactions().map(
@@ -18,6 +19,10 @@ class TransactionViewmodel {
     return _transactionRepository
         .watchTransactionById(transactionId)
         .map((transaction) => TransactionViewData.fromDomain(transaction!));
+  }
+
+  Future<String> addTransaction(TransactionPayload transaction) async {
+    return await _transactionRepository.createTransaction(transaction);
   }
 
   Future<void> deleteTransaction(String transactionId) async {
