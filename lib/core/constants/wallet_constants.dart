@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../features/wallets/domain/entities/wallet_icon.dart';
+
+class WalletIcon {
+  final IconData icon;
+  final Color color;
+  final String label;
+
+  const WalletIcon({
+    required this.icon,
+    required this.color,
+    required this.label,
+  });
+}
 
 class WalletConstants {
   static const String defaultCurrency = 'VND (₫)';

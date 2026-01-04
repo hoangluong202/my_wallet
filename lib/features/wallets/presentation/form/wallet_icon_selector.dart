@@ -49,7 +49,7 @@ class WalletIconSelector extends StatelessWidget {
               iconData.color == selectedIconColor;
 
           return _IconOption(
-            iconData: iconData,
+            iconData: WalletIconData(icon: iconData.icon, color: iconData.color),
             isSelected: isSelected,
             onTap: () => onIconSelected(iconData.icon, iconData.color),
           );

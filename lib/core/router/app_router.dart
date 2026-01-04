@@ -6,7 +6,7 @@ import '../../features/wallets/presentation/form/add_wallet_page.dart';
 import '../../features/wallets/presentation/form/edit_wallet_page.dart';
 import '../../features/wallets/presentation/detail/wallet_detail_page.dart';
 import '../../features/wallets/presentation/history/wallet_history_page.dart';
-import '../../features/wallets/domain/wallet.dart';
+import '../../features/wallets/presentation/model/wallet_view_data.dart';
 import '../di/injector.dart';
 
 class AppRouter {
@@ -35,7 +35,7 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AddWalletPage());
 
       case editWallet:
-        final wallet = settings.arguments as Wallet;
+        final wallet = settings.arguments as WalletViewData;
         return MaterialPageRoute(
           builder: (_) => EditWalletPage(wallet: wallet),
         );
@@ -80,7 +80,7 @@ class EditWalletArguments {
 }
 
 class WalletDetailArguments {
-  final Wallet wallet;
+  final WalletViewData wallet;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onHistory;
@@ -94,7 +94,7 @@ class WalletDetailArguments {
 }
 
 class WalletHistoryArguments {
-  final Wallet wallet;
+  final WalletViewData wallet;
   final String walletName;
 
   const WalletHistoryArguments({
