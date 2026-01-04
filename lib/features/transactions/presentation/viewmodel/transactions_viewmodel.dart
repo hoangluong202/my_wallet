@@ -2,10 +2,10 @@ import '../model/transaction_view_data.dart';
 import '../../data/repositories/transaction_repository.dart';
 import '../form/transaction_payload.dart';
 
-class TransactionViewModel {
+class TransactionsViewModel {
   final TransactionRepository _transactionRepository;
 
-  TransactionViewModel(this._transactionRepository);
+  TransactionsViewModel(this._transactionRepository);
 
   Stream<List<TransactionViewData>> watchAllTransactions() {
     return _transactionRepository.watchAllTransactions().map(

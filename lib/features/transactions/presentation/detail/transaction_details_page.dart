@@ -5,7 +5,7 @@ import '../../../../core/widgets/notification_widget.dart';
 import 'transaction_action_buttons.dart';
 import '../form/edit_transaction_page.dart';
 import '../../../../core/di/injector.dart';
-import '../viewmodel/transaction_viewmodel.dart';
+import '../viewmodel/transactions_viewmodel.dart';
 import '../model/transaction_view_data.dart';
 import 'transaction_details_card.dart';
 
@@ -18,13 +18,13 @@ class TransactionDetailsPage extends StatefulWidget {
 }
 
 class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
-  late TransactionViewModel _viewModel;
+  late TransactionsViewModel _viewModel;
   bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = getIt<TransactionViewModel>();
+    _viewModel = getIt<TransactionsViewModel>();
   }
 
   @override

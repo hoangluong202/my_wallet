@@ -4,7 +4,7 @@ import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../viewmodel/transaction_viewmodel.dart';
+import '../viewmodel/transactions_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../categories/domain/category.dart';
@@ -29,7 +29,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
-  late TransactionViewModel _transactionViewModel;
+  late TransactionsViewModel _transactionViewModel;
   late CategoriesViewModel _categoriesViewModel;
   late WalletsViewModel _walletsViewModel;
 
@@ -42,7 +42,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _amountController = TextEditingController();
     _noteController = TextEditingController();
 
-    _transactionViewModel = getIt<TransactionViewModel>();
+    _transactionViewModel = getIt<TransactionsViewModel>();
     _categoriesViewModel = getIt<CategoriesViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
 
@@ -783,7 +783,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       ),
     );
   }
-Future<void> _showDatePicker() async {
+
+  Future<void> _showDatePicker() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -815,6 +816,7 @@ Future<void> _showDatePicker() async {
       });
     }
   }
+
   Widget _buildNoteSection() {
     return _buildCardSection(
       title: 'Note',

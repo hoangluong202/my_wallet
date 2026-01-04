@@ -1,12 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import '../../data/repositories/auth_repository.dart';
-import '../../../users/domain/services/user_service.dart';
 import '../../../../database/app_database.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final AuthRepository _authRepository;
-  final UserService _userService;
   final AppDatabase _database;
 
   firebase_auth.User? _currentUser;
@@ -14,7 +12,7 @@ class AuthViewModel extends ChangeNotifier {
   String? _error;
   bool _isAuthenticated = false;
 
-  AuthViewModel(this._authRepository, this._userService, this._database) {
+  AuthViewModel(this._authRepository,this._database) {
     _initializeAuth();
   }
 
@@ -44,7 +42,7 @@ class AuthViewModel extends ChangeNotifier {
         _isAuthenticated = true;
 
         // Save or update user in local database
-        await _userService.handleUserLogin(user);
+        // await _userService.handleUserLogin(user);
 
         _isLoading = false;
         notifyListeners();

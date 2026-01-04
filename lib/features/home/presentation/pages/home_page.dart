@@ -5,8 +5,6 @@ import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../users/presentation/viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
-import '../../../categories/presentation/list/categories_viewmodel.dart';
-import '../../../transactions/presentation/list/transactions_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,16 +17,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final UserViewModel _userViewModel;
   late final WalletsViewModel _walletsViewModel;
-  late final CategoriesViewModel _categoriesViewModel;
-  late final TransactionsViewModel _transactionsViewModel;
 
   @override
   void initState() {
     super.initState();
     _userViewModel = getIt<UserViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
-    _categoriesViewModel = getIt<CategoriesViewModel>();
-    _transactionsViewModel = getIt<TransactionsViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
     });
@@ -58,19 +52,6 @@ class _HomePageState extends State<HomePage> {
         }
         return;
       }
-
-      final userId = currentUser.uid;
-
-      // Sync wallets, categories, transactions, and user data
-      await Future.wait([
-        _walletsViewModel.bidirectionalSync(userId),
-        _categoriesViewModel.bidirectionalSync(userId),
-        _userViewModel.bidirectionalSync(userId),
-      ]);
-
-      await Future.wait([
-        _transactionsViewModel.bidirectionalSync(userId),
-      ]);
 
       if (context.mounted) {
         SuccessNotification.show(
@@ -180,23 +161,18 @@ class _HomePageState extends State<HomePage> {
                   ListenableBuilder(
                     listenable: _walletsViewModel,
                     builder: (context, _) {
-                      final isSyncing = _walletsViewModel.isSyncing;
                       return IconButton(
-                        onPressed: isSyncing ? null : () => _syncData(context),
-                        icon: isSyncing
-                            ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Icon(Icons.cloud_sync, color: Colors.white),
-                        iconSize: 24,
-                        tooltip: 'Sync wallets',
+                        onPressed: () => _syncData(context),
+                        icon: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        ),
                       );
                     },
                   ),

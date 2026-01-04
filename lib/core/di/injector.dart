@@ -8,7 +8,7 @@ import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../features/users/data/datasources/user_firebase_service.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
-import '../../features/users/domain/repositories/user_repository.dart';
+import '../../features/users/data/repositories/user_repository.dart';
 import '../../features/users/domain/services/user_service.dart';
 import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
 import '../../features/wallets/presentation/list/wallets_viewmodel.dart';

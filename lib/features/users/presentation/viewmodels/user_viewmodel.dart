@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../domain/repositories/user_repository.dart';
-import '../../domain/entities/user.dart';
+import '../../domain/user.dart';
 
 class UserViewModel extends ChangeNotifier {
-  final UserRepository _userRepository;
-
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
 
-  UserViewModel(this._userRepository);
+  UserViewModel();
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -24,7 +21,6 @@ class UserViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _currentUser = await _userRepository.getUserById(userId);
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -43,28 +39,5 @@ class UserViewModel extends ChangeNotifier {
     _currentUser = null;
     _error = null;
     notifyListeners();
-  }
-
-  /// Bidirectional sync: Push local user data to cloud, then pull from cloud
-  Future<void> bidirectionalSync(String userId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      // Step 1: Push local user data to cloud
-      await _userRepository.syncToCloud(userId);
-
-      // Step 2: Pull updates from cloud
-      await _userRepository.pullFromCloud(userId);
-
-      // Step 3: Reload user data
-      await loadUser(userId);
-    } catch (e) {
-      _error = 'Sync failed: $e';
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
-    }
   }
 }

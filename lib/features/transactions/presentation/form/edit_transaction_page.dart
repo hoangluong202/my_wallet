@@ -5,7 +5,7 @@ import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousand_separator_input_formatter.dart';
-import '../viewmodel/transaction_viewmodel.dart';
+import '../viewmodel/transactions_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../presentation/model/transaction_view_data.dart';
@@ -32,7 +32,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
-  late TransactionViewModel _transactionViewModel;
+  late TransactionsViewModel _transactionViewModel;
   late CategoriesViewModel _categoriesViewModel;
   late WalletsViewModel _walletsViewModel;
 
@@ -49,7 +49,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       text: widget.transaction.note ?? '',
     );
 
-    _transactionViewModel = getIt<TransactionViewModel>();
+    _transactionViewModel = getIt<TransactionsViewModel>();
     _categoriesViewModel = getIt<CategoriesViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
 

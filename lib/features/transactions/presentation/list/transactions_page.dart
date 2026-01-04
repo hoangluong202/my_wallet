@@ -3,14 +3,14 @@ import '../../../../core/di/injector.dart';
 import 'transactions_header.dart';
 import 'transactions_tab_content.dart';
 import '../model/transaction_view_data.dart';
-import '../viewmodel/transaction_viewmodel.dart';
+import '../viewmodel/transactions_viewmodel.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = getIt<TransactionViewModel>();
+    final viewModel = getIt<TransactionsViewModel>();
 
     return DefaultTabController(
       length: 3,
