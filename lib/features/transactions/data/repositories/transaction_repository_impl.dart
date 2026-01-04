@@ -167,12 +167,12 @@ class TransactionRepositoryImpl implements TransactionRepository {
       throw Exception('Failed to create transaction: $e');
     }
   }
-  
+
   @override
-  Future<void> updateTransaction(Transaction transaction) async {
+  Future<void> updateTransaction(TransactionPayload transaction) async {
     try {
       await _database.transactionDao.updateTransaction(
-        _toCompanion(transaction),
+        _payloadToCompanion(transaction),
       );
     } catch (e) {
       throw Exception('Failed to update transaction: $e');

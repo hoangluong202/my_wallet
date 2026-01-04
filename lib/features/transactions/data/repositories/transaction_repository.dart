@@ -15,6 +15,6 @@ abstract class TransactionRepository {
     DateTime endDate,
   );
   Future<String> createTransaction(TransactionPayload transaction);
-  Future<void> updateTransaction(Transaction transaction);
+  Future<void> updateTransaction(TransactionPayload transaction);
   Future<void> deleteTransaction(String id);
 }

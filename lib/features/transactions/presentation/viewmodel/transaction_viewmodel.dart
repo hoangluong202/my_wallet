@@ -25,6 +25,10 @@ class TransactionViewModel {
     return await _transactionRepository.createTransaction(transaction);
   }
 
+  Future<void> updateTransaction(TransactionPayload transaction) async {
+    return await _transactionRepository.updateTransaction(transaction);
+  }
+
   Future<void> deleteTransaction(String transactionId) async {
     return await _transactionRepository.deleteTransaction(transactionId);
   }
