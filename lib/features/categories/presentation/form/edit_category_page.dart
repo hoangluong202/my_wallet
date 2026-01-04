@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../domain/category.dart';
 import '../constants/category_icons.dart';
+import '../model/category_view_data.dart';
 
 class EditCategoryPage extends StatefulWidget {
-  final Category category;
+  final CategoryViewData category;
 
   const EditCategoryPage({super.key, required this.category});
 
@@ -24,7 +24,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.category.name);
-    _selectedIcon = CategoryIcons.getIconByCodePoint(widget.category.iconCode).icon;
+    _selectedIcon = widget.category.icon;
   }
 
   @override

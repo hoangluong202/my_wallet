@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../domain/category.dart';
-import '../constants/category_icons.dart';
+import '../model/category_view_data.dart';
 
 class CategoryCard extends StatelessWidget {
-  final Category category;
+  final CategoryViewData category;
   final VoidCallback onTap;
 
   const CategoryCard({super.key, required this.category, required this.onTap});
@@ -41,19 +41,14 @@ class CategoryCard extends StatelessWidget {
   }
 
   Widget _buildCategoryIcon() {
-
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: CategoryIcons.getIconByCodePoint(category.iconCode).color.withValues(alpha: 0.2),
+        color: category.color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(
-        CategoryIcons.getIconByCodePoint(category.iconCode).icon,
-        color: CategoryIcons.getIconByCodePoint(category.iconCode).color,
-        size: 22,
-      ),
+      child: Icon(category.icon, color: category.color, size: 22),
     );
   }
 

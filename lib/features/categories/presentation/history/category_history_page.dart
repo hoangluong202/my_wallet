@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/category.dart';
-import '../constants/category_icons.dart';
+import '../model/category_view_data.dart';
 
 class TransactionHistory {
   final double amount;
@@ -17,7 +16,7 @@ class TransactionHistory {
 }
 
 class CategoryHistoryPage extends StatelessWidget {
-  final Category category;
+  final CategoryViewData category;
 
   const CategoryHistoryPage({super.key, required this.category});
 
@@ -122,13 +121,13 @@ class CategoryHistoryPage extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: CategoryIcons.getIconByCodePoint(category.iconCode).color.withValues(alpha: 0.2),
+                      color: category.color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      CategoryIcons.getIconByCodePoint(category.iconCode).icon,
+                      category.icon,
                       size: 18,
-                      color: CategoryIcons.getIconByCodePoint(category.iconCode).color,
+                      color: category.color,
                     ),
                   ),
                 ],

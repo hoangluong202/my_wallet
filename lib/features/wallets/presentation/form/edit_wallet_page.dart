@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../domain/wallet.dart';
 import 'wallet_form_page.dart';
+import '../model/wallet_view_data.dart';
 
 class EditWalletPage extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
 
   const EditWalletPage({super.key, required this.wallet});
 

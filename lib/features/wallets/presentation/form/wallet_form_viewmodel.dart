@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../domain/wallet.dart';
 import '../../../../core/constants/wallet_constants.dart';
-import '../constants/wallet_icons.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletFormViewModel extends ChangeNotifier {
   final TextEditingController nameController;
@@ -12,19 +11,16 @@ class WalletFormViewModel extends ChangeNotifier {
   Color _selectedIconColor = Colors.blue;
 
   final bool isEditMode;
-  final Wallet? existingWallet;
+  final WalletViewData? existingWallet;
 
   WalletFormViewModel({this.isEditMode = false, this.existingWallet})
     : nameController = TextEditingController(text: existingWallet?.name ?? ''),
       balanceController = TextEditingController(
-        text: existingWallet != null
-            ? _formatVND(existingWallet.balance)
-            : '',
+        text: existingWallet != null ? _formatVND(existingWallet.balance) : '',
       ) {
     if (existingWallet != null) {
-      final iconData = WalletIcons.getIconByCodePoint(existingWallet!.iconCode);
-      _selectedIcon = iconData.icon;
-      _selectedIconColor = iconData.color;
+      _selectedIcon = existingWallet!.icon;
+      _selectedIconColor = existingWallet!.color;
     }
   }
 

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../domain/category.dart';
-import '../constants/category_icons.dart';
+import '../model/category_view_data.dart';
 
 class CategoryIconSection extends StatelessWidget {
-  final Category category;
+  final CategoryViewData category;
 
   const CategoryIconSection({super.key, required this.category});
 
   @override
   Widget build(BuildContext context) {
-    final iconData = CategoryIcons.getIconByCodePoint(category.iconCode);
     return Center(
       child: Column(
         children: [
@@ -17,10 +15,10 @@ class CategoryIconSection extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: iconData.color.withValues(alpha: 0.2),
+              color: category.color.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(iconData.icon, size: 40, color: iconData.color),
+            child: Icon(category.icon, size: 40, color: category.color),
           ),
           const SizedBox(height: 16),
           Text(

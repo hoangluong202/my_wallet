@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/extensions/context_extensions.dart';
-import '../../domain/wallet.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../list/wallet_icon_section.dart';
 import 'wallet_info_card.dart';
 import 'wallet_action_buttons.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletDetailPage extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onHistory;

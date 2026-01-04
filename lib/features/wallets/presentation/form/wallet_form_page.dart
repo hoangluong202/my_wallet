@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../domain/wallet.dart';
 import 'wallet_form_viewmodel.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import 'wallet_icon_selector.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletFormPage extends StatefulWidget {
-  final Wallet? wallet;
+  final WalletViewData? wallet;
   final bool isEditMode;
 
   const WalletFormPage({super.key, this.wallet, this.isEditMode = false});

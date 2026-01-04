@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../domain/wallet.dart';
-import '../helpers/wallet_icon_helper.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletCard extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
   final VoidCallback onTap;
 
   const WalletCard({super.key, required this.wallet, required this.onTap});
@@ -47,11 +46,13 @@ class WalletCard extends StatelessWidget {
   }
 
   Widget _buildIcon() {
-    return WalletIconHelper.buildIconWithBackground(
-      wallet.iconCode,
-      size: 26,
-      padding: 10,
-      borderRadius: 12,
+    return Container(
+      decoration: BoxDecoration(
+        color: wallet.color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: EdgeInsets.all(10),
+      child: Icon(wallet.icon, color: wallet.color, size: 26),
     );
   }
 

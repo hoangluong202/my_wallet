@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../domain/wallet.dart';
-import '../constants/wallet_icons.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletHistoryPage extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
 
   const WalletHistoryPage({super.key, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
     final historyEntries = _getHistoryData();
-    final iconData = WalletIcons.getIconByCodePoint(wallet.iconCode);
 
     return Scaffold(
       body: SafeArea(
@@ -58,10 +56,10 @@ class WalletHistoryPage extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: iconData.color.withValues(alpha: 0.15),
+                      color: wallet.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(iconData.icon, size: 18, color: iconData.color),
+                    child: Icon(wallet.icon, size: 18, color: wallet.color),
                   ),
                 ],
               ),

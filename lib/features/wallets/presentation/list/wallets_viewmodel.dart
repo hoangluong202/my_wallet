@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../../domain/wallet.dart';
@@ -12,8 +11,6 @@ class WalletsViewModel extends ChangeNotifier {
 
   String? _error;
   String? get error => _error;
-
-  StreamSubscription<List<Wallet>>? _subscription;
 
   Stream<List<WalletViewData>> get walletsStream => _repository.watchAllWallets().map(
     (wallets) => wallets.map((wallet) => WalletViewData.fromDomain(wallet)).toList(),

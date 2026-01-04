@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/category.dart';
-import '../constants/category_icons.dart';
+import '../model/category_view_data.dart';
 
 class CategoryInfoCard extends StatelessWidget {
-  final Category category;
+  final CategoryViewData category;
 
   const CategoryInfoCard({super.key, required this.category});
 
@@ -31,7 +31,7 @@ class CategoryInfoCard extends StatelessWidget {
             context,
             'Type',
             _getCategoryTypeLabel(category.type),
-            CategoryIcons.getIconByCodePoint(category.iconCode).color,
+            category.color,
           ),
           const SizedBox(height: 16),
           _buildInfoRow(

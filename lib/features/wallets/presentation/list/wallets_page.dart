@@ -11,6 +11,7 @@ import '../form/add_wallet_page.dart';
 import '../form/wallet_form_page.dart';
 import '../detail/wallet_detail_page.dart';
 import '../history/wallet_history_page.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletsPage extends StatefulWidget {
   const WalletsPage({super.key});
@@ -77,7 +78,7 @@ class _WalletsPageState extends State<WalletsPage> {
                     },
                   ),
                   Expanded(
-                    child: StreamBuilder<List<Wallet>>(
+                    child: StreamBuilder<List<WalletViewData>>(
                       stream: _viewModel.walletsStream,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
@@ -175,7 +176,7 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
-  void _onWalletTap(Wallet wallet) {
+  void _onWalletTap(WalletViewData wallet) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -189,7 +190,7 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
-  void _onEditWallet(Wallet wallet) async {
+  void _onEditWallet(WalletViewData wallet) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -219,7 +220,7 @@ class _WalletsPageState extends State<WalletsPage> {
     }
   }
 
-  Future<void> _onDeleteWallet(Wallet wallet) async {
+  Future<void> _onDeleteWallet(WalletViewData wallet) async {
     try {
       await _viewModel.deleteWallet(wallet.id);
       if (mounted && _viewModel.error == null) {
@@ -240,7 +241,7 @@ class _WalletsPageState extends State<WalletsPage> {
     }
   }
 
-  void _onViewHistory(Wallet wallet) {
+  void _onViewHistory(WalletViewData wallet) {
     Navigator.push(
       context,
       MaterialPageRoute(

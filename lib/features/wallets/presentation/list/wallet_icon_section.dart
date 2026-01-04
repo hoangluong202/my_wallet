@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../domain/wallet.dart';
-import '../constants/wallet_icons.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletIconSection extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
 
   const WalletIconSection({super.key, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
-    final iconData = WalletIcons.getIconByCodePoint(wallet.iconCode);
-
     return Center(
       child: Column(
         children: [
@@ -18,10 +15,10 @@ class WalletIconSection extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: iconData.color.withValues(alpha: 0.15),
+              color: wallet.color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(iconData.icon, size: 28, color: iconData.color),
+            child: Icon(wallet.icon, size: 28, color: wallet.color),
           ),
           const SizedBox(height: 8),
           Text(

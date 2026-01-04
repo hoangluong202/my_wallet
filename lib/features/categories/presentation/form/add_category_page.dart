@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../list/categories_page.dart';
 import '../constants/category_icons.dart';
 import '../../domain/category.dart';
 import '../../presentation/helpers/label.dart';
@@ -8,7 +7,7 @@ class AddCategoryPage extends StatefulWidget {
   final CategoryType preselectedType;
 
   const AddCategoryPage({super.key, required this.preselectedType});
-
+  
   @override
   State<AddCategoryPage> createState() => _AddCategoryPageState();
 }

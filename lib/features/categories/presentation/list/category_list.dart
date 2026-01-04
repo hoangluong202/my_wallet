@@ -9,6 +9,7 @@ import '../detail/category_detail_page.dart';
 import '../history/category_history_page.dart';
 import '../detail/category_card.dart';
 import './category_empty_state.dart';
+import '../model/category_view_data.dart';
 
 class CategoryList extends StatelessWidget {
   final CategoryType type;
@@ -24,7 +25,7 @@ class CategoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Category>>(
+    return StreamBuilder<List<CategoryViewData>>(
       stream: viewModel.categoriesStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -62,10 +63,9 @@ class CategoryList extends StatelessWidget {
       children: [
         Text(
           '${_getCategoryLabel()} Categories',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         FilledButton.icon(
           onPressed: () => _onAddCategory(context),
@@ -93,7 +93,7 @@ class CategoryList extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoriesList(BuildContext context, List<Category> items) {
+  Widget _buildCategoriesList(BuildContext context, List<CategoryViewData> items) {
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -107,7 +107,7 @@ class CategoryList extends StatelessWidget {
     );
   }
 
-  void _onCategoryTap(BuildContext context, Category category) {
+  void _onCategoryTap(BuildContext context, CategoryViewData category) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -121,7 +121,7 @@ class CategoryList extends StatelessWidget {
     );
   }
 
-  Future<void> _onEditCategory(BuildContext context, Category category) async {
+  Future<void> _onEditCategory(BuildContext context, CategoryViewData category) async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
@@ -153,7 +153,7 @@ class CategoryList extends StatelessWidget {
 
   Future<void> _onDeleteCategory(
     BuildContext context,
-    Category category,
+    CategoryViewData category,
   ) async {
     try {
       await viewModel.deleteCategory(category.id);
@@ -176,7 +176,7 @@ class CategoryList extends StatelessWidget {
     }
   }
 
-  void _onViewHistory(BuildContext context, Category category) {
+  void _onViewHistory(BuildContext context, CategoryViewData category) {
     Navigator.push(
       context,
       MaterialPageRoute(

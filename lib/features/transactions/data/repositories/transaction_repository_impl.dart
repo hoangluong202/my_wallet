@@ -56,19 +56,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return joinedDataList.map(_mapToDomain).toList();
   }
 
-  TransactionsCompanion _toCompanion(Transaction transaction) {
-    return TransactionsCompanion(
-      id: Value(transaction.id),
-      categoryId: Value(transaction.category.id),
-      walletId: Value(transaction.wallet.id),
-      amount: Value(transaction.amount),
-      note: Value(transaction.note),
-      transactionDate: Value(transaction.transactionDate),
-      createdAt: Value(transaction.createdAt),
-      updatedAt: Value(transaction.updatedAt),
-    );
-  }
-
   TransactionsCompanion _payloadToCompanion(TransactionPayload payload) {
     return TransactionsCompanion(
       id: Value(payload.id),

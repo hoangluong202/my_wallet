@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/header/detail_header.dart';
-import '../../domain/category.dart';
 import '../form/category_icon_section.dart';
 import 'category_info_card.dart';
 import '../../../wallets/presentation/detail/wallet_action_buttons.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../model/category_view_data.dart';
 
 class CategoryDetailPage extends StatelessWidget {
-  final Category category;
+  final CategoryViewData category;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onHistory;

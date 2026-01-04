@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../domain/wallet.dart';
-import '../constants/wallet_icons.dart';
+import '../model/wallet_view_data.dart';
 
 class WalletInfoCard extends StatelessWidget {
-  final Wallet wallet;
+  final WalletViewData wallet;
 
   const WalletInfoCard({super.key, required this.wallet});
 
   @override
   Widget build(BuildContext context) {
-    final iconData = WalletIcons.getIconByCodePoint(wallet.iconCode);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -20,14 +18,14 @@ class WalletInfoCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            iconData.color.withValues(alpha: 0.8),
-            iconData.color.withValues(alpha: 0.6),
+            wallet.color.withOpacity(0.8),
+            wallet.color.withOpacity(0.6),
           ],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: iconData.color.withValues(alpha: 0.3),
+            color: wallet.color.withOpacity(0.3),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
