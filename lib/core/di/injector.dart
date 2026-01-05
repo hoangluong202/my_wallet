@@ -9,31 +9,56 @@ import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/data/repositories/user_repository.dart';
 import '../../features/wallets/presentation/list/wallets_viewmodel.dart';
+import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
+import '../../features/transactions/presentation/viewmodel/transactions_viewmodel.dart';
+import '../../features/categories/presentation/list/categories_viewmodel.dart';
+import '../../features/transactions/data/repositories/transaction_repository.dart';
+import '../../features/transactions/data/repositories/transaction_repository_impl.dart';
+import '../../features/categories/data/repositories/categories_repository.dart';
+import '../../features/categories/data/repositories/categories_repository_impl.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> setupDependencies() async {
-  // Core - Database
+  // ============================================
+  // LAYER 1: CORE - Infrastructure
+  // ============================================
+
   getIt.registerLazySingleton<AppDatabase>(() => AppDatabase());
 
-  // Firebase
   getIt.registerLazySingleton<FirebaseFirestore>(
     () => FirebaseFirestore.instance,
   );
 
   getIt.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
 
-  // Auth Repository
+  // ============================================
+  // LAYER 2: DATA - Repositories
+  // ============================================
+
   getIt.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>()),
   );
 
-  // User Repository
   getIt.registerLazySingleton<UserRepository>(
     () => UserRepositoryImpl(getIt<AppDatabase>().userDao),
   );
 
-  // View Model
+  getIt.registerLazySingleton<WalletRepository>(
+    () => WalletRepositoryImpl(getIt<AppDatabase>()),
+  );
+
+  getIt.registerLazySingleton<TransactionRepository>(
+    () => TransactionRepositoryImpl(getIt<AppDatabase>()),
+  );
+
+  getIt.registerLazySingleton<CategoriesRepository>(
+    () => CategoriesRepositoryImpl(getIt<AppDatabase>()),
+  );
+
+  // ============================================
+  // LAYER 3: PRESENTATION - ViewModels
+  // ============================================
   getIt.registerSingleton<AuthViewModel>(
     AuthViewModel(getIt<AuthRepository>(), getIt<AppDatabase>()),
   );
@@ -42,8 +67,13 @@ Future<void> setupDependencies() async {
     () => WalletsViewModel(getIt<WalletRepository>()),
   );
 
-  // Repositories
-  getIt.registerLazySingleton<WalletRepository>(
-    () => WalletRepositoryImpl(getIt<AppDatabase>()),
+  getIt.registerFactory<UserViewModel>(() => UserViewModel());
+
+  getIt.registerFactory<TransactionsViewModel>(
+    () => TransactionsViewModel(getIt<TransactionRepository>()),
+  );
+
+  getIt.registerFactory<CategoriesViewModel>(
+    () => CategoriesViewModel(getIt<CategoriesRepository>()),
   );
 }

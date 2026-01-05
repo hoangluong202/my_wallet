@@ -17,7 +17,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _authViewModel = getIt.get<AuthViewModel>();
+    _authViewModel = getIt<AuthViewModel>();
   }
 
   @override
@@ -25,7 +25,6 @@ class _MyAppState extends State<MyApp> {
     return ListenableBuilder(
       listenable: _authViewModel,
       builder: (context, _) {
-        // Determine initial route based on auth state
         final initialRoute = _authViewModel.isAuthenticated
             ? AppRouter.main
             : AppRouter.login;
