@@ -74,21 +74,50 @@ class WalletFormViewModel extends ChangeNotifier {
     }
   }
 
-  Map<String, dynamic> getWalletData() {
-    return {
-      'id':
-          existingWallet?.id ??
-          DateTime.now().millisecondsSinceEpoch.toString(),
-      'name': nameController.text.trim(),
-      'currency': _selectedCurrency,
-      'balance': int.parse(
-        balanceController.text.replaceAll('.', ''),
-      ).toDouble(),
-      'icon': _selectedIcon,
-      'iconColor': _selectedIconColor,
-      'createdAt': existingWallet?.createdAt ?? DateTime.now(),
-      'updatedAt': DateTime.now(),
-    };
+  Future<bool> createWallet() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final wallet = Wallet(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: 'current_user_id', // TODO: Get from AuthViewModel
+        name: nameController.text.trim(),
+        balance: _parseBalance(),
+        icon: selectedIcon,
+        iconColor: selectedIconColor,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.createWallet(wallet);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to create wallet: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  double _parseBalance() {
+    final cleanValue = balanceController.text.replaceAll('.', '');
+    return double.parse(cleanValue);
+  }
+
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 
   static String _formatVND(int amount) {

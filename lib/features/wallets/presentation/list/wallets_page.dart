@@ -7,7 +7,6 @@ import 'wallets_viewmodel.dart';
 import 'wallets_app_bar.dart';
 import 'wallet_summary_card.dart';
 import 'wallet_card.dart';
-import '../form/add_wallet_page.dart';
 import '../form/wallet_form_page.dart';
 import '../detail/wallet_detail_page.dart';
 import '../history/wallet_history_page.dart';
