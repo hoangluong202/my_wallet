@@ -1,23 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/wallet_constants.dart';
 import '../model/wallet_view_data.dart';
+import '../../domain/wallet.dart';
+import '../../data/repositories/wallet_repository.dart';
 
 class WalletFormViewModel extends ChangeNotifier {
+  final WalletRepository _repository;
+
   final TextEditingController nameController;
   final TextEditingController balanceController;
+  final bool isEditMode;
+  final WalletViewData? existingWallet;
 
   String _selectedCurrency = WalletConstants.defaultCurrency;
   IconData _selectedIcon = Icons.account_balance_wallet;
   Color _selectedIconColor = Colors.blue;
 
-  final bool isEditMode;
-  final WalletViewData? existingWallet;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  WalletFormViewModel({this.isEditMode = false, this.existingWallet})
-    : nameController = TextEditingController(text: existingWallet?.name ?? ''),
-      balanceController = TextEditingController(
-        text: existingWallet != null ? _formatVND(existingWallet.balance) : '',
-      ) {
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  WalletFormViewModel({
+    required WalletRepository repository,
+    this.isEditMode = false,
+    this.existingWallet,
+  }) : _repository = repository,
+       nameController = TextEditingController(text: existingWallet?.name ?? ''),
+       balanceController = TextEditingController(
+         text: existingWallet != null ? _formatVND(existingWallet.balance) : '',
+       ) {
     if (existingWallet != null) {
       _selectedIcon = existingWallet!.icon;
       _selectedIconColor = existingWallet!.color;
@@ -81,11 +94,9 @@ class WalletFormViewModel extends ChangeNotifier {
     try {
       final wallet = Wallet(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id', // TODO: Get from AuthViewModel
         name: nameController.text.trim(),
         balance: _parseBalance(),
-        icon: selectedIcon,
-        iconColor: selectedIconColor,
+        iconCode: _selectedIcon.codePoint,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -100,9 +111,58 @@ class WalletFormViewModel extends ChangeNotifier {
     }
   }
 
-  double _parseBalance() {
+  Future<bool> updateWallet() async {
+    if (existingWallet == null) {
+      _setError('No wallet to update');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final wallet = Wallet(
+        id: existingWallet!.id,
+        name: nameController.text.trim(),
+        balance: _parseBalance(),
+        iconCode: _selectedIcon.codePoint,
+        createdAt: existingWallet!.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      await _repository.updateWallet(wallet);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to update wallet: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> deleteWallet() async {
+    if (existingWallet == null) {
+      _setError('No wallet to delete');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _repository.deleteWallet(existingWallet!.id); // ✅ Call repository
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError('Failed to delete wallet: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  int _parseBalance() {
     final cleanValue = balanceController.text.replaceAll('.', '');
-    return double.parse(cleanValue);
+    return int.parse(cleanValue);
   }
 
   void _setLoading(bool value) {

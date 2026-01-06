@@ -46,7 +46,10 @@ class _WalletFormPageState extends State<WalletFormPage> {
   void initState() {
     super.initState();
 
+    final repository = GetIt.instance<WalletRepository>();
+
     _viewModel = WalletFormViewModel(
+      repository: repository,
       isEditMode: widget.isEditMode,
       existingWallet: widget.wallet,
     );
@@ -316,11 +319,8 @@ class _WalletFormPageState extends State<WalletFormPage> {
             ? 'Wallet updated successfully!'
             : 'Wallet created successfully!',
       );
-
-      // Close page and return success
       Navigator.pop(context, true);
     } else {
-      // Error already shown in UI via _viewModel.errorMessage
       ErrorNotification.show(
         context: context,
         message: _viewModel.errorMessage ?? 'Something went wrong',
