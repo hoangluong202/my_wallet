@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/wallet_constants.dart';
 import '../constants/wallet_icons.dart';
 
 class WalletIconSelector extends StatelessWidget {
@@ -41,9 +40,9 @@ class WalletIconSelector extends StatelessWidget {
       height: 70,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: WalletConstants.availableIcons.length,
+        itemCount: WalletIcons.icons.length,
         itemBuilder: (context, index) {
-          final iconData = WalletConstants.availableIcons[index];
+          final iconData = WalletIcons.icons[index];
           final isSelected =
               iconData.icon == selectedIcon &&
               iconData.color == selectedIconColor;
@@ -84,7 +83,7 @@ class _IconOption extends StatelessWidget {
         ),
         child: CircleAvatar(
           radius: 24,
-          backgroundColor: iconData.color.withOpacity(0.2),
+          backgroundColor: iconData.color.withValues(alpha: 0.2),
           child: Icon(iconData.icon, size: 22, color: iconData.color),
         ),
       ),

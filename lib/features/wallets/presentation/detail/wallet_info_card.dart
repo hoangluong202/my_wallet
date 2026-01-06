@@ -18,14 +18,14 @@ class WalletInfoCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            wallet.color.withOpacity(0.8),
-            wallet.color.withOpacity(0.6),
+            wallet.color.withValues(alpha: 0.8),
+            wallet.color.withValues(alpha: 0.6),
           ],
         ),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: wallet.color.withOpacity(0.3),
+            color: wallet.color.withValues(alpha: 0.3),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -70,7 +70,7 @@ class WalletInfoCard extends StatelessWidget {
   }
 
   Widget _buildDivider() {
-    return Container(height: 1, color: Colors.white.withOpacity(0.2));
+    return Container(height: 1, color: Colors.white.withValues(alpha: 0.2));
   }
 
   Widget _buildDetailsSection() {
@@ -103,7 +103,7 @@ class WalletInfoCard extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontWeight: FontWeight.w500,
           ),
         ),

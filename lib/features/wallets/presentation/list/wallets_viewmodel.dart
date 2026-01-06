@@ -15,6 +15,13 @@ class WalletsViewModel extends ChangeNotifier {
   Stream<List<WalletViewData>> get walletsStream => _repository.watchAllWallets().map(
     (wallets) => wallets.map((wallet) => WalletViewData.fromDomain(wallet)).toList(),
   );
+
+  Stream<WalletViewData?> watchWallet(String walletId) {
+    return _repository.watchWalletById(walletId).map(
+      (wallet) => wallet != null ? WalletViewData.fromDomain(wallet) : null,
+    );
+  }
+
   Stream<int> get totalBalanceStream => walletsStream.map(
     (wallets) => wallets.fold(0, (sum, wallet) => sum + wallet.balance),
   );

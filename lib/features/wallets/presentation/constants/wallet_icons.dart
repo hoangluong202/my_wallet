@@ -10,10 +10,6 @@ class WalletIconData {
 class WalletIcons {
   static const List<WalletIconData> icons = [
     WalletIconData(
-      icon: Icons.error_outline,
-      color: Color(0xFF9E9E9E), // Gray
-    ),
-    WalletIconData(
       icon: Icons.account_balance_wallet,
       color: Color(0xFF2196F3), // Blue
     ),
@@ -99,6 +95,11 @@ class WalletIcons {
     final index = icons.indexWhere(
       (iconData) => iconData.icon.codePoint == codePoint,
     );
-    return index != -1 ? icons[index] : icons[0];
+    return index != -1
+        ? icons[index]
+        : WalletIconData(
+            icon: Icons.error_outline,
+            color: Color(0xFF9E9E9E), // Gray
+          );
   }
 }

@@ -42,12 +42,7 @@ class AppRouter {
       case walletDetail:
         final args = settings.arguments as WalletDetailArguments;
         return MaterialPageRoute(
-          builder: (_) => WalletDetailPage(
-            wallet: args.wallet,
-            onEdit: args.onEdit,
-            onDelete: args.onDelete,
-            onHistory: args.onHistory,
-          ),
+          builder: (_) => WalletDetailPage(walletId: args.wallet.id),
         );
 
       case walletHistory:

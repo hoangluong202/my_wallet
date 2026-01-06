@@ -9,7 +9,6 @@ import 'wallet_summary_card.dart';
 import 'wallet_card.dart';
 import '../form/wallet_form_page.dart';
 import '../detail/wallet_detail_page.dart';
-import '../history/wallet_history_page.dart';
 import '../model/wallet_view_data.dart';
 
 class WalletsPage extends StatefulWidget {
@@ -76,6 +75,7 @@ class _WalletsPageState extends State<WalletsPage> {
                       );
                     },
                   ),
+                  const SizedBox(height: 12),
                   Expanded(
                     child: StreamBuilder<List<WalletViewData>>(
                       stream: _viewModel.walletsStream,
@@ -179,72 +179,7 @@ class _WalletsPageState extends State<WalletsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WalletDetailPage(
-          wallet: wallet,
-          onEdit: () => _onEditWallet(wallet),
-          onDelete: () => _onDeleteWallet(wallet),
-          onHistory: () => _onViewHistory(wallet),
-        ),
-      ),
-    );
-  }
-
-  void _onEditWallet(WalletViewData wallet) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WalletFormPage(wallet: wallet, isEditMode: true),
-      ),
-    );
-
-    if (result != null && mounted) {
-      final updatedWallet = Wallet(
-        id: wallet.id,
-        name: result['name'],
-        balance: result['balance'],
-        createdAt: wallet.createdAt,
-        updatedAt: result['updatedAt'],
-        iconCode: result['iconCode'],
-      );
-
-      await _viewModel.updateWallet(updatedWallet);
-      if (mounted && _viewModel.error == null) {
-        Navigator.pop(context); // Close detail page
-        SuccessNotification.show(
-          context: context,
-          message: 'Wallet "${updatedWallet.name}" updated successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    }
-  }
-
-  Future<void> _onDeleteWallet(WalletViewData wallet) async {
-    try {
-      await _viewModel.deleteWallet(wallet.id);
-      if (mounted && _viewModel.error == null) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Wallet "${wallet.name}" deleted successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ErrorNotification.show(
-          context: context,
-          message: e.toString().replaceFirst('Exception: ', ''),
-          duration: const Duration(seconds: 3),
-        );
-      }
-    }
-  }
-
-  void _onViewHistory(WalletViewData wallet) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WalletHistoryPage(wallet: wallet),
+        builder: (context) => WalletDetailPage(walletId: wallet.id),
       ),
     );
   }
