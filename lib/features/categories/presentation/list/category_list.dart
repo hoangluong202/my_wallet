@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/notification_widget.dart';
-import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/category.dart';
 import 'categories_viewmodel.dart';
 import '../form/add_category_page.dart';
@@ -93,7 +92,10 @@ class CategoryList extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoriesList(BuildContext context, List<CategoryViewData> items) {
+  Widget _buildCategoriesList(
+    BuildContext context,
+    List<CategoryViewData> items,
+  ) {
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -121,34 +123,16 @@ class CategoryList extends StatelessWidget {
     );
   }
 
-  Future<void> _onEditCategory(BuildContext context, CategoryViewData category) async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+  Future<void> _onEditCategory(
+    BuildContext context,
+    CategoryViewData category,
+  ) async {
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditCategoryPage(category: category),
       ),
     );
-
-    if (result != null && context.mounted) {
-      final updatedCategory = Category(
-        id: category.id,
-        name: result['name'],
-        iconCode: result['icon'],
-        type: category.type,
-        createdAt: category.createdAt,
-        updatedAt: DateTime.now(),
-      );
-
-      await viewModel.updateCategory(updatedCategory);
-      if (context.mounted) {
-        Navigator.pop(context);
-        SuccessNotification.show(
-          context: context,
-          message: 'Category "${updatedCategory.name}" updated successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    }
   }
 
   Future<void> _onDeleteCategory(
@@ -186,32 +170,12 @@ class CategoryList extends StatelessWidget {
   }
 
   Future<void> _onAddCategory(BuildContext context) async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddCategoryPage(preselectedType: type),
       ),
     );
-
-    if (result != null && context.mounted) {
-      final category = Category(
-        id: UuidGenerator.generate(),
-        name: result['name'],
-        iconCode: result['icon'],
-        type: result['type'],
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      await viewModel.addCategory(category);
-      if (context.mounted) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Category "${category.name}" added successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    }
   }
 
   String _getCategoryLabel() {

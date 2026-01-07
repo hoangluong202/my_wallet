@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:uuid/uuid.dart';
 import '../constants/category_icons.dart';
 import '../../domain/category.dart';
 import '../../presentation/helpers/label.dart';
+import '../list/categories_viewmodel.dart';
+import '../../data/repositories/categories_repository.dart';
+import '../../../../core/widgets/notification_widget.dart';
 
 class AddCategoryPage extends StatefulWidget {
   final CategoryType preselectedType;
 
   const AddCategoryPage({super.key, required this.preselectedType});
-  
+
   @override
   State<AddCategoryPage> createState() => _AddCategoryPageState();
 }
@@ -17,6 +22,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   late TextEditingController _nameController;
   late IconData _selectedIcon;
   late CategoryType _selectedType;
+  late final CategoriesViewModel _viewModel;
 
   final List<IconData> _availableIcons = CategoryIcons.icons
       .map((iconData) => iconData.icon)
@@ -25,6 +31,8 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   @override
   void initState() {
     super.initState();
+    final repository = GetIt.instance<CategoriesRepository>();
+    _viewModel = CategoriesViewModel(repository);
     _nameController = TextEditingController();
     _selectedIcon = Icons.category;
     _selectedType = widget.preselectedType;
@@ -36,15 +44,32 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     super.dispose();
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final result = {
-        'name': _nameController.text,
-        'icon': _selectedIcon,
-        'color': _getColorForIcon(_selectedIcon),
-        'type': _selectedType,
-      };
-      Navigator.pop(context, result);
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    final category = Category(
+      id: Uuid().v4(),
+      name: _nameController.text.trim(),
+      type: _selectedType,
+      iconCode: _selectedIcon.codePoint,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final success = await _viewModel.addCategory(category);
+
+    if (!mounted) return;
+
+    if (success) {
+      SuccessNotification.show(
+        context: context,
+        message: 'Category created successfully!',
+      );
+      Navigator.pop(context, true);
+    } else {
+      ErrorNotification.show(
+        context: context,
+        message: _viewModel.errorMessage ?? 'Failed to create category',
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -153,7 +178,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                                               color: _selectedIcon == icon
                                                   ? _getColorForIcon(
                                                       icon,
-                                                    ).withOpacity(0.15)
+                                                    ).withValues(alpha: 0.15)
                                                   : Colors.grey.shade50,
                                               borderRadius:
                                                   BorderRadius.circular(12),
@@ -233,12 +258,9 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter a category name';
-                                    }
-                                    return null;
-                                  },
+                                  validator: (value) => _viewModel.validateCategoryName(
+                                    value ?? ''
+                                  ),
                                 ),
                               ],
                             ),

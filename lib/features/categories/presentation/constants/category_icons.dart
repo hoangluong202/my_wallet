@@ -11,10 +11,6 @@ class CategoryIconData {
 class CategoryIcons {
   static const List<CategoryIconData> icons = [
     CategoryIconData(
-      icon: Icons.error_outline,
-      color: Color(0xFF9E9E9E), // Gray
-    ),
-    CategoryIconData(
       icon: Icons.fastfood,
       color: Color(0xFFFF5722), // Deep Orange
     ),
@@ -60,7 +56,12 @@ class CategoryIcons {
     final index = icons.indexWhere(
       (iconData) => iconData.icon.codePoint == codePoint,
     );
-    return index != -1 ? icons[index] : icons[0];
+    return index != -1
+        ? icons[index]
+        : CategoryIconData(
+            icon: Icons.error_outline,
+            color: Color(0xFF9E9E9E), // Gray
+          );
   }
 }
 

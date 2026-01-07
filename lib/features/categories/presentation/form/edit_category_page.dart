@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import '../constants/category_icons.dart';
 import '../model/category_view_data.dart';
+import '../../domain/category.dart';
+import '../list/categories_viewmodel.dart';
+import '../../../../core/widgets/notification_widget.dart';
+import '../../data/repositories/categories_repository.dart';
 
 class EditCategoryPage extends StatefulWidget {
   final CategoryViewData category;
@@ -15,6 +20,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late IconData _selectedIcon;
+  late final CategoriesViewModel _viewModel;
 
   final List<IconData> _availableIcons = CategoryIcons.icons
       .map((iconData) => iconData.icon)
@@ -23,6 +29,8 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   @override
   void initState() {
     super.initState();
+    final repository = GetIt.instance<CategoriesRepository>();
+    _viewModel = CategoriesViewModel(repository);
     _nameController = TextEditingController(text: widget.category.name);
     _selectedIcon = widget.category.icon;
   }
@@ -33,28 +41,32 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
     super.dispose();
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final updated = {
-        'id': widget.category.id,
-        'name': _nameController.text,
-        'icon': _selectedIcon.codePoint,
-        'type': widget.category.type.name,
-      };
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+    final category = Category(
+      id: widget.category.id,
+      name: _nameController.text.trim(),
+      type: widget.category.type,
+      iconCode: _selectedIcon.codePoint,
+      createdAt: widget.category.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    final success = await _viewModel.updateCategory(category);
 
-      debugPrint('Category updated: ${_nameController.text}');
+    if (!mounted) return;
 
-      // SuccessNotification.show(
-      //   context: context,
-      //   message: '${_nameController.text} updated successfully!',
-      //   duration: const Duration(seconds: 2),
-      // );
-
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) {
-          Navigator.pop(context, updated);
-        }
-      });
+    if (success) {
+      SuccessNotification.show(
+        context: context,
+        message: 'Category updated successfully!',
+      );
+      Navigator.pop(context, true);
+    } else {
+      ErrorNotification.show(
+        context: context,
+        message: _viewModel.errorMessage ?? 'Failed to update category',
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -189,7 +201,6 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // Category Name Card
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
@@ -243,12 +254,8 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter a category name';
-                                    }
-                                    return null;
-                                  },
+                                  validator: (value) => _viewModel
+                                      .validateCategoryName(value ?? ''),
                                 ),
                               ],
                             ),

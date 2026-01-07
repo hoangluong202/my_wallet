@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_wallet/core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
-import '../../../../core/utils/uuid_generator.dart';
-import '../../domain/wallet.dart';
 import 'wallets_viewmodel.dart';
 import 'wallets_app_bar.dart';
 import 'wallet_summary_card.dart';
@@ -119,31 +116,11 @@ class _WalletsPageState extends State<WalletsPage> {
     );
   }
 
-  void _onAddWallet() async {
-    final result = await Navigator.push(
+  void _onAddWallet() {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddWalletPage()),
     );
-
-    if (result != null && mounted) {
-      final wallet = Wallet(
-        id: UuidGenerator.generate(),
-        name: result['name'],
-        balance: result['balance'],
-        createdAt: result['createdAt'],
-        updatedAt: result['updatedAt'],
-        iconCode: result['iconCode'],
-      );
-
-      await _viewModel.addWallet(wallet);
-      if (mounted && _viewModel.error == null) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Wallet "${wallet.name}" added successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    }
   }
 
   Widget _buildEmptyState() {
