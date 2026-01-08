@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/notification_widget.dart';
 import '../../domain/category.dart';
 import 'categories_viewmodel.dart';
 import '../form/add_category_page.dart';
-import '../form/edit_category_page.dart';
 import '../detail/category_detail_page.dart';
-import '../history/category_history_page.dart';
 import '../detail/category_card.dart';
 import './category_empty_state.dart';
 import '../model/category_view_data.dart';
@@ -113,58 +110,7 @@ class CategoryList extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryDetailPage(
-          category: category,
-          onEdit: () => _onEditCategory(context, category),
-          onDelete: () => _onDeleteCategory(context, category),
-          onHistory: () => _onViewHistory(context, category),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _onEditCategory(
-    BuildContext context,
-    CategoryViewData category,
-  ) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditCategoryPage(category: category),
-      ),
-    );
-  }
-
-  Future<void> _onDeleteCategory(
-    BuildContext context,
-    CategoryViewData category,
-  ) async {
-    try {
-      await viewModel.deleteCategory(category.id);
-      if (context.mounted) {
-        Navigator.pop(context);
-        SuccessNotification.show(
-          context: context,
-          message: 'Category "${category.name}" deleted successfully!',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ErrorNotification.show(
-          context: context,
-          message: 'Category have transactions, can not delete!',
-          duration: const Duration(seconds: 3),
-        );
-      }
-    }
-  }
-
-  void _onViewHistory(BuildContext context, CategoryViewData category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryHistoryPage(category: category),
+        builder: (context) => CategoryDetailPage(id: category.id),
       ),
     );
   }

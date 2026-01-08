@@ -26,7 +26,7 @@ class CategoriesViewModel extends ChangeNotifier {
     if (value.trim().length > 50) {
       return 'Category name must be less than 50 characters';
     }
-    
+
     return null;
   }
 
@@ -35,6 +35,13 @@ class CategoriesViewModel extends ChangeNotifier {
         (categories) => categories
             .map((category) => CategoryViewData.fromDomain(category))
             .toList(),
+      );
+
+  Stream<CategoryViewData?> getCategoryStream(String id) => _repository
+      .watchCategoryById(id)
+      .map(
+        (category) =>
+            category != null ? CategoryViewData.fromDomain(category) : null,
       );
 
   void _setLoading(bool value) {
