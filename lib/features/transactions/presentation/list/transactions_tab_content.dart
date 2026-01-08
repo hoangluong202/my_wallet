@@ -28,6 +28,7 @@ class TransactionsTabContent extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      itemCount: filteredList.length,
       itemBuilder: (context, index) {
         final entry = filteredList.entries.elementAt(index);
         final dateGroup = entry.key;

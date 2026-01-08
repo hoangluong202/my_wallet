@@ -16,7 +16,6 @@ class TransactionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = TransactionTypeConstants.getStyle(transaction.category.type);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -27,7 +26,7 @@ class TransactionItemCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -58,7 +57,7 @@ class TransactionItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.category.type.name,
+                      transaction.category.name,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

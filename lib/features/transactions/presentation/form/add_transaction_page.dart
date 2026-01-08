@@ -35,6 +35,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   late TransactionFormState _formState;
 
+  List<CategoryViewData> _allCategories = [];
+  List<WalletViewData> _allWallets = [];
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +50,30 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _walletsViewModel = getIt<WalletsViewModel>();
 
     _formState = TransactionFormState.initial();
+
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      _allCategories = await _categoriesViewModel.categoriesStream.first;
+      _allWallets = await _walletsViewModel.walletsStream.first;
+
+      if (_allCategories.isNotEmpty && _allWallets.isNotEmpty) {
+        final firstCategory = _allCategories
+            .where((c) => c.type == _formState.selectedType)
+            .firstOrNull;
+
+        setState(() {
+          _formState = _formState.copyWith(
+            selectedCategoryId: firstCategory?.id,
+            selectedWalletId: _allWallets.first.id,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
+    }
   }
 
   @override
@@ -215,49 +242,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildCategorySection() {
+    final filteredCategories = _allCategories
+        .where((cat) => cat.type == _formState.selectedType)
+        .toList();
+
+    final selectedCategory = filteredCategories
+        .where((c) => c.id == _formState.selectedCategoryId)
+        .firstOrNull;
+
     return _buildCardSection(
       title: 'Category',
       icon: Icons.category_outlined,
-      child: StreamBuilder<List<CategoryViewData>>(
-        stream: _categoriesViewModel.categoriesStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Text(
-              'Error loading categories',
-              style: TextStyle(color: Colors.red, fontSize: 14),
-            );
-          }
-
-          final categories = snapshot.data ?? [];
-          final filteredCategories = categories
-              .where((cat) => cat.type == _formState.selectedType)
-              .toList();
-
-          if (_formState.selectedCategoryId == null &&
-              filteredCategories.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _onCategoryChanged(filteredCategories.first.id);
-            });
-          }
-
-          return _formState.selectedCategoryId == null
-              ? _buildCategoryPlaceholder()
-              : _buildSelectedCategory(
-                  categories.firstWhere(
-                    (c) => c.id == _formState.selectedCategoryId,
-                  ),
-                );
-        },
-      ),
+      child: selectedCategory == null
+          ? _buildCategoryPlaceholder()
+          : _buildSelectedCategory(selectedCategory),
     );
   }
 
@@ -322,63 +320,58 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   void _showCategoryPicker() {
+    final filtered = _allCategories
+        .where((c) => c.type == _formState.selectedType)
+        .toList();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StreamBuilder<List<CategoryViewData>>(
-        stream: _categoriesViewModel.categoriesStream,
-        builder: (context, snapshot) {
-          final categories = snapshot.data ?? [];
-          final filtered = categories
-              .where((c) => c.type == _formState.selectedType)
-              .toList();
-
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Title
-                Text(
-                  'Select Category',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-
-                // List
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final category = filtered[index];
-                      return _buildCategoryPickerItem(category);
-                    },
-                  ),
-                ),
-              ],
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          );
-        },
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              'Select Category',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+
+            // List
+            Expanded(
+              child: ListView.builder(
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final category = filtered[index];
+                  return _buildCategoryPickerItem(category);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCategoryPickerItem(CategoryViewData category) {
+    final isSelected = _formState.selectedCategoryId == category.id;
+
     return GestureDetector(
       onTap: () {
         _onCategoryChanged(category.id);
@@ -388,26 +381,40 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         padding: const EdgeInsets.all(14),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: category.color.withOpacity(0.2)),
+          border: Border.all(
+            color: isSelected
+                ? category.color
+                : category.color.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
           borderRadius: BorderRadius.circular(12),
+          color: isSelected
+              ? category.color.withOpacity(0.05)
+              : Colors.transparent,
         ),
         child: Row(
           children: [
+            // Icon
             CircleAvatar(
               radius: 18,
               backgroundColor: category.color.withOpacity(0.2),
               child: Icon(category.icon, color: category.color, size: 22),
             ),
             const SizedBox(width: 12),
+
             Expanded(
               child: Text(
                 category.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
+                  color: isSelected ? category.color : Colors.black87,
                 ),
               ),
             ),
+
+            if (isSelected)
+              Icon(Icons.check_circle, color: category.color, size: 24),
           ],
         ),
       ),
@@ -426,16 +433,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         decoration: InputDecoration(
           hintText: '0',
           hintStyle: TextStyle(fontSize: 24, color: Colors.grey.shade300),
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 12.0, top: 12),
-            child: Text(
-              '₫',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade600,
-              ),
-            ),
+          suffixText: ' ₫',
+          suffixStyle: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+            letterSpacing: 0.5,
           ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
@@ -444,16 +447,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           if (value == null || value.isEmpty) {
             return 'Please enter an amount';
           }
-          final amount = int.tryParse(value.replaceAll(',', '')) ?? 0;
+          final amount = int.tryParse(value.replaceAll('.', '')) ?? 0;
+
           if (amount <= 0) {
             return 'Amount must be greater than 0';
           }
           return null;
         },
         onChanged: (value) {
-          setState(() {
-            _formState = _formState.copyWith(amount: value);
-          });
+          _formState = _formState.copyWith(amount: value);
         },
       ),
     );
@@ -501,46 +503,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildWalletSection() {
+    final selectedWallet = _allWallets
+        .where((w) => w.id == _formState.selectedWalletId)
+        .firstOrNull;
     return _buildCardSection(
       title: 'Wallet',
       icon: Icons.account_balance_wallet_outlined,
-      child: StreamBuilder<List<WalletViewData>>(
-        stream: _walletsViewModel.walletsStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Text(
-              'Error loading wallets',
-              style: TextStyle(color: Colors.red, fontSize: 14),
-            );
-          }
-
-          final wallets = snapshot.data ?? [];
-
-          // Auto-select first wallet if none selected
-          if (_formState.selectedWalletId == null && wallets.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _onWalletChanged(wallets.first.id);
-            });
-          }
-
-          return _formState.selectedWalletId == null
-              ? _buildWalletPlaceholder()
-              : _buildSelectedWallet(
-                  wallets.firstWhere(
-                    (w) => w.id == _formState.selectedWalletId,
-                  ),
-                );
-        },
-      ),
+      child: selectedWallet == null
+          ? _buildWalletPlaceholder()
+          : _buildSelectedWallet(selectedWallet),
     );
   }
 
@@ -626,51 +597,44 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StreamBuilder<List<WalletViewData>>(
-        stream: _walletsViewModel.walletsStream,
-        builder: (context, snapshot) {
-          final wallets = snapshot.data ?? [];
-
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Title
-                Text(
-                  'Select Wallet',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-
-                // List
-                Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: wallets.length,
-                    itemBuilder: (context, index) {
-                      final wallet = wallets[index];
-                      return _buildWalletPickerItem(wallet);
-                    },
-                  ),
-                ),
-              ],
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          );
-        },
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              'Select Wallet',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+
+            // List
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _allWallets.length,
+                itemBuilder: (context, index) {
+                  final wallet = _allWallets[index];
+                  return _buildWalletPickerItem(wallet);
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -811,9 +775,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
 
     if (picked != null && picked != _formState.selectedDate) {
-      setState(() {
-        _formState = _formState.copyWith(selectedDate: picked);
-      });
+      _formState = _formState.copyWith(selectedDate: picked);
     }
   }
 
@@ -831,19 +793,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
-          setState(() {
-            _formState = _formState.copyWith(note: value);
-          });
+          _formState = _formState.copyWith(note: value);
         },
       ),
     );
   }
 
   void _onTypeChanged(CategoryType type) {
+    final firstCategory = _allCategories
+        .where((c) => c.type == type)
+        .firstOrNull;
     setState(() {
       _formState = _formState.copyWith(
         selectedType: type,
-        selectedCategoryId: null,
+        selectedCategoryId: firstCategory?.id,
       );
     });
   }

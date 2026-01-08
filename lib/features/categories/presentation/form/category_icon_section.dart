@@ -15,7 +15,7 @@ class CategoryIconSection extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: category.color.withOpacity(0.2),
+              color: category.color.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(category.icon, size: 40, color: category.color),

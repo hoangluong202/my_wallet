@@ -73,7 +73,6 @@ class TransactionsPage extends StatelessWidget {
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () {
-                              // Stream tự động retry khi có thay đổi
                             },
                             icon: const Icon(Icons.refresh),
                             label: const Text('Retry'),
