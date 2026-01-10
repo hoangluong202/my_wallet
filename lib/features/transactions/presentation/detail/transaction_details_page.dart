@@ -86,25 +86,12 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   }
 
   void _onEdit(BuildContext context, TransactionViewData transaction) async {
-    final result = await Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditTransactionPage(transaction: transaction),
       ),
     );
-
-    if (result == true) {
-      setState(() {
-        _hasChanges = true;
-      });
-      if (context.mounted) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Transaction updated successfully',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    }
   }
 
   Future<void> _onDelete(

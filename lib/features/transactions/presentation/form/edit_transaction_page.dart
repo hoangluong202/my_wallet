@@ -344,16 +344,12 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         decoration: InputDecoration(
           hintText: '0',
           hintStyle: TextStyle(fontSize: 24, color: Colors.grey.shade300),
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 12.0, top: 12),
-            child: Text(
-              '₫',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade600,
-              ),
-            ),
+          suffixText: ' ₫',
+          suffixStyle: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+            letterSpacing: 0.5,
           ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.zero,
@@ -369,9 +365,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           return null;
         },
         onChanged: (value) {
-          setState(() {
-            _formState = _formState.copyWith(amount: value);
-          });
+          _formState = _formState.copyWith(amount: value);
         },
       ),
     );
@@ -722,9 +716,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: (value) {
-          setState(() {
-            _formState = _formState.copyWith(note: value);
-          });
+          _formState = _formState.copyWith(note: value);
         },
       ),
     );
@@ -773,13 +765,19 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     if (!_formState.isValid) return;
 
     try {
-      // Create transaction entity
-      final transaction = TransactionPayload.fromFormState(_formState);
+      final transaction = TransactionPayload(
+        id: widget.transaction.id,
+        categoryId: _formState.selectedCategoryId!,
+        walletId: _formState.selectedWalletId!,
+        amount: _parseAmount(_formState.amount),
+        transactionDate: _formState.selectedDate,
+        note: _formState.note.isEmpty ? null : _formState.note,
+        createdAt: widget.transaction.createdAt,
+        updatedAt: DateTime.now(),
+      );
 
-      // Save to database via ViewModel
       await _transactionViewModel.updateTransaction(transaction);
 
-      // Show success and close
       if (mounted) {
         SuccessNotification.show(
           context: context,
@@ -791,7 +789,8 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       if (mounted) {
         ErrorNotification.show(
           context: context,
-          message: 'Failed to update transaction: $e',
+          message: 'Error: $e',
+          duration: const Duration(seconds: 10),
         );
       }
     }

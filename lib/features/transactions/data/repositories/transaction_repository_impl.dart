@@ -146,10 +146,60 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<String> createTransaction(TransactionPayload transaction) async {
     try {
-      await _database.transactionDao.insertTransaction(
-        _payloadToCompanion(transaction),
-      );
-      return transaction.id;
+      return await _database.transaction(() async {
+        // 1. Insert transaction
+        await _database.transactionDao.insertTransaction(
+          _payloadToCompanion(transaction),
+        );
+
+        // 2. Get category để biết type
+        final category = await _database.categoryDao.getCategoryById(
+          transaction.categoryId,
+        );
+
+        if (category == null) {
+          throw Exception('Category not found');
+        }
+
+        // 3. Get wallet hiện tại
+        final wallet = await _database.walletDao.getWalletById(
+          transaction.walletId,
+        );
+
+        if (wallet == null) {
+          throw Exception('Wallet not found');
+        }
+
+        final categoryType = CategoryType.values.firstWhere(
+          (e) => e.name == category.type,
+          orElse: () => CategoryType.expense,
+        );
+
+        int newBalance;
+        switch (categoryType) {
+          case CategoryType.expense:
+          case CategoryType.loan:
+            newBalance = wallet.balance - transaction.amount;
+            break;
+          case CategoryType.income:
+          case CategoryType.debt:
+            newBalance = wallet.balance + transaction.amount;
+            break;
+        }
+
+        await _database.walletDao.updateWallet(
+          WalletsCompanion(
+            id: Value(wallet.id),
+            name: Value(wallet.name),
+            balance: Value(newBalance),
+            iconCode: Value(wallet.iconCode),
+            createdAt: Value(wallet.createdAt),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+
+        return transaction.id;
+      });
     } catch (e) {
       throw Exception('Failed to create transaction: $e');
     }
@@ -158,18 +208,158 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<void> updateTransaction(TransactionPayload transaction) async {
     try {
-      await _database.transactionDao.updateTransaction(
-        _payloadToCompanion(transaction),
-      );
+      print('Updating transaction: ${transaction.id}');
+      await _database.transaction(() async {
+        final oldTransactionData = await _database.transactionDao
+            .getTransactionById(transaction.id);
+        print('Old transaction data: $oldTransactionData');
+        if (oldTransactionData == null) {
+          throw Exception('Transaction not found');
+        }
+
+        final oldTransaction = oldTransactionData.transaction;
+        final oldCategory = oldTransactionData.category;
+
+        final newCategory = await _database.categoryDao.getCategoryById(
+          transaction.categoryId,
+        );
+
+        if (newCategory == null) {
+          throw Exception('Category not found');
+        }
+
+        final oldWallet = await _database.walletDao.getWalletById(
+          oldTransaction.walletId,
+        );
+
+        if (oldWallet != null) {
+          final oldCategoryType = CategoryType.values.firstWhere(
+            (e) => e.name == oldCategory.type,
+            orElse: () => CategoryType.expense,
+          );
+
+          int revertedBalance;
+          switch (oldCategoryType) {
+            case CategoryType.expense:
+            case CategoryType.loan:
+              revertedBalance = oldWallet.balance + oldTransaction.amount;
+              break;
+            case CategoryType.income:
+            case CategoryType.debt:
+              revertedBalance = oldWallet.balance - oldTransaction.amount;
+              break;
+          }
+
+          await _database.walletDao.updateWallet(
+            WalletsCompanion(
+              id: Value(oldWallet.id),
+              name: Value(oldWallet.name),
+              balance: Value(revertedBalance),
+              iconCode: Value(oldWallet.iconCode),
+              createdAt: Value(oldWallet.createdAt),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+
+        final newWallet = await _database.walletDao.getWalletById(
+          transaction.walletId,
+        );
+
+        if (newWallet == null) {
+          throw Exception('Wallet not found');
+        }
+
+        final newCategoryType = CategoryType.values.firstWhere(
+          (e) => e.name == newCategory.type,
+          orElse: () => CategoryType.expense,
+        );
+
+        int newBalance;
+        switch (newCategoryType) {
+          case CategoryType.expense:
+          case CategoryType.loan:
+            newBalance = newWallet.balance - transaction.amount;
+            break;
+          case CategoryType.income:
+          case CategoryType.debt:
+            newBalance = newWallet.balance + transaction.amount;
+            break;
+        }
+
+        await _database.walletDao.updateWallet(
+          WalletsCompanion(
+            id: Value(newWallet.id),
+            name: Value(newWallet.name),
+            balance: Value(newBalance),
+            iconCode: Value(newWallet.iconCode),
+            createdAt: Value(newWallet.createdAt),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+
+        await _database.transactionDao.updateTransaction(
+          _payloadToCompanion(transaction),
+        );
+      });
     } catch (e) {
-      throw Exception('Failed to update transaction: $e');
+      print('Error: $e');
+      throw Exception('Error: $e');
     }
   }
 
   @override
   Future<void> deleteTransaction(String id) async {
     try {
-      await _database.transactionDao.deleteTransaction(id);
+      await _database.transaction(() async {
+        final transactionData = await _database.transactionDao
+            .getTransactionById(id);
+
+        if (transactionData == null) {
+          throw Exception('Transaction not found');
+        }
+
+        final transaction = transactionData.transaction;
+        final category = transactionData.category;
+
+        final wallet = await _database.walletDao.getWalletById(
+          transaction.walletId,
+        );
+
+        if (wallet == null) {
+          throw Exception('Wallet not found');
+        }
+
+        final categoryType = CategoryType.values.firstWhere(
+          (e) => e.name == category.type,
+          orElse: () => CategoryType.expense,
+        );
+
+        int newBalance;
+        switch (categoryType) {
+          case CategoryType.expense:
+          case CategoryType.loan:
+            newBalance = wallet.balance + transaction.amount;
+            break;
+          case CategoryType.income:
+          case CategoryType.debt:
+            newBalance = wallet.balance - transaction.amount;
+            break;
+        }
+
+        await _database.walletDao.updateWallet(
+          WalletsCompanion(
+            id: Value(wallet.id),
+            name: Value(wallet.name),
+            balance: Value(newBalance),
+            iconCode: Value(wallet.iconCode),
+            createdAt: Value(wallet.createdAt),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+
+        await _database.transactionDao.deleteTransaction(id);
+      });
     } catch (e) {
       throw Exception('Failed to delete transaction: $e');
     }
