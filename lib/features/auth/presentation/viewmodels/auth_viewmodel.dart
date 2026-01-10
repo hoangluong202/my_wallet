@@ -40,10 +40,6 @@ class AuthViewModel extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         _isAuthenticated = true;
-
-        // Save or update user in local database
-        // await _userService.handleUserLogin(user);
-
         _isLoading = false;
         notifyListeners();
         return true;

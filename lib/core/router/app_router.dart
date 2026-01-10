@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/main/presentation/pages/main_scaffold.dart';
+import '../../main_scaffold.dart';
 import '../../features/transactions/presentation/form/add_transaction_page.dart';
 import '../../features/wallets/presentation/form/wallet_form_page.dart';
 import '../../features/wallets/presentation/detail/wallet_detail_page.dart';

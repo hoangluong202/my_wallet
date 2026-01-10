@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../../../users/presentation/viewmodels/user_viewmodel.dart';
+import '../viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
 

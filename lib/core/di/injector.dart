@@ -37,7 +37,7 @@ Future<void> setupDependencies() async {
   // ============================================
 
   getIt.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>()),
+    () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>(), userRepository: getIt<UserRepository>()),
   );
 
   getIt.registerLazySingleton<UserRepository>(

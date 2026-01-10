@@ -1,11 +1,12 @@
+import 'package:drift/drift.dart';
 import '../../../../database/app_database.dart';
 import 'user_repository.dart';
+import '../../domain/user.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final UserDao _userDao;
 
   UserRepositoryImpl(this._userDao);
-
 
   @override
   Future<void> updateUserTimestamp(String id) async {
@@ -20,5 +21,21 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<bool> userExists(String id) async {
     return await _userDao.userExists(id);
+  }
+
+  @override
+  Future<void> saveUser(User user) async {
+    await _userDao.insertUser(_mapToCompanion(user));
+  }
+
+  UsersCompanion _mapToCompanion(User user) {
+    return UsersCompanion(
+      id: Value(user.id),
+      email: Value(user.email),
+      name: Value(user.name),
+      password: Value(user.password ?? ''),
+      createdAt: Value(user.createdAt),
+      updatedAt: Value(user.updatedAt),
+    );
   }
 }

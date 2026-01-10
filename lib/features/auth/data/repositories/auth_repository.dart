@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../users/data/repositories/user_repository.dart';
+import '../../../users/domain/user.dart' as local;
+import '../../../../core/utils/uuid_generator.dart';
 
 abstract class AuthRepository {
   Future<User?> signInWithGoogle();
@@ -11,10 +14,15 @@ abstract class AuthRepository {
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
+  final UserRepository _userRepository;
 
-  AuthRepositoryImpl({FirebaseAuth? firebaseAuth, GoogleSignIn? googleSignIn})
-    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn();
+  AuthRepositoryImpl({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+    required UserRepository userRepository,
+  }) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn(),
+       _userRepository = userRepository;
 
   @override
   Future<User?> signInWithGoogle() async {
@@ -40,6 +48,21 @@ class AuthRepositoryImpl implements AuthRepository {
       final userCredential = await _firebaseAuth.signInWithCredential(
         credential,
       );
+
+      final firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        throw Exception('Failed to get user from credential');
+      }
+      final user = local.User(
+        id: UuidGenerator.generate(),
+        name: firebaseUser.displayName ?? 'No Name',
+        email: firebaseUser.email ?? 'No Email',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await _userRepository.saveUser(user);
 
       return userCredential.user;
     } on FirebaseAuthException catch (e) {
