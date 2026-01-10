@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/di/injector.dart';
 import '../../../../core/router/app_router.dart';
-import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
@@ -17,23 +17,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final UserViewModel _userViewModel;
   late final WalletsViewModel _walletsViewModel;
+  late final AuthViewModel _authViewModel;
 
   @override
   void initState() {
     super.initState();
     _userViewModel = getIt<UserViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUserData();
-    });
-  }
-
-  Future<void> _loadUserData() async {
-    final authViewModel = getIt<AuthViewModel>();
-    final currentUser = authViewModel.currentUser;
-    if (currentUser != null) {
-      await _userViewModel.loadUser(currentUser.uid);
-    }
+    _authViewModel = getIt<AuthViewModel>();
   }
 
   Future<void> _syncData(BuildContext context) async {
@@ -112,9 +103,9 @@ class _HomePageState extends State<HomePage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: ListenableBuilder(
-            listenable: _userViewModel,
+            listenable: _authViewModel,
             builder: (context, _) {
-              final userName = _userViewModel.userName;
+              final userName = _authViewModel.currentUser?.displayName ?? 'User';
               final initials = _getInitials(userName);
 
               return Row(

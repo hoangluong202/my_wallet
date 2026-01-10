@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/constants/navigation_items.dart';
 import 'core/widgets/bottom_navigation/custom_bottom_bar.dart';
 import 'core/widgets/custom_fab.dart';
-import 'features/users/presentation/home/home_page.dart';
+import 'features/auth/presentation/home/home_page.dart';
 import 'features/wallets/presentation/list/wallets_page.dart';
 import 'features/transactions/presentation/list/transactions_page.dart';
 import 'features/transactions/presentation/form/add_transaction_page.dart';

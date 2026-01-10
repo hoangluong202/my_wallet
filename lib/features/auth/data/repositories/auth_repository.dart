@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../../../users/data/repositories/user_repository.dart';
-import '../../../users/domain/user.dart' as local;
+import 'user_repository.dart';
+import '../../domain/user.dart' as local;
 import '../../../../core/utils/uuid_generator.dart';
 
 abstract class AuthRepository {
@@ -64,7 +64,7 @@ class AuthRepositoryImpl implements AuthRepository {
       
       await _userRepository.saveUser(user);
 
-      return userCredential.user;
+      return firebaseUser;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {

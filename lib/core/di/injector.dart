@@ -6,10 +6,10 @@ import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../../features/users/data/repositories/user_repository_impl.dart';
-import '../../features/users/data/repositories/user_repository.dart';
+import '../../features/auth/data/repositories/user_repository_impl.dart';
+import '../../features/auth/data/repositories/user_repository.dart';
 import '../../features/wallets/presentation/list/wallets_viewmodel.dart';
-import '../../features/users/presentation/viewmodels/user_viewmodel.dart';
+import '../../features/auth/presentation/viewmodels/user_viewmodel.dart';
 import '../../features/transactions/presentation/viewmodel/transactions_viewmodel.dart';
 import '../../features/categories/presentation/list/categories_viewmodel.dart';
 import '../../features/transactions/data/repositories/transaction_repository.dart';
@@ -67,7 +67,7 @@ Future<void> setupDependencies() async {
     () => WalletsViewModel(getIt<WalletRepository>()),
   );
 
-  getIt.registerFactory<UserViewModel>(() => UserViewModel());
+  getIt.registerFactory<UserViewModel>(() => UserViewModel(getIt<UserRepository>(), getIt<AuthRepository>()));
 
   getIt.registerFactory<TransactionsViewModel>(
     () => TransactionsViewModel(getIt<TransactionRepository>()),

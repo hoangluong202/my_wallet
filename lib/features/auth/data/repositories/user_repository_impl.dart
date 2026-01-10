@@ -7,6 +7,12 @@ class UserRepositoryImpl implements UserRepository {
   final UserDao _userDao;
 
   UserRepositoryImpl(this._userDao);
+  
+  @override
+  Future<User?> getUserById(String id) async {
+    final userData = await _userDao.getUserById(id);
+    return userData != null ? _mapFromDataClass(userData) : null;
+  }
 
   @override
   Future<void> updateUserTimestamp(String id) async {
@@ -36,6 +42,17 @@ class UserRepositoryImpl implements UserRepository {
       password: Value(user.password ?? ''),
       createdAt: Value(user.createdAt),
       updatedAt: Value(user.updatedAt),
+    );
+  }
+
+  User _mapFromDataClass(UserData data) {
+    return User(
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      password: data.password.isEmpty ? null : data.password,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
     );
   }
 }
