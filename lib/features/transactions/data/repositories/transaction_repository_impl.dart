@@ -364,4 +364,150 @@ class TransactionRepositoryImpl implements TransactionRepository {
       throw Exception('Failed to delete transaction: $e');
     }
   }
+
+  @override
+  Future<Map<int, Map<String, int>>> getDailyIncomeExpenseByMonth(
+    int year,
+    int month,
+  ) async {
+    try {
+      final startDate = DateTime(year, month, 1);
+      final endDate = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      final transactions = await getTransactionsByDateRange(startDate, endDate);
+
+      // Initialize result map for all days in month
+      final result = <int, Map<String, int>>{};
+      final daysInMonth = endDate.day;
+
+      for (int day = 1; day <= daysInMonth; day++) {
+        result[day] = {'income': 0, 'expense': 0};
+      }
+
+      // Aggregate transactions by day and type
+      for (final transaction in transactions) {
+        final day = transaction.transactionDate.day;
+        final categoryType = transaction.category.type;
+
+        if (categoryType == CategoryType.income ||
+            categoryType == CategoryType.debt) {
+          result[day]!['income'] = result[day]!['income']! + transaction.amount;
+        } else if (categoryType == CategoryType.expense ||
+            categoryType == CategoryType.loan) {
+          result[day]!['expense'] =
+              result[day]!['expense']! + transaction.amount;
+        }
+      }
+
+      return result;
+    } catch (e) {
+      throw Exception('Failed to get daily income/expense: $e');
+    }
+  }
+
+  @override
+  Stream<Map<int, Map<String, int>>> watchDailyIncomeExpenseByMonth(
+    int year,
+    int month,
+  ) {
+    try {
+      final startDate = DateTime(year, month, 1);
+      final endDate = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      return watchTransactionsByDateRange(startDate, endDate).map((
+        transactions,
+      ) {
+        // Initialize result map for all days in month
+        final result = <int, Map<String, int>>{};
+        final daysInMonth = endDate.day;
+
+        for (int day = 1; day <= daysInMonth; day++) {
+          result[day] = {'income': 0, 'expense': 0};
+        }
+
+        // Aggregate transactions by day and type
+        for (final transaction in transactions) {
+          final day = transaction.transactionDate.day;
+          final categoryType = transaction.category.type;
+
+          if (categoryType == CategoryType.income ||
+              categoryType == CategoryType.debt) {
+            result[day]!['income'] =
+                result[day]!['income']! + transaction.amount;
+          } else if (categoryType == CategoryType.expense ||
+              categoryType == CategoryType.loan) {
+            result[day]!['expense'] =
+                result[day]!['expense']! + transaction.amount;
+          }
+        }
+
+        return result;
+      });
+    } catch (e) {
+      throw Exception('Failed to watch daily income/expense: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, int>> getCategoryExpensesByMonth(
+    int year,
+    int month,
+  ) async {
+    try {
+      final startDate = DateTime(year, month, 1);
+      final endDate = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      final transactions = await getTransactionsByDateRange(startDate, endDate);
+
+      // Aggregate expenses by category name
+      final result = <String, int>{};
+
+      for (final transaction in transactions) {
+        final categoryType = transaction.category.type;
+
+        // Only count expense and loan types
+        if (categoryType == CategoryType.expense ||
+            categoryType == CategoryType.loan) {
+          final categoryName = transaction.category.name;
+          result[categoryName] =
+              (result[categoryName] ?? 0) + transaction.amount;
+        }
+      }
+
+      return result;
+    } catch (e) {
+      throw Exception('Failed to get category expenses: $e');
+    }
+  }
+
+  @override
+  Stream<Map<String, int>> watchCategoryExpensesByMonth(int year, int month) {
+    try {
+      final startDate = DateTime(year, month, 1);
+      final endDate = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      return watchTransactionsByDateRange(startDate, endDate).map((
+        transactions,
+      ) {
+        // Aggregate expenses by category name
+        final result = <String, int>{};
+
+        for (final transaction in transactions) {
+          final categoryType = transaction.category.type;
+
+          // Only count expense and loan types
+          if (categoryType == CategoryType.expense ||
+              categoryType == CategoryType.loan) {
+            final categoryName = transaction.category.name;
+            result[categoryName] =
+                (result[categoryName] ?? 0) + transaction.amount;
+          }
+        }
+
+        return result;
+      });
+    } catch (e) {
+      throw Exception('Failed to watch category expenses: $e');
+    }
+  }
 }

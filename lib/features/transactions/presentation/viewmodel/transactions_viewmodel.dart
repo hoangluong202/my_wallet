@@ -32,4 +32,16 @@ class TransactionsViewModel {
   Future<void> deleteTransaction(String transactionId) async {
     return await _transactionRepository.deleteTransaction(transactionId);
   }
+
+  // Chart data methods
+  Stream<Map<int, Map<String, int>>> watchDailyIncomeExpenseByMonth(
+    int year,
+    int month,
+  ) {
+    return _transactionRepository.watchDailyIncomeExpenseByMonth(year, month);
+  }
+
+  Stream<Map<String, int>> watchCategoryExpensesByMonth(int year, int month) {
+    return _transactionRepository.watchCategoryExpensesByMonth(year, month);
+  }
 }

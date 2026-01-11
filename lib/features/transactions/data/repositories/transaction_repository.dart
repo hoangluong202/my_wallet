@@ -17,4 +17,16 @@ abstract class TransactionRepository {
   Future<String> createTransaction(TransactionPayload transaction);
   Future<void> updateTransaction(TransactionPayload transaction);
   Future<void> deleteTransaction(String id);
+
+  // Chart data aggregation methods
+  Future<Map<int, Map<String, int>>> getDailyIncomeExpenseByMonth(
+    int year,
+    int month,
+  );
+  Stream<Map<int, Map<String, int>>> watchDailyIncomeExpenseByMonth(
+    int year,
+    int month,
+  );
+  Future<Map<String, int>> getCategoryExpensesByMonth(int year, int month);
+  Stream<Map<String, int>> watchCategoryExpensesByMonth(int year, int month);
 }

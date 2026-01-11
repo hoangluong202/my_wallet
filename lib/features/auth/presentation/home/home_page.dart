@@ -5,6 +5,7 @@ import '../../../../core/router/app_router.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
+import '../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
 import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,6 +19,15 @@ class _HomePageState extends State<HomePage> {
   late final UserViewModel _userViewModel;
   late final WalletsViewModel _walletsViewModel;
   late final AuthViewModel _authViewModel;
+  late final TransactionsViewModel _transactionsViewModel;
+
+  // Selected month for charts
+  DateTime _selectedMonth = DateTime.now();
+  DateTime _selectedPieChartMonth = DateTime.now();
+
+  // Chart visibility toggles
+  bool _showIncome = true;
+  bool _showExpense = true;
 
   @override
   void initState() {
@@ -25,6 +35,7 @@ class _HomePageState extends State<HomePage> {
     _userViewModel = getIt<UserViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
     _authViewModel = getIt<AuthViewModel>();
+    _transactionsViewModel = getIt<TransactionsViewModel>();
   }
 
   Future<void> _syncData(BuildContext context) async {
@@ -105,7 +116,8 @@ class _HomePageState extends State<HomePage> {
           child: ListenableBuilder(
             listenable: _authViewModel,
             builder: (context, _) {
-              final userName = _authViewModel.currentUser?.displayName ?? 'User';
+              final userName =
+                  _authViewModel.currentUser?.displayName ?? 'User';
               final initials = _getInitials(userName);
 
               return Row(
@@ -157,11 +169,10 @@ class _HomePageState extends State<HomePage> {
                         icon: SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                          child: Icon(
+                            Icons.sync,
+                            color: Colors.white,
+                            size: 20,
                           ),
                         ),
                       );
@@ -230,13 +241,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBalanceCards(BuildContext context) {
-    final wallets = [
-      {'name': 'Main Bank', 'balance': 5230000, 'color': Colors.blue},
-      {'name': 'Momo', 'balance': 120000, 'color': Colors.pink},
-      {'name': 'Savings', 'balance': 15000000, 'color': Colors.green},
-    ];
-    final total = wallets.fold<int>(0, (sum, w) => sum + (w['balance'] as int));
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -281,13 +285,20 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatVND(total),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                  StreamBuilder<int>(
+                    stream: _walletsViewModel.totalBalanceStream,
+                    initialData: 0,
+                    builder: (context, snapshot) {
+                      final total = snapshot.data ?? 0;
+                      return Text(
+                        _formatVND(total),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -315,197 +326,493 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: StreamBuilder<Map<int, Map<String, int>>>(
+          stream: _transactionsViewModel.watchDailyIncomeExpenseByMonth(
+            _selectedMonth.year,
+            _selectedMonth.month,
+          ),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                height: 400,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final dailyData = snapshot.data!;
+            final daysInMonth = DateTime(
+              _selectedMonth.year,
+              _selectedMonth.month + 1,
+              0,
+            ).day;
+
+            // Convert map to list for chart
+            final chartData = List.generate(daysInMonth, (index) {
+              final day = index + 1;
+              final dayData = dailyData[day] ?? {'income': 0, 'expense': 0};
+              return {
+                'day': day,
+                'income': dayData['income'] ?? 0,
+                'expense': dayData['expense'] ?? 0,
+              };
+            });
+
+            // Calculate max value for chart scaling based on visible data
+            double maxValue = 0;
+
+            if (_showIncome && _showExpense) {
+              // Both visible: use the max of both
+              final maxIncome = chartData.isEmpty
+                  ? 0
+                  : chartData
+                        .map((e) => e['income'] as int)
+                        .reduce((a, b) => a > b ? a : b);
+              final maxExpense = chartData.isEmpty
+                  ? 0
+                  : chartData
+                        .map((e) => e['expense'] as int)
+                        .reduce((a, b) => a > b ? a : b);
+              maxValue = (maxIncome > maxExpense ? maxIncome : maxExpense)
+                  .toDouble();
+            } else if (_showIncome) {
+              // Only income visible: use max income
+              final maxIncome = chartData.isEmpty
+                  ? 0
+                  : chartData
+                        .map((e) => e['income'] as int)
+                        .reduce((a, b) => a > b ? a : b);
+              maxValue = maxIncome.toDouble();
+            } else if (_showExpense) {
+              // Only expense visible: use max expense
+              final maxExpense = chartData.isEmpty
+                  ? 0
+                  : chartData
+                        .map((e) => e['expense'] as int)
+                        .reduce((a, b) => a > b ? a : b);
+              maxValue = maxExpense.toDouble();
+            }
+
+            // Handle case when there's no data
+            final displayMaxValue = maxValue > 0 ? maxValue : 1000000;
+            final interval = (displayMaxValue / 4).ceilToDouble();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Income & Expense',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '2024',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
+                // Header with month selector
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Daily Income & Expense',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildLegendItem(Colors.green, 'Income'),
-                const SizedBox(width: 20),
-                _buildLegendItem(Colors.red, 'Expense'),
-              ],
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 1000000,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.shade200,
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 45,
-                        getTitlesWidget: (value, meta) {
-                          if (value == 0) return const SizedBox.shrink();
-                          return Text(
-                            '${(value / 1000000).toInt()}M',
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_left,
+                            size: 22,
+                            color: Colors.grey.shade700,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedMonth = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month - 1,
+                              );
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_getMonthName(_selectedMonth.month)} ${_selectedMonth.year}',
                             style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          const months = [
-                            'Jan',
-                            'Feb',
-                            'Mar',
-                            'Apr',
-                            'May',
-                            'Jun',
-                            'Jul',
-                            'Aug',
-                            'Sep',
-                            'Oct',
-                            'Nov',
-                            'Dec',
-                          ];
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < months.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                months[value.toInt()],
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: [
-                        const FlSpot(0, 3000000),
-                        const FlSpot(1, 2800000),
-                        const FlSpot(2, 3500000),
-                        const FlSpot(3, 3200000),
-                        const FlSpot(4, 3100000),
-                        const FlSpot(5, 3800000),
-                        const FlSpot(6, 3600000),
-                        const FlSpot(7, 3900000),
-                        const FlSpot(8, 3400000),
-                        const FlSpot(9, 3700000),
-                        const FlSpot(10, 4000000),
-                        const FlSpot(11, 4200000),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_right,
+                            size: 22,
+                            color: Colors.grey.shade700,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedMonth = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month + 1,
+                              );
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32),
+                        ),
                       ],
-                      isCurved: true,
-                      color: Colors.green,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: Colors.green.withOpacity(0.1),
-                      ),
-                    ),
-                    LineChartBarData(
-                      spots: [
-                        const FlSpot(0, 2200000),
-                        const FlSpot(1, 2400000),
-                        const FlSpot(2, 2100000),
-                        const FlSpot(3, 2300000),
-                        const FlSpot(4, 2600000),
-                        const FlSpot(5, 2900000),
-                        const FlSpot(6, 2700000),
-                        const FlSpot(7, 3000000),
-                        const FlSpot(8, 2800000),
-                        const FlSpot(9, 3100000),
-                        const FlSpot(10, 3200000),
-                        const FlSpot(11, 3400000),
-                      ],
-                      isCurved: true,
-                      color: Colors.red,
-                      barWidth: 3,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: Colors.red.withOpacity(0.1),
-                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ],
+                const SizedBox(height: 16),
+
+                // Legend with toggles
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildToggleLegendItem(
+                      Colors.green.shade600,
+                      'Income',
+                      _showIncome,
+                      (value) {
+                        setState(() {
+                          _showIncome = value;
+                          // At least one must be shown
+                          if (!_showIncome && !_showExpense) {
+                            _showExpense = true;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 20),
+                    _buildToggleLegendItem(
+                      Colors.red.shade600,
+                      'Expense',
+                      _showExpense,
+                      (value) {
+                        setState(() {
+                          _showExpense = value;
+                          // At least one must be shown
+                          if (!_showIncome && !_showExpense) {
+                            _showIncome = true;
+                          }
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Line Chart
+                SizedBox(
+                  height: 220,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: interval,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.shade200,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      titlesData: FlTitlesData(
+                        // Left titles (Y-axis - Amount)
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 50,
+                            interval: interval,
+                            getTitlesWidget: (value, meta) {
+                              if (value == 0) return const SizedBox.shrink();
+                              if (value >= 1000000) {
+                                return Text(
+                                  '${(value / 1000000).toStringAsFixed(1)}M',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              }
+                              return Text(
+                                '${(value / 1000).toInt()}K',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        // Bottom titles (X-axis - Days)
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: daysInMonth > 15
+                                ? 5
+                                : 3, // Show every 5 days if >15 days, else every 3
+                            getTitlesWidget: (value, meta) {
+                              final day = value.toInt() + 1;
+                              if (day < 1 || day > daysInMonth) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  '$day',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                      ),
+                      borderData: FlBorderData(
+                        show: true,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                          left: BorderSide(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      minX: 0,
+                      maxX: (daysInMonth - 1).toDouble(),
+                      minY: 0,
+                      maxY: displayMaxValue * 1.15, // Add 15% padding on top
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (touchedSpot) =>
+                              Colors.grey.shade800,
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              final dayIndex = spot.x.toInt();
+                              final day = chartData[dayIndex]['day'];
+                              final value = spot.y.toInt();
+
+                              // Determine label based on color
+                              String label;
+                              if (spot.bar.color == Colors.green.shade600) {
+                                label = 'Income';
+                              } else {
+                                label = 'Expense';
+                              }
+
+                              return LineTooltipItem(
+                                'Day $day\n$label: ${_formatVND(value)}',
+                                const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                      lineBarsData: [
+                        // Income line
+                        if (_showIncome)
+                          LineChartBarData(
+                            spots: List.generate(
+                              chartData.length,
+                              (index) => FlSpot(
+                                index.toDouble(),
+                                (chartData[index]['income'] as int).toDouble(),
+                              ),
+                            ),
+                            isCurved: true,
+                            curveSmoothness: 0.3,
+                            color: Colors.green.shade600,
+                            barWidth: 2.5,
+                            dotData: FlDotData(
+                              show:
+                                  daysInMonth <=
+                                  15, // Only show dots if <= 15 days
+                              getDotPainter: (spot, percent, barData, index) {
+                                return FlDotCirclePainter(
+                                  radius: 3,
+                                  color: Colors.white,
+                                  strokeWidth: 1.5,
+                                  strokeColor: Colors.green.shade600,
+                                );
+                              },
+                            ),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.green.shade600.withOpacity(0.15),
+                                  Colors.green.shade600.withOpacity(0.03),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                          ),
+                        // Expense line
+                        if (_showExpense)
+                          LineChartBarData(
+                            spots: List.generate(
+                              chartData.length,
+                              (index) => FlSpot(
+                                index.toDouble(),
+                                (chartData[index]['expense'] as int).toDouble(),
+                              ),
+                            ),
+                            isCurved: true,
+                            curveSmoothness: 0.3,
+                            color: Colors.red.shade600,
+                            barWidth: 2.5,
+                            dotData: FlDotData(
+                              show:
+                                  daysInMonth <=
+                                  15, // Only show dots if <= 15 days
+                              getDotPainter: (spot, percent, barData, index) {
+                                return FlDotCirclePainter(
+                                  radius: 3,
+                                  color: Colors.white,
+                                  strokeWidth: 1.5,
+                                  strokeColor: Colors.red.shade600,
+                                );
+                              },
+                            ),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.red.shade600.withOpacity(0.15),
+                                  Colors.red.shade600.withOpacity(0.03),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Summary
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      if (_showIncome) ...[
+                        _buildSummaryItem(
+                          'Total Income',
+                          chartData.fold<int>(
+                            0,
+                            (sum, item) => sum + (item['income'] as int),
+                          ),
+                          Colors.green.shade600,
+                        ),
+                        if (_showExpense)
+                          Container(
+                            width: 1,
+                            height: 30,
+                            color: Colors.grey.shade300,
+                          ),
+                      ],
+                      if (_showExpense)
+                        _buildSummaryItem(
+                          'Total Expense',
+                          chartData.fold<int>(
+                            0,
+                            (sum, item) => sum + (item['expense'] as int),
+                          ),
+                          Colors.red.shade600,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildCategoryPieChart(BuildContext context) {
-    final categories = [
-      {'name': 'Food', 'amount': 2500000, 'color': Colors.orange},
-      {'name': 'Transport', 'amount': 1200000, 'color': Colors.blue},
-      {'name': 'Shopping', 'amount': 3000000, 'color': Colors.purple},
-      {'name': 'Entertainment', 'amount': 800000, 'color': Colors.pink},
-      {'name': 'Bills', 'amount': 1500000, 'color': Colors.teal},
-      {'name': 'Others', 'amount': 1000000, 'color': Colors.grey},
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
+    return months[month - 1];
+  }
 
-    final total = categories.fold<int>(
-      0,
-      (sum, c) => sum + (c['amount'] as int),
+  Widget _buildSummaryItem(String label, int amount, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _formatVND(amount),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
+  }
 
+  Widget _buildCategoryPieChart(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -522,133 +829,415 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Expense by Category',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Pie chart centered
-            Center(
-              child: SizedBox(
-                height: 200,
-                width: 200,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 3,
-                    centerSpaceRadius: 60,
-                    sections: categories.map((category) {
-                      final amount = category['amount'] as int;
-                      final percentage = (amount / total * 100).toStringAsFixed(
-                        0,
-                      );
-                      return PieChartSectionData(
-                        value: amount.toDouble(),
-                        title: '$percentage%',
-                        color: category['color'] as Color,
-                        radius: 50,
-                        titleStyle: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Category list - vertical layout for better readability
-            ...categories.map((category) {
-              final amount = category['amount'] as int;
-              final percentage = (amount / total * 100).toStringAsFixed(1);
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: category['color'] as Color,
-                        shape: BoxShape.circle,
+        child: StreamBuilder<Map<String, int>>(
+          stream: _transactionsViewModel.watchCategoryExpensesByMonth(
+            _selectedPieChartMonth.year,
+            _selectedPieChartMonth.month,
+          ),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                height: 400,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final categoryExpenses = snapshot.data!;
+
+            // If no data, show empty state
+            if (categoryExpenses.isEmpty) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with month selector
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Expense by Category',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            category['name'] as String,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade800,
-                              fontWeight: FontWeight.w600,
+                          IconButton(
+                            icon: Icon(
+                              Icons.chevron_left,
+                              size: 22,
+                              color: Colors.grey.shade700,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _selectedPieChartMonth = DateTime(
+                                  _selectedPieChartMonth.year,
+                                  _selectedPieChartMonth.month - 1,
+                                );
+                              });
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${_getMonthName(_selectedPieChartMonth.month)} ${_selectedPieChartMonth.year}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ),
-                          Text(
-                            '$percentage%',
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(
+                              Icons.chevron_right,
+                              size: 22,
+                              color: Colors.grey.shade700,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _selectedPieChartMonth = DateTime(
+                                  _selectedPieChartMonth.year,
+                                  _selectedPieChartMonth.month + 1,
+                                );
+                              });
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No expense data',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              );
+            }
+
+            // Prepare data with colors
+            final colorPalette = [
+              Colors.orange,
+              Colors.blue,
+              Colors.purple,
+              Colors.pink,
+              Colors.teal,
+              Colors.amber,
+              Colors.cyan,
+              Colors.indigo,
+              Colors.lime,
+              Colors.deepOrange,
+            ];
+
+            final categories = categoryExpenses.entries.toList();
+            final categoriesWithColors = List.generate(categories.length, (
+              index,
+            ) {
+              return {
+                'name': categories[index].key,
+                'amount': categories[index].value,
+                'color': colorPalette[index % colorPalette.length],
+              };
+            });
+
+            final total = categoryExpenses.values.fold<int>(
+              0,
+              (sum, amount) => sum + amount,
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with month selector
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Expense by Category',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_left,
+                            size: 22,
+                            color: Colors.grey.shade700,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedPieChartMonth = DateTime(
+                                _selectedPieChartMonth.year,
+                                _selectedPieChartMonth.month - 1,
+                              );
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${_getMonthName(_selectedPieChartMonth.month)} ${_selectedPieChartMonth.year}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            Icons.chevron_right,
+                            size: 22,
+                            color: Colors.grey.shade700,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedPieChartMonth = DateTime(
+                                _selectedPieChartMonth.year,
+                                _selectedPieChartMonth.month + 1,
+                              );
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Pie chart centered
+                Center(
+                  child: SizedBox(
+                    height: 200,
+                    width: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 3,
+                        centerSpaceRadius: 60,
+                        sections: categoriesWithColors.map((category) {
+                          final amount = category['amount'] as int;
+                          final percentage = (amount / total * 100)
+                              .toStringAsFixed(0);
+                          return PieChartSectionData(
+                            value: amount.toDouble(),
+                            title: '$percentage%',
+                            color: category['color'] as Color,
+                            radius: 50,
+                            titleStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Category list - vertical layout for better readability
+                ...categoriesWithColors.map((category) {
+                  final amount = category['amount'] as int;
+                  final percentage = (amount / total * 100).toStringAsFixed(1);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: category['color'] as Color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                category['name'] as String,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '$percentage%',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _formatVND(amount),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+                // Total summary
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.receipt_long,
+                            size: 20,
+                            color: Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Total Expense',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade700,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _formatVND(amount),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                      Text(
+                        _formatVND(total),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red.shade700,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              );
-            }),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 3,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+  Widget _buildToggleLegendItem(
+    Color color,
+    String label,
+    bool isSelected,
+    Function(bool) onToggle,
+  ) {
+    return InkWell(
+      onTap: () => onToggle(!isSelected),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: 1.5,
           ),
         ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 16,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isSelected ? color : Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? color : Colors.grey.shade500,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
