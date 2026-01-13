@@ -22,9 +22,8 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   late IconData _selectedIcon;
   late final CategoriesViewModel _viewModel;
 
-  final List<IconData> _availableIcons = CategoryIcons.icons
-      .map((iconData) => iconData.icon)
-      .toList();
+  late List<IconData> _availableIcons;
+
 
   @override
   void initState() {
@@ -33,6 +32,9 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
     _viewModel = CategoriesViewModel(repository);
     _nameController = TextEditingController(text: widget.category.name);
     _selectedIcon = widget.category.icon;
+    _availableIcons = CategoryIcons.getIconsByType(
+      widget.category.type,
+    ).map((iconData) => iconData.icon).toList();
   }
 
   @override
@@ -42,6 +44,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   }
 
   Future<void> _submitForm() async {
+    print('Submitting form...');
     if (!_formKey.currentState!.validate()) return;
     final category = Category(
       id: widget.category.id,
@@ -51,6 +54,7 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
       createdAt: widget.category.createdAt,
       updatedAt: DateTime.now(),
     );
+    print('Updating category: ${category.iconCode}');
     final success = await _viewModel.updateCategory(category);
 
     if (!mounted) return;
@@ -71,15 +75,8 @@ class _EditCategoryPageState extends State<EditCategoryPage> {
   }
 
   Color _getColorForIcon(IconData icon) {
-    final index = _availableIcons.indexOf(icon) % 5;
-    final colors = [
-      Colors.orange,
-      Colors.blue,
-      Colors.pink,
-      Colors.purple,
-      Colors.green,
-    ];
-    return colors[index];
+    final iconData = CategoryIcons.getIconByCodePoint(icon.codePoint);
+    return iconData.color;
   }
 
   @override

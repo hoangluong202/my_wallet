@@ -132,6 +132,15 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return query.watch().map(_mapResultsToDetails);
   }
 
+  Future<int> countTransactionsByCategory(String categoryId) async {
+    final query = selectOnly(transactions)
+      ..addColumns([transactions.id.count()])
+      ..where(transactions.categoryId.equals(categoryId));
+
+    final result = await query.getSingle();
+    return result.read(transactions.id.count()) ?? 0;
+  }
+
   Future<int> insertTransaction(TransactionsCompanion transaction) async {
     return into(transactions).insert(transaction);
   }

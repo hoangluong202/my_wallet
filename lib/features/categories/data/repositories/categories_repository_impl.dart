@@ -67,6 +67,16 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
 
   @override
   Future<void> deleteCategory(String id) async {
+    // Check if category is being used in any transactions
+    final transactionCount = await _database.transactionDao
+        .countTransactionsByCategory(id);
+
+    if (transactionCount > 0) {
+      throw Exception(
+        'Cannot delete category. It is being used in $transactionCount transaction${transactionCount > 1 ? 's' : ''}.',
+      );
+    }
+
     await _database.categoryDao.deleteCategory(id);
   }
 }

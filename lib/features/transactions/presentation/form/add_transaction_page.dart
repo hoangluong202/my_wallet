@@ -775,7 +775,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
 
     if (picked != null && picked != _formState.selectedDate) {
-      _formState = _formState.copyWith(selectedDate: picked);
+      setState(() {
+        _formState = _formState.copyWith(selectedDate: picked);
+      });
     }
   }
 

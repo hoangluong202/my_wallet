@@ -23,10 +23,7 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   late IconData _selectedIcon;
   late CategoryType _selectedType;
   late final CategoriesViewModel _viewModel;
-
-  final List<IconData> _availableIcons = CategoryIcons.icons
-      .map((iconData) => iconData.icon)
-      .toList();
+  late List<IconData> _availableIcons;
 
   @override
   void initState() {
@@ -36,6 +33,9 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     _nameController = TextEditingController();
     _selectedIcon = Icons.category;
     _selectedType = widget.preselectedType;
+    _availableIcons = CategoryIcons.getIconsByType(_selectedType)
+        .map((iconData) => iconData.icon)
+        .toList();
   }
 
   @override
@@ -74,15 +74,8 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
   }
 
   Color _getColorForIcon(IconData icon) {
-    final index = _availableIcons.indexOf(icon) % 5;
-    final colors = [
-      Colors.orange,
-      Colors.blue,
-      Colors.pink,
-      Colors.purple,
-      Colors.green,
-    ];
-    return colors[index];
+    final iconData = CategoryIcons.getIconByCodePoint(icon.codePoint);
+    return iconData.color;
   }
 
   @override
@@ -258,9 +251,8 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  validator: (value) => _viewModel.validateCategoryName(
-                                    value ?? ''
-                                  ),
+                                  validator: (value) => _viewModel
+                                      .validateCategoryName(value ?? ''),
                                 ),
                               ],
                             ),

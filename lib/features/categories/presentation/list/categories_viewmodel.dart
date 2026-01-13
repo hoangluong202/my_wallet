@@ -87,17 +87,16 @@ class CategoriesViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteCategory(String id) async {
+  Future<void> deleteCategory(String id) async {
     _setLoading(true);
     _clearError();
     try {
       await _repository.deleteCategory(id);
       _setLoading(false);
-      return true;
     } catch (e) {
       _setLoading(false);
       _setError(e.toString());
-      return false;
+      rethrow; // Re-throw exception để UI có thể catch và hiển thị đúng
     }
   }
 }

@@ -9,7 +9,7 @@ import '../model/category_view_data.dart';
 import '../list/categories_viewmodel.dart';
 import '../form/edit_category_page.dart';
 import '../history/category_history_page.dart';
-
+import '../../../../core/widgets/notification_widget.dart';
 
 class CategoryDetailPage extends StatefulWidget {
   final String id;
@@ -55,7 +55,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 _buildContent(context, category),
                 const Expanded(child: SizedBox.expand()),
                 WalletActionButtons(
-                  onEdit: () => _onEdit(context,category),
+                  onEdit: () => _onEdit(context, category),
                   onHistory: () => _onHistory(context, category),
                   onDelete: () => _showDeleteConfirmation(context, category),
                 ),
@@ -120,9 +120,21 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     );
 
     if (confirmed == true && context.mounted) {
-      await _viewModel.deleteCategory(category.id);
-      if (context.mounted) {
-        Navigator.pop(context);
+      try {
+        await _viewModel.deleteCategory(category.id);
+        if (context.mounted) {
+          SuccessNotification.show(
+            context: context,
+            message: 'Category "${category.name}" deleted successfully',
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          // Extract meaningful error message
+          final errorMessage = e.toString().replaceFirst('Exception: ', '');
+          ErrorNotification.show(context: context, message: errorMessage);
+        }
       }
     }
   }
