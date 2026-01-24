@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:my_wallet/features/transactions/presentation/form/category_selector.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
@@ -59,6 +60,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       _allCategories = await _categoriesViewModel.categoriesStream.first;
       _allWallets = await _walletsViewModel.walletsStream.first;
 
+      _allCategories = _allCategories.toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+      _allWallets = _allWallets.toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
       if (_allCategories.isNotEmpty && _allWallets.isNotEmpty) {
         final firstCategory = _allCategories
             .where((c) => c.type == _formState.selectedType)
@@ -81,6 +88,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  List<CategoryViewData> get _filteredCategories {
+    return _allCategories
+        .where((cat) => cat.type == _formState.selectedType)
+        .toList();
   }
 
   @override
@@ -242,181 +255,17 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildCategorySection() {
-    final filteredCategories = _allCategories
-        .where((cat) => cat.type == _formState.selectedType)
-        .toList();
-
-    final selectedCategory = filteredCategories
-        .where((c) => c.id == _formState.selectedCategoryId)
-        .firstOrNull;
-
     return _buildCardSection(
       title: 'Category',
       icon: Icons.category_outlined,
-      child: selectedCategory == null
-          ? _buildCategoryPlaceholder()
-          : _buildSelectedCategory(selectedCategory),
-    );
-  }
-
-  Widget _buildCategoryPlaceholder() {
-    return GestureDetector(
-      onTap: _showCategoryPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a category',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectedCategory(CategoryViewData category) {
-    return GestureDetector(
-      onTap: _showCategoryPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: category.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(category.icon, color: category.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              category.name,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-
-  void _showCategoryPicker() {
-    final filtered = _allCategories
-        .where((c) => c.type == _formState.selectedType)
-        .toList();
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Title
-            Text(
-              'Select Category',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-
-            // List
-            Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final category = filtered[index];
-                  return _buildCategoryPickerItem(category);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryPickerItem(CategoryViewData category) {
-    final isSelected = _formState.selectedCategoryId == category.id;
-
-    return GestureDetector(
-      onTap: () {
-        _onCategoryChanged(category.id);
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected
-                ? category.color
-                : category.color.withOpacity(0.2),
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected
-              ? category.color.withOpacity(0.05)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            // Icon
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: category.color.withOpacity(0.2),
-              child: Icon(category.icon, color: category.color, size: 22),
-            ),
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: Text(
-                category.name,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? category.color : Colors.black87,
-                ),
-              ),
-            ),
-
-            if (isSelected)
-              Icon(Icons.check_circle, color: category.color, size: 24),
-          ],
-        ),
+      child: CategorySelector(
+        categories: _filteredCategories,
+        selectedId: _formState.selectedCategoryId,
+        onSelected: (id) {
+          setState(() {
+            _formState = _formState.copyWith(selectedCategoryId: id);
+          });
+        },
       ),
     );
   }
