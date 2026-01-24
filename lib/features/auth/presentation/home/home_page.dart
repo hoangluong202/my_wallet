@@ -963,7 +963,8 @@ class _HomePageState extends State<HomePage> {
               Colors.deepOrange,
             ];
 
-            final categories = categoryExpenses.entries.toList();
+            final categories = categoryExpenses.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
             final categoriesWithColors = List.generate(categories.length, (
               index,
             ) {
