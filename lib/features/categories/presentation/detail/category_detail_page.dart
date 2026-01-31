@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:my_wallet/core/widgets/action_buttons.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../form/category_icon_section.dart';
 import 'category_info_card.dart';
-import '../../../wallets/presentation/detail/wallet_action_buttons.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../model/category_view_data.dart';
 import '../list/categories_viewmodel.dart';
@@ -54,7 +54,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 ),
                 _buildContent(context, category),
                 const Expanded(child: SizedBox.expand()),
-                WalletActionButtons(
+                ActionButtons(
                   onEdit: () => _onEdit(context, category),
                   onHistory: () => _onHistory(context, category),
                   onDelete: () => _showDeleteConfirmation(context, category),

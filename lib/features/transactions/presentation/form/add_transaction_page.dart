@@ -662,12 +662,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     });
   }
 
-  void _onCategoryChanged(String categoryId) {
-    setState(() {
-      _formState = _formState.copyWith(selectedCategoryId: categoryId);
-    });
-  }
-
   void _onWalletChanged(String walletId) {
     setState(() {
       _formState = _formState.copyWith(selectedWalletId: walletId);

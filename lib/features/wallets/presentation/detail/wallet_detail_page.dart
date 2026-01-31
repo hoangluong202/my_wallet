@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:my_wallet/core/widgets/action_buttons.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../list/wallet_icon_section.dart';
 import 'wallet_info_card.dart';
-import 'wallet_action_buttons.dart';
 import '../model/wallet_view_data.dart';
 import '../list/wallets_viewmodel.dart';
 import '../../data/repositories/wallet_repository.dart';
@@ -124,10 +124,15 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
                 ),
                 _buildContent(context, wallet),
                 const Expanded(child: SizedBox.expand()),
-                WalletActionButtons(
+                
+                ActionButtons(
                   onEdit: () => _navigateToEdit(context, wallet),
-                  onHistory: () => _navigateToHistory(context, wallet),
                   onDelete: () => _showDeleteConfirmation(context, wallet),
+                  onTransfer: () => SuccessNotification.show(
+                    context: context,
+                    message: 'Transfer feature coming soon',
+                    duration: const Duration(seconds: 2),
+                  ),
                 ),
               ],
             );

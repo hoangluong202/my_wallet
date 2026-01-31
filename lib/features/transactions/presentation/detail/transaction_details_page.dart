@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_wallet/core/widgets/action_buttons.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/dialogs/confirm_dialog.dart';
 import '../../../../core/widgets/notification_widget.dart';
-import 'transaction_action_buttons.dart';
 import '../form/edit_transaction_page.dart';
 import '../../../../core/di/injector.dart';
 import '../viewmodel/transactions_viewmodel.dart';
@@ -55,7 +55,7 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
                     onBack: () => Navigator.pop(context, _hasChanges),
                   ),
                   Expanded(child: TransactionDetailsCard(transaction)),
-                  TransactionActionButtons(
+                  ActionButtons(
                     onEdit: () => _onEdit(context, transaction),
                     onDelete: () => _onDelete(context, transaction),
                   ),
