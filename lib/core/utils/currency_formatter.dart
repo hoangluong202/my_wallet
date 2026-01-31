@@ -5,6 +5,11 @@ class CurrencyFormatter {
     return s.replaceAllMapped(re, (m) => '.');
   }
 
+  static int parseVND(String formatted) {
+    final cleanString = formatted.replaceAll('.', '');
+    return int.parse(cleanString);
+  } 
+
   static String formatVNDWithSymbol(int amount) {
     return '${formatVND(amount)} đ';
   }

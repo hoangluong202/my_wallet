@@ -35,4 +35,16 @@ class WalletViewData {
       updatedAt: wallet.updatedAt,
     );
   }
+  
+  static WalletViewData empty() {
+    return WalletViewData(
+      id: '',
+      name: '',
+      balance: 0,
+      icon: Icons.account_balance_wallet,
+      color: Colors.grey,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
 }

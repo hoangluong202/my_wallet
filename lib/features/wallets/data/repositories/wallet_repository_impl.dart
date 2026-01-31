@@ -12,7 +12,8 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<List<Wallet>> getAllWallets() async {
     try {
       final walletDataList = await _database.walletDao.getAllWallets();
-      return WalletModel.toEntityList(walletDataList);
+      return WalletModel.toEntityList(walletDataList).toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     } catch (e) {
       throw Exception('Failed to get wallets: $e');
     }
@@ -79,6 +80,51 @@ class WalletRepositoryImpl implements WalletRepository {
       await _database.walletDao.deleteWallet(id);
     } catch (e) {
       throw Exception('Failed to delete wallet: $e');
+    }
+  }
+
+  @override
+  Future<void> transferMoney({
+    required String sourceWalletId,
+    required String targetWalletId,
+    required int amount,
+  }) async {
+    try {
+      await _database.transaction(() async {
+        // Deduct amount from source wallet
+        final sourceWalletData = await _database.walletDao.getWalletById(
+          sourceWalletId,
+        );
+        if (sourceWalletData == null) {
+          throw Exception('Source wallet not found');
+        }
+        final updatedSourceBalance = sourceWalletData.balance - amount;
+
+        await _database.walletDao.updateWallet(
+          WalletModel.toCompanion(
+            WalletModel.toEntity(
+              sourceWalletData,
+            ).copyWith(balance: updatedSourceBalance),
+          ),
+        );
+        // Add amount to target wallet
+        final targetWalletData = await _database.walletDao.getWalletById(
+          targetWalletId,
+        );
+        if (targetWalletData == null) {
+          throw Exception('Target wallet not found');
+        }
+        final updatedTargetBalance = targetWalletData.balance + amount;
+        await _database.walletDao.updateWallet(
+          WalletModel.toCompanion(
+            WalletModel.toEntity(
+              targetWalletData,
+            ).copyWith(balance: updatedTargetBalance),
+          ),
+        );
+      });
+    } catch (e) {
+      throw Exception('Failed to transfer money: $e');
     }
   }
 }

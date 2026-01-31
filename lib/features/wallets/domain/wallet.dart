@@ -14,4 +14,22 @@ class Wallet {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  Wallet copyWith({
+    String? id,
+    String? name,
+    int? balance,
+    int? iconCode,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Wallet(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      balance: balance ?? this.balance,
+      iconCode: iconCode ?? this.iconCode,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

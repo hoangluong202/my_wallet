@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:my_wallet/core/widgets/action_buttons.dart';
+import 'package:my_wallet/features/wallets/presentation/form/transfer_money_page.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../list/wallet_icon_section.dart';
@@ -124,15 +125,11 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
                 ),
                 _buildContent(context, wallet),
                 const Expanded(child: SizedBox.expand()),
-                
+
                 ActionButtons(
                   onEdit: () => _navigateToEdit(context, wallet),
                   onDelete: () => _showDeleteConfirmation(context, wallet),
-                  onTransfer: () => SuccessNotification.show(
-                    context: context,
-                    message: 'Transfer feature coming soon',
-                    duration: const Duration(seconds: 2),
-                  ),
+                  onTransfer: () => _navigateToTransfer(context, wallet),
                 ),
               ],
             );
@@ -168,17 +165,16 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
     );
   }
 
-  Future<void> _navigateToHistory(
+  Future<void> _navigateToTransfer(
     BuildContext context,
     WalletViewData wallet,
   ) async {
-    if (context.mounted) {
-      SuccessNotification.show(
-        context: context,
-        message: 'Transaction history coming soon',
-        duration: const Duration(seconds: 2),
-      );
-    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransferMoneyPage(sourceWallet: wallet),
+      ),
+    );
   }
 
   Future<void> _showDeleteConfirmation(

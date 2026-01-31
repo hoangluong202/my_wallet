@@ -303,7 +303,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
         );
       });
     } catch (e) {
-      print('Error: $e');
       throw Exception('Error: $e');
     }
   }

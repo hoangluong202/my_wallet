@@ -8,4 +8,9 @@ abstract class WalletRepository {
   Future<String> createWallet(Wallet wallet);
   Future<void> updateWallet(Wallet wallet);
   Future<void> deleteWallet(String id);
+  Future<void> transferMoney({
+    required String sourceWalletId,
+    required String targetWalletId,
+    required int amount,
+  });
 }

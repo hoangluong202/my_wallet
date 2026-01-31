@@ -16,6 +16,11 @@ class WalletsViewModel extends ChangeNotifier {
     (wallets) => wallets.map((wallet) => WalletViewData.fromDomain(wallet)).toList(),
   );
 
+  Future<List<WalletViewData>> get loadWallets async {
+    final wallets = await _repository.getAllWallets();
+    return wallets.map((wallet) => WalletViewData.fromDomain(wallet)).toList();
+  }
+
   Stream<WalletViewData?> watchWallet(String walletId) {
     return _repository.watchWalletById(walletId).map(
       (wallet) => wallet != null ? WalletViewData.fromDomain(wallet) : null,

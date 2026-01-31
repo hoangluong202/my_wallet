@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_wallet/features/wallets/presentation/form/transfer_money_viewmodel.dart';
 import '../../database/app_database.dart';
 import '../../features/wallets/data/repositories/wallet_repository_impl.dart';
 import '../../features/wallets/data/repositories/wallet_repository.dart';
@@ -37,7 +38,10 @@ Future<void> setupDependencies() async {
   // ============================================
 
   getIt.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(firebaseAuth: getIt<FirebaseAuth>(), userRepository: getIt<UserRepository>()),
+    () => AuthRepositoryImpl(
+      firebaseAuth: getIt<FirebaseAuth>(),
+      userRepository: getIt<UserRepository>(),
+    ),
   );
 
   getIt.registerLazySingleton<UserRepository>(
@@ -67,7 +71,9 @@ Future<void> setupDependencies() async {
     () => WalletsViewModel(getIt<WalletRepository>()),
   );
 
-  getIt.registerFactory<UserViewModel>(() => UserViewModel(getIt<UserRepository>(), getIt<AuthRepository>()));
+  getIt.registerFactory<UserViewModel>(
+    () => UserViewModel(getIt<UserRepository>(), getIt<AuthRepository>()),
+  );
 
   getIt.registerFactory<TransactionsViewModel>(
     () => TransactionsViewModel(getIt<TransactionRepository>()),
@@ -75,5 +81,9 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<CategoriesViewModel>(
     () => CategoriesViewModel(getIt<CategoriesRepository>()),
+  );
+
+  getIt.registerFactory<TransferMoneyViewModel>(
+    () => TransferMoneyViewModel(walletRepo: getIt<WalletRepository>()),
   );
 }
