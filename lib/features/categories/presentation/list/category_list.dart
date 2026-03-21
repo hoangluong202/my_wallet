@@ -93,16 +93,117 @@ class CategoryList extends StatelessWidget {
     BuildContext context,
     List<CategoryViewData> items,
   ) {
+    // Separate parent and child categories
+    final parentCategories = items
+        .where((c) => c.parentCategoryId == null)
+        .toList();
+
     return ListView.separated(
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemCount: parentCategories.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final category = items[index];
-        return CategoryCard(
-          category: category,
-          onTap: () => _onCategoryTap(context, category),
-        );
+        final parentCategory = parentCategories[index];
+        final childCategories = items
+            .where((c) => c.parentCategoryId == parentCategory.id)
+            .toList();
+
+        return _buildCategoryTree(context, parentCategory, childCategories);
       },
+    );
+  }
+
+  // NEW: Build tree structure for parent-child relationship
+  Widget _buildCategoryTree(
+    BuildContext context,
+    CategoryViewData parentCategory,
+    List<CategoryViewData> childCategories,
+  ) {
+    // If no children, just show the parent card without wrapper
+    if (childCategories.isEmpty) {
+      return CategoryCard(
+        category: parentCategory,
+        onTap: () => _onCategoryTap(context, parentCategory),
+      );
+    }
+
+    // If has children, show parent and all children in a container
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          // Parent category card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: CategoryCard(
+              category: parentCategory,
+              onTap: () => _onCategoryTap(context, parentCategory),
+            ),
+          ),
+          // All child categories
+          ...List.generate(childCategories.length, (childIndex) {
+            final childCategory = childCategories[childIndex];
+            final isLastChild = childIndex == childCategories.length - 1;
+
+            return Column(
+              children: [
+                Divider(
+                  height: 1,
+                  color: Colors.grey.shade200,
+                  indent: 16,
+                  endIndent: 16,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 24),
+                    child: Row(
+                      children: [
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: 2,
+                              height: 8,
+                              child: Container(color: Colors.grey.shade400),
+                            ),
+                            Container(
+                              width: 2,
+                              height: isLastChild ? 0 : 20,
+                              decoration: BoxDecoration(
+                                border: isLastChild
+                                    ? null
+                                    : Border(
+                                        left: BorderSide(
+                                          color: Colors.grey.shade400,
+                                          width: 2,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: CategoryCard(
+                            category: childCategory,
+                            onTap: () => _onCategoryTap(context, childCategory),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
     );
   }
 

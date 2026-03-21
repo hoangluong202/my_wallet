@@ -67,8 +67,8 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
 
   @override
   Future<void> deleteCategory(String id) async {
-    // Check if category is being used in any transactions
-    final transactionCount = await _database.transactionDao
+    // Check if the category itself is being used in transactions
+    var transactionCount = await _database.transactionDao
         .countTransactionsByCategory(id);
 
     if (transactionCount > 0) {
@@ -77,6 +77,81 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
       );
     }
 
+    // Get all categories to find children
+    final allCategories = await getCategories();
+
+    // Check if any child categories exist
+    final children = allCategories
+        .where((c) => c.parentCategoryId == id)
+        .toList();
+
+    // If has children, don't allow deletion
+    if (children.isNotEmpty) {
+      throw Exception(
+        'Cannot delete category. It has ${children.length} sub-categor${children.length > 1 ? 'ies' : 'y'}. Please delete them first.',
+      );
+    }
+
+    // If no transactions use this category or its children, delete it
     await _database.categoryDao.deleteCategory(id);
+  }
+
+  // NEW: Parent category methods
+  @override
+  Future<bool> hasChildCategory(String parentCategoryId) async {
+    return _database.categoryDao.hasChild(parentCategoryId);
+  }
+
+  @override
+  Future<Category?> getParentCategory(String childCategoryId) async {
+    final parentData = await _database.categoryDao.getParentCategory(
+      childCategoryId,
+    );
+    return parentData != null ? CategoryModel.toEntity(parentData) : null;
+  }
+
+  @override
+  Future<void> addCategoryWithValidation(Category category) async {
+    // Validate parent category if provided
+    if (category.parentCategoryId != null) {
+      await _validateParentCategory(category);
+    }
+    await addCategory(category);
+  }
+
+  @override
+  Future<void> updateCategoryWithValidation(Category category) async {
+    // Validate parent category if provided
+    if (category.parentCategoryId != null) {
+      await _validateParentCategory(category);
+    }
+    await updateCategory(category);
+  }
+
+  // NEW: Private validation method
+  Future<void> _validateParentCategory(Category category) async {
+    // 1. Check parent exists
+    final parent = await _database.categoryDao.getCategoryById(
+      category.parentCategoryId!,
+    );
+    if (parent == null) {
+      throw Exception('Parent category not found');
+    }
+
+    // 2. Check parent is not a child itself (max 1 level deep: root -> child only)
+    if (parent.parentCategoryId != null) {
+      throw Exception(
+        'Cannot create multi-level hierarchy. Parent category must be a root category',
+      );
+    }
+
+    // 3. Check type matches
+    final parentType = CategoryType.values.firstWhere(
+      (e) => e.name == parent.type,
+      orElse: () => CategoryType.expense,
+    );
+    if (category.type != parentType) {
+      throw Exception('Child category type must match parent type');
+    }
   }
 }

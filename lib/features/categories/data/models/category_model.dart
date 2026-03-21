@@ -3,9 +3,10 @@ import '../../../../database/app_database.dart';
 import '../../domain/category.dart';
 
 class CategoryModel {
-  
   static CategoryType _getCategoryType(String type) {
-    return CategoryType.values.firstWhere((e) => e.toString().split('.').last == type);
+    return CategoryType.values.firstWhere(
+      (e) => e.toString().split('.').last == type,
+    );
   }
 
   static Category toEntity(CategoryData data) {
@@ -15,6 +16,7 @@ class CategoryModel {
       type: _getCategoryType(data.type),
       iconCode: data.iconCode,
       description: data.description,
+      parentCategoryId: data.parentCategoryId,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     );
@@ -27,6 +29,9 @@ class CategoryModel {
       type: Value(entity.type.toString().split('.').last),
       iconCode: Value(entity.iconCode),
       description: Value(entity.description),
+      parentCategoryId: entity.parentCategoryId != null
+          ? Value(entity.parentCategoryId)
+          : const Value.absent(),
       createdAt: Value(entity.createdAt),
       updatedAt: Value(entity.updatedAt),
     );
@@ -46,6 +51,7 @@ class CategoryModel {
     required String type,
     required int iconCode,
     String? description,
+    String? parentCategoryId,
   }) {
     final now = DateTime.now();
     return CategoriesCompanion.insert(
@@ -54,6 +60,9 @@ class CategoryModel {
       type: type,
       iconCode: iconCode,
       description: Value(description),
+      parentCategoryId: parentCategoryId != null
+          ? Value(parentCategoryId)
+          : const Value.absent(),
       createdAt: now,
       updatedAt: now,
     );
@@ -64,12 +73,18 @@ class CategoryModel {
     String? type,
     int? iconCode,
     String? description,
+    String? parentCategoryId,
   }) {
     return CategoriesCompanion(
       name: name != null ? Value(name) : const Value.absent(),
       type: type != null ? Value(type) : const Value.absent(),
       iconCode: iconCode != null ? Value(iconCode) : const Value.absent(),
-      description: description != null ? Value(description) : const Value.absent(),
+      description: description != null
+          ? Value(description)
+          : const Value.absent(),
+      parentCategoryId: parentCategoryId != null
+          ? Value(parentCategoryId)
+          : const Value.absent(),
       updatedAt: Value(DateTime.now()),
     );
   }

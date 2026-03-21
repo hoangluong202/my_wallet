@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:my_wallet/core/widgets/action_buttons.dart';
-import '../../../../core/widgets/header/detail_header.dart';
-import '../form/category_icon_section.dart';
-import 'category_info_card.dart';
+
 import '../../../../core/extensions/context_extensions.dart';
-import '../model/category_view_data.dart';
-import '../list/categories_viewmodel.dart';
+import '../../../../core/widgets/action_buttons.dart';
+import '../../../../core/widgets/notification_widget.dart';
+import '../../../transactions/data/repositories/transaction_repository.dart';
+import '../../../transactions/presentation/detail/transaction_details_page.dart';
 import '../form/edit_category_page.dart';
 import '../history/category_history_page.dart';
-import '../../../../core/widgets/notification_widget.dart';
+import '../list/categories_viewmodel.dart';
+import '../model/category_view_data.dart';
+import '../widgets/category_detail_header.dart';
+import '../widgets/category_children_section.dart';
+import '../widgets/category_parent_section.dart';
+import '../widgets/category_transactions_section.dart';
 
 class CategoryDetailPage extends StatefulWidget {
   final String id;
@@ -22,11 +26,13 @@ class CategoryDetailPage extends StatefulWidget {
 
 class _CategoryDetailPageState extends State<CategoryDetailPage> {
   late final CategoriesViewModel _viewModel;
+  late final TransactionRepository _transactionRepository;
 
   @override
   void initState() {
     super.initState();
     _viewModel = GetIt.instance<CategoriesViewModel>();
+    _transactionRepository = GetIt.instance<TransactionRepository>();
   }
 
   @override
@@ -37,29 +43,23 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           stream: _viewModel.getCategoryStream(widget.id),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return _ErrorView(error: snapshot.error);
             }
-
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
 
             final category = snapshot.data!;
 
-            return Column(
-              children: [
-                DetailHeader(
-                  title: 'Category Details',
-                  onBack: () => Navigator.pop(context),
-                ),
-                _buildContent(context, category),
-                const Expanded(child: SizedBox.expand()),
-                ActionButtons(
-                  onEdit: () => _onEdit(context, category),
-                  onHistory: () => _onHistory(context, category),
-                  onDelete: () => _showDeleteConfirmation(context, category),
-                ),
-              ],
+            if (category.parentCategoryId == null) {
+              return _buildDetailPage(context, category, null);
+            }
+
+            return StreamBuilder<CategoryViewData?>(
+              stream: _viewModel.getCategoryStream(category.parentCategoryId!),
+              builder: (context, parentSnapshot) {
+                return _buildDetailPage(context, category, parentSnapshot.data);
+              },
             );
           },
         ),
@@ -67,42 +67,69 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     );
   }
 
-  Widget _buildContent(BuildContext context, CategoryViewData category) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CategoryIconSection(category: category),
-            const SizedBox(height: 12),
-            CategoryInfoCard(category: category),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _onEdit(BuildContext context, CategoryViewData category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditCategoryPage(category: category),
-      ),
-    );
-  }
-
-  Future<void> _onHistory(
+  Widget _buildDetailPage(
     BuildContext context,
     CategoryViewData category,
-  ) async {
+    CategoryViewData? parentCategory,
+  ) {
+    return Column(
+      children: [
+        CategoryDetailHeader(category: category),
+        Expanded(
+          child: _CategoryDetailBody(
+            category: category,
+            parentCategory: parentCategory,
+            viewModel: _viewModel,
+            transactionRepository: _transactionRepository,
+            onTransactionTap: (transactionId) =>
+                _navigateToTransaction(context, transactionId),
+            onChildCategoryTap: (id) => _navigateToCategoryDetail(context, id),
+          ),
+        ),
+        ActionButtons(
+          onEdit: () => _navigateToEdit(context, category),
+          onHistory: () => _navigateToHistory(context, category),
+          onDelete: () => _showDeleteConfirmation(context, category),
+        ),
+      ],
+    );
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  void _navigateToCategoryDetail(BuildContext context, String id) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CategoryDetailPage(id: id)),
+    );
+  }
+
+  void _navigateToEdit(BuildContext context, CategoryViewData category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EditCategoryPage(category: category)),
+    );
+  }
+
+  void _navigateToHistory(BuildContext context, CategoryViewData category) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryHistoryPage(category: category),
+        builder: (_) => CategoryHistoryPage(category: category),
       ),
     );
   }
+
+  void _navigateToTransaction(BuildContext context, String transactionId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionDetailsPage(transactionId: transactionId),
+      ),
+    );
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
 
   Future<void> _showDeleteConfirmation(
     BuildContext context,
@@ -112,30 +139,120 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       title: 'Delete Category?',
       content:
           'Are you sure you want to delete "${category.name}"?\n\n'
-          'Note: You can only delete a category if there are no transactions using it. '
-          'This action cannot be undone.',
+          'Note: You can only delete a category if there are no transactions '
+          'using it. This action cannot be undone.',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       isDangerous: true,
     );
 
-    if (confirmed == true && context.mounted) {
-      try {
-        await _viewModel.deleteCategory(category.id);
-        if (context.mounted) {
-          SuccessNotification.show(
-            context: context,
-            message: 'Category "${category.name}" deleted successfully',
-          );
-          Navigator.pop(context);
-        }
-      } catch (e) {
-        if (context.mounted) {
-          // Extract meaningful error message
-          final errorMessage = e.toString().replaceFirst('Exception: ', '');
-          ErrorNotification.show(context: context, message: errorMessage);
-        }
+    if (confirmed != true || !context.mounted) return;
+
+    await _deleteCategory(context, category);
+  }
+
+  Future<void> _deleteCategory(
+    BuildContext context,
+    CategoryViewData category,
+  ) async {
+    _showLoadingDialog(context);
+
+    try {
+      await _viewModel.deleteCategory(category.id);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // close loading
+      SuccessNotification.show(
+        context: context,
+        message: 'Category "${category.name}" deleted successfully',
+      );
+      if (context.mounted) Navigator.pop(context); // close detail page
+    } catch (e) {
+      if (!context.mounted) return;
+      _safeCloseDialog(context);
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      if (context.mounted) {
+        ErrorNotification.show(context: context, message: errorMessage);
       }
     }
+  }
+
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  void _safeCloseDialog(BuildContext context) {
+    try {
+      Navigator.pop(context);
+    } catch (_) {
+      // Dialog may already be closed
+    }
+  }
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────────
+
+class _CategoryDetailBody extends StatelessWidget {
+  final CategoryViewData category;
+  final CategoryViewData? parentCategory;
+  final CategoriesViewModel viewModel;
+  final TransactionRepository transactionRepository;
+  final ValueChanged<String> onTransactionTap;
+  final ValueChanged<String> onChildCategoryTap;
+
+  const _CategoryDetailBody({
+    required this.category,
+    required this.parentCategory,
+    required this.viewModel,
+    required this.transactionRepository,
+    required this.onTransactionTap,
+    required this.onChildCategoryTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (parentCategory != null) ...[
+            CategoryParentSection(
+              parentCategory: parentCategory!,
+              onTap: () => onChildCategoryTap(parentCategory!.id),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (category.parentCategoryId == null)
+            CategoryChildrenSection(
+              category: category,
+              viewModel: viewModel,
+              onChildTap: onChildCategoryTap,
+            ),
+          CategoryTransactionsSection(
+            category: category,
+            transactionRepository: transactionRepository,
+            onTransactionTap: onTransactionTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Error View ────────────────────────────────────────────────────────────────
+
+class _ErrorView extends StatelessWidget {
+  final Object? error;
+
+  const _ErrorView({this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text('Error: $error'));
   }
 }

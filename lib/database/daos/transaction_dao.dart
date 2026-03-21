@@ -152,4 +152,25 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteTransaction(String id) async {
     return (delete(transactions)..where((t) => t.id.equals(id))).go();
   }
+
+  // NEW: Get transactions by category ID with details
+  Future<List<TransactionJoinedModel>> getTransactionsByCategory(
+    String categoryId,
+  ) async {
+    final query = _baseJoinQuery()
+      ..where(transactions.categoryId.equals(categoryId));
+    _applyDefaultOrdering(query);
+    final results = await query.get();
+    return _mapResultsToDetails(results);
+  }
+
+  // Watch transactions by category ID with details
+  Stream<List<TransactionJoinedModel>> watchTransactionsByCategory(
+    String categoryId,
+  ) {
+    final query = _baseJoinQuery()
+      ..where(transactions.categoryId.equals(categoryId));
+    _applyDefaultOrdering(query);
+    return query.watch().map(_mapResultsToDetails);
+  }
 }

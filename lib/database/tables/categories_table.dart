@@ -7,6 +7,8 @@ class Categories extends Table {
   IntColumn get iconCode => integer()();
   TextColumn get type => text()(); // expense, income, debt, loan
   TextColumn get description => text().nullable()();
+  TextColumn get parentCategoryId =>
+      text().nullable()(); // NEW: Parent category reference
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -17,5 +19,6 @@ class Categories extends Table {
   List<String> get customConstraints => [
     'CHECK(length(name) >= 2)',
     "CHECK(type IN ('expense', 'income', 'debt', 'loan'))",
+    'FOREIGN KEY(parentCategoryId) REFERENCES categories(id) ON DELETE SET NULL', // NK: FK constraint - allows multiple children
   ];
 }

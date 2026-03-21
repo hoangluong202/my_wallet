@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/date_formatter.dart';
-import '../../domain/category.dart';
 import '../model/category_view_data.dart';
 
 class CategoryInfoCard extends StatelessWidget {
   final CategoryViewData category;
+  final CategoryViewData? parentCategory;
 
-  const CategoryInfoCard({super.key, required this.category});
+  const CategoryInfoCard({
+    super.key,
+    required this.category,
+    this.parentCategory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,26 +30,14 @@ class CategoryInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow(
-            context,
-            'Type',
-            _getCategoryTypeLabel(category.type),
-            category.color,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
-            'Created On',
-            DateFormatter.formatDate(category.createdAt),
-            Colors.green,
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            context,
-            'Last Updated',
-            DateFormatter.formatDuration(category.updatedAt),
-            Colors.orange,
-          ),
+          // Show parent if exists
+          if (parentCategory != null)
+            _buildInfoRow(
+              context,
+              'Parent Category',
+              parentCategory!.name,
+              Colors.green,
+            ),
         ],
       ),
     );
@@ -89,18 +80,5 @@ class CategoryInfoCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getCategoryTypeLabel(CategoryType type) {
-    switch (type) {
-      case CategoryType.expense:
-        return 'Expense';
-      case CategoryType.income:
-        return 'Income';
-      case CategoryType.debt:
-        return 'Debt';
-      case CategoryType.loan:
-        return 'Loan';
-    }
   }
 }

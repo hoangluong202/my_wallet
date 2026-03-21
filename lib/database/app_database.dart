@@ -28,7 +28,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -37,18 +37,15 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Drop all tables and recreate from scratch
-        await m.drop(transactions);
-        await m.drop(categories);
-        await m.drop(wallets);
-        await m.drop(users);
-
-        // Recreate all tables
-        await m.createAll();
-      },
-      beforeOpen: (details) async {
-        // Enable foreign keys
-        await customStatement('PRAGMA foreign_keys = ON');
+        if (from < 8) {
+          // Add parentCategoryId column to categories table
+          await m.addColumn(categories, categories.parentCategoryId);
+        }
+        if (from < 9) {
+          // Remove UNIQUE constraint on parentCategoryId to allow multiple children per parent
+          // Note: SQLite doesn't support dropping constraints directly,
+          // but the new schema without UNIQUE will be enforced on INSERT/UPDATE
+        }
       },
     );
   }

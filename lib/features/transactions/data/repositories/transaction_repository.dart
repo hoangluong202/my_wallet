@@ -18,6 +18,10 @@ abstract class TransactionRepository {
   Future<void> updateTransaction(TransactionPayload transaction);
   Future<void> deleteTransaction(String id);
 
+  // NEW: Get transactions by category
+  Future<List<Transaction>> getTransactionsByCategory(String categoryId);
+  Stream<List<Transaction>> watchTransactionsByCategory(String categoryId);
+
   // Chart data aggregation methods
   Future<Map<int, Map<String, int>>> getDailyIncomeExpenseByMonth(
     int year,

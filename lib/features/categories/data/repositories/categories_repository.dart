@@ -10,4 +10,10 @@ abstract class CategoriesRepository {
   Future<void> addCategory(Category category);
   Future<void> updateCategory(Category category);
   Future<void> deleteCategory(String id);
+
+  // NEW: Parent category methods
+  Future<bool> hasChildCategory(String parentCategoryId);
+  Future<Category?> getParentCategory(String childCategoryId);
+  Future<void> addCategoryWithValidation(Category category);
+  Future<void> updateCategoryWithValidation(Category category);
 }

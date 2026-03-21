@@ -68,4 +68,66 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteAllCategories() async {
     return delete(categories).go();
   }
+
+  // NEW: Get child category for a parent
+  Future<CategoryData?> getChildCategory(String parentCategoryId) async {
+    return (select(categories)
+          ..where((t) => t.parentCategoryId.equals(parentCategoryId)))
+        .getSingleOrNull();
+  }
+
+  // NEW: Get all child categories for a parent
+  Future<List<CategoryData>> getChildCategories(String parentCategoryId) async {
+    return (select(categories)
+          ..where((t) => t.parentCategoryId.equals(parentCategoryId))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  // NEW: Watch all child categories for a parent
+  Stream<List<CategoryData>> watchChildCategories(String parentCategoryId) {
+    return (select(categories)
+          ..where((t) => t.parentCategoryId.equals(parentCategoryId))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.name, mode: OrderingMode.asc),
+          ]))
+        .watch();
+  }
+
+  // NEW: Check if category has a child
+  Future<bool> hasChild(String categoryId) async {
+    final child = await getChildCategory(categoryId);
+    return child != null;
+  }
+
+  // NEW: Get parent category
+  Future<CategoryData?> getParentCategory(String childCategoryId) async {
+    final child = await getCategoryById(childCategoryId);
+    if (child == null || child.parentCategoryId == null) return null;
+    return getCategoryById(child.parentCategoryId!);
+  }
+
+  // NEW: Get all root categories (parent_category_id is null)
+  Future<List<CategoryData>> getRootCategories() async {
+    return (select(categories)
+          ..where((t) => t.parentCategoryId.isNull())
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .get();
+  }
+
+  // NEW: Watch all root categories
+  Stream<List<CategoryData>> watchRootCategories() {
+    return (select(categories)
+          ..where((t) => t.parentCategoryId.isNull())
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .watch();
+  }
 }

@@ -99,4 +99,34 @@ class CategoriesViewModel extends ChangeNotifier {
       rethrow; // Re-throw exception để UI có thể catch và hiển thị đúng
     }
   }
+
+  // NEW: Add category with validation
+  Future<bool> addCategoryWithValidation(Category category) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      await _repository.addCategoryWithValidation(category);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // NEW: Update category with validation
+  Future<bool> updateCategoryWithValidation(Category category) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      await _repository.updateCategoryWithValidation(category);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
 }

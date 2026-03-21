@@ -876,6 +876,17 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _parentCategoryIdMeta = const VerificationMeta(
+    'parentCategoryId',
+  );
+  @override
+  late final GeneratedColumn<String> parentCategoryId = GeneratedColumn<String>(
+    'parent_category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -905,6 +916,7 @@ class $CategoriesTable extends Categories
     iconCode,
     type,
     description,
+    parentCategoryId,
     createdAt,
     updatedAt,
   ];
@@ -958,6 +970,15 @@ class $CategoriesTable extends Categories
         ),
       );
     }
+    if (data.containsKey('parent_category_id')) {
+      context.handle(
+        _parentCategoryIdMeta,
+        parentCategoryId.isAcceptableOrUnknown(
+          data['parent_category_id']!,
+          _parentCategoryIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1003,6 +1024,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       ),
+      parentCategoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_category_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1026,6 +1051,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
   final int iconCode;
   final String type;
   final String? description;
+  final String? parentCategoryId;
   final DateTime createdAt;
   final DateTime updatedAt;
   const CategoryData({
@@ -1034,6 +1060,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     required this.iconCode,
     required this.type,
     this.description,
+    this.parentCategoryId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1046,6 +1073,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     map['type'] = Variable<String>(type);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || parentCategoryId != null) {
+      map['parent_category_id'] = Variable<String>(parentCategoryId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1061,6 +1091,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      parentCategoryId: parentCategoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentCategoryId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1077,6 +1110,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       iconCode: serializer.fromJson<int>(json['iconCode']),
       type: serializer.fromJson<String>(json['type']),
       description: serializer.fromJson<String?>(json['description']),
+      parentCategoryId: serializer.fromJson<String?>(json['parentCategoryId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1090,6 +1124,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       'iconCode': serializer.toJson<int>(iconCode),
       'type': serializer.toJson<String>(type),
       'description': serializer.toJson<String?>(description),
+      'parentCategoryId': serializer.toJson<String?>(parentCategoryId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1101,6 +1136,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     int? iconCode,
     String? type,
     Value<String?> description = const Value.absent(),
+    Value<String?> parentCategoryId = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => CategoryData(
@@ -1109,6 +1145,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
     iconCode: iconCode ?? this.iconCode,
     type: type ?? this.type,
     description: description.present ? description.value : this.description,
+    parentCategoryId: parentCategoryId.present
+        ? parentCategoryId.value
+        : this.parentCategoryId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1121,6 +1160,9 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
       description: data.description.present
           ? data.description.value
           : this.description,
+      parentCategoryId: data.parentCategoryId.present
+          ? data.parentCategoryId.value
+          : this.parentCategoryId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1134,6 +1176,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
           ..write('iconCode: $iconCode, ')
           ..write('type: $type, ')
           ..write('description: $description, ')
+          ..write('parentCategoryId: $parentCategoryId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1141,8 +1184,16 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, iconCode, type, description, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    iconCode,
+    type,
+    description,
+    parentCategoryId,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1152,6 +1203,7 @@ class CategoryData extends DataClass implements Insertable<CategoryData> {
           other.iconCode == this.iconCode &&
           other.type == this.type &&
           other.description == this.description &&
+          other.parentCategoryId == this.parentCategoryId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1162,6 +1214,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
   final Value<int> iconCode;
   final Value<String> type;
   final Value<String?> description;
+  final Value<String?> parentCategoryId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -1171,6 +1224,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     this.iconCode = const Value.absent(),
     this.type = const Value.absent(),
     this.description = const Value.absent(),
+    this.parentCategoryId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1181,6 +1235,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     required int iconCode,
     required String type,
     this.description = const Value.absent(),
+    this.parentCategoryId = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -1196,6 +1251,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     Expression<int>? iconCode,
     Expression<String>? type,
     Expression<String>? description,
+    Expression<String>? parentCategoryId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -1206,6 +1262,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
       if (iconCode != null) 'icon_code': iconCode,
       if (type != null) 'type': type,
       if (description != null) 'description': description,
+      if (parentCategoryId != null) 'parent_category_id': parentCategoryId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1218,6 +1275,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     Value<int>? iconCode,
     Value<String>? type,
     Value<String?>? description,
+    Value<String?>? parentCategoryId,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -1228,6 +1286,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
       iconCode: iconCode ?? this.iconCode,
       type: type ?? this.type,
       description: description ?? this.description,
+      parentCategoryId: parentCategoryId ?? this.parentCategoryId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -1252,6 +1311,9 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (parentCategoryId.present) {
+      map['parent_category_id'] = Variable<String>(parentCategoryId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1272,6 +1334,7 @@ class CategoriesCompanion extends UpdateCompanion<CategoryData> {
           ..write('iconCode: $iconCode, ')
           ..write('type: $type, ')
           ..write('description: $description, ')
+          ..write('parentCategoryId: $parentCategoryId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2255,6 +2318,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required int iconCode,
       required String type,
       Value<String?> description,
+      Value<String?> parentCategoryId,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -2266,6 +2330,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<int> iconCode,
       Value<String> type,
       Value<String?> description,
+      Value<String?> parentCategoryId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -2302,6 +2367,11 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentCategoryId => $composableBuilder(
+    column: $table.parentCategoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2350,6 +2420,11 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get parentCategoryId => $composableBuilder(
+    column: $table.parentCategoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2384,6 +2459,11 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get parentCategoryId => $composableBuilder(
+    column: $table.parentCategoryId,
     builder: (column) => column,
   );
 
@@ -2430,6 +2510,7 @@ class $$CategoriesTableTableManager
                 Value<int> iconCode = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String?> description = const Value.absent(),
+                Value<String?> parentCategoryId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2439,6 +2520,7 @@ class $$CategoriesTableTableManager
                 iconCode: iconCode,
                 type: type,
                 description: description,
+                parentCategoryId: parentCategoryId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -2450,6 +2532,7 @@ class $$CategoriesTableTableManager
                 required int iconCode,
                 required String type,
                 Value<String?> description = const Value.absent(),
+                Value<String?> parentCategoryId = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -2459,6 +2542,7 @@ class $$CategoriesTableTableManager
                 iconCode: iconCode,
                 type: type,
                 description: description,
+                parentCategoryId: parentCategoryId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

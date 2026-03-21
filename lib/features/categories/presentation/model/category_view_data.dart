@@ -8,6 +8,7 @@ class CategoryViewData {
   final CategoryType type;
   final IconData icon;
   final Color color;
+  final String? parentCategoryId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +18,7 @@ class CategoryViewData {
     required this.type,
     required this.icon,
     required this.color,
+    this.parentCategoryId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -31,6 +33,7 @@ class CategoryViewData {
       type: category.type,
       icon: iconData.icon,
       color: iconData.color,
+      parentCategoryId: category.parentCategoryId,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     );

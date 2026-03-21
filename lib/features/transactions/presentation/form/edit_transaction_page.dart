@@ -567,7 +567,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           final filtered = categories
               .where((c) => c.type == _formState.selectedType)
               .toList();
-
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
