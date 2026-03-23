@@ -4,8 +4,15 @@ import 'category_type_badge.dart';
 
 class CategoryDetailHeader extends StatelessWidget {
   final CategoryViewData category;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const CategoryDetailHeader({super.key, required this.category});
+  const CategoryDetailHeader({
+    super.key,
+    required this.category,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +51,61 @@ class CategoryDetailHeader extends StatelessWidget {
               _CategoryIcon(category: category),
               const SizedBox(width: 14),
               Expanded(child: _CategoryInfo(category: category)),
+              // Action buttons (edit / delete) on the right in header
+              if (onEdit != null || onDelete != null) ...[
+                const SizedBox(width: 12),
+                Row(
+                  children: [
+                    if (onEdit != null)
+                      _HeaderActionButton(
+                        icon: Icons.edit,
+                        color: Colors.blueGrey.shade800,
+                        onTap: onEdit!,
+                        tooltip: 'Edit',
+                      ),
+                    if (onDelete != null) const SizedBox(width: 8),
+                    if (onDelete != null)
+                      _HeaderActionButton(
+                        icon: Icons.delete_outline,
+                        color: Colors.red.shade600,
+                        onTap: onDelete!,
+                        tooltip: 'Delete',
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  const _HeaderActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }

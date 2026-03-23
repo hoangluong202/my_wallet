@@ -4,6 +4,7 @@ import '../../../transactions/data/repositories/transaction_repository.dart';
 import '../../domain/category.dart';
 import '../constants/category_icons.dart';
 import '../model/category_view_data.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import 'category_type_badge.dart';
 
 class CategoryTransactionsSection extends StatelessWidget {
@@ -26,9 +27,9 @@ class CategoryTransactionsSection extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Transactions This Month',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _TransactionList(
@@ -76,19 +77,16 @@ class _TransactionList extends StatelessWidget {
           return _EmptyTransactions();
         }
 
-        final visibleCount = transactions.length.clamp(0, 3);
-
-        return SizedBox(
-          height: visibleCount * 75.0,
-          child: ListView.builder(
-            padding: EdgeInsets.zero,
-            itemCount: transactions.length,
-            itemBuilder: (_, index) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _TransactionItem(
-                transaction: transactions[index],
-                onTap: () => onTap(transactions[index].id),
-              ),
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: transactions.length,
+          itemBuilder: (_, index) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TransactionItem(
+              transaction: transactions[index],
+              onTap: () => onTap(transactions[index].id),
             ),
           ),
         );
@@ -208,14 +206,13 @@ class _TransactionAmount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCredit =
-        (transaction.category.type as CategoryType).isCredit;
+    final isCredit = (transaction.category.type as CategoryType).isCredit;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          '${isCredit ? '+' : '-'}${transaction.amount.toStringAsFixed(0)}₫',
+          '${isCredit ? '+' : '-'}${CurrencyFormatter.formatVNDWithSymbol(transaction.amount)}',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

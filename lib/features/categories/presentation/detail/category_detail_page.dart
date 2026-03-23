@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../core/extensions/context_extensions.dart';
-import '../../../../core/widgets/action_buttons.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../transactions/data/repositories/transaction_repository.dart';
 import '../../../transactions/presentation/detail/transaction_details_page.dart';
 import '../form/edit_category_page.dart';
-import '../history/category_history_page.dart';
 import '../list/categories_viewmodel.dart';
 import '../model/category_view_data.dart';
 import '../widgets/category_detail_header.dart';
@@ -74,7 +72,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   ) {
     return Column(
       children: [
-        CategoryDetailHeader(category: category),
+        CategoryDetailHeader(
+          category: category,
+          onEdit: () => _navigateToEdit(context, category),
+          onDelete: () => _showDeleteConfirmation(context, category),
+        ),
         Expanded(
           child: _CategoryDetailBody(
             category: category,
@@ -86,11 +88,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             onChildCategoryTap: (id) => _navigateToCategoryDetail(context, id),
           ),
         ),
-        ActionButtons(
-          onEdit: () => _navigateToEdit(context, category),
-          onHistory: () => _navigateToHistory(context, category),
-          onDelete: () => _showDeleteConfirmation(context, category),
-        ),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -111,14 +109,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     );
   }
 
-  void _navigateToHistory(BuildContext context, CategoryViewData category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CategoryHistoryPage(category: category),
-      ),
-    );
-  }
+  // history navigation removed; history button is no longer displayed in header
 
   void _navigateToTransaction(BuildContext context, String transactionId) {
     Navigator.push(
