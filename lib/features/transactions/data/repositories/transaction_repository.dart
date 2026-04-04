@@ -22,6 +22,13 @@ abstract class TransactionRepository {
   Future<List<Transaction>> getTransactionsByCategory(String categoryId);
   Stream<List<Transaction>> watchTransactionsByCategory(String categoryId);
 
+  // NEW: Get transactions by multiple category IDs within a date range
+  Future<List<Transaction>> getTransactionsByCategoryIds(
+    List<String> categoryIds,
+    DateTime startDate,
+    DateTime endDate,
+  );
+
   // Chart data aggregation methods
   Future<Map<int, Map<String, int>>> getDailyIncomeExpenseByMonth(
     int year,

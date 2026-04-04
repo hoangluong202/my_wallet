@@ -173,4 +173,23 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     _applyDefaultOrdering(query);
     return query.watch().map(_mapResultsToDetails);
   }
+
+  /// Get transactions whose categoryId is in [categoryIds] AND whose
+  /// transactionDate falls within [startDate]..[endDate] (inclusive).
+  Future<List<TransactionJoinedModel>> getTransactionsByCategoryIds(
+    List<String> categoryIds,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    if (categoryIds.isEmpty) return [];
+    final query = _baseJoinQuery()
+      ..where(
+        transactions.categoryId.isIn(categoryIds) &
+            transactions.transactionDate.isBiggerOrEqualValue(startDate) &
+            transactions.transactionDate.isSmallerOrEqualValue(endDate),
+      );
+    _applyDefaultOrdering(query);
+    final results = await query.get();
+    return _mapResultsToDetails(results);
+  }
 }

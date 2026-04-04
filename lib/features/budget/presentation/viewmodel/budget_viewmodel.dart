@@ -56,22 +56,33 @@ class BudgetViewModel extends ChangeNotifier {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
+  /// Returns the budget category ID plus all its direct child category IDs.
+  Future<List<String>> _resolveCategoryIds(String categoryId) async {
+    final children = await _categoriesRepository.getCategories().then(
+      (all) => all
+          .where((c) => c.parentCategoryId == categoryId)
+          .map((c) => c.id)
+          .toList(),
+    );
+    return [categoryId, ...children];
+  }
+
   Future<List<BudgetViewData>> _enrichBudgets(List<Budget> budgets) async {
     final List<BudgetViewData> result = [];
     for (final budget in budgets) {
       int spent = 0;
       try {
-        final txns = await _transactionRepository.getTransactionsByCategory(
-          budget.categoryId,
+        // Collect the budget's category AND all its sub-categories
+        final categoryIds = await _resolveCategoryIds(budget.categoryId);
+
+        // Fetch transactions for all those category IDs within the date range
+        final txns = await _transactionRepository.getTransactionsByCategoryIds(
+          categoryIds,
+          budget.startDate,
+          budget.endDate,
         );
-        // Sum only expense transactions within the budget's date range
-        spent = txns
-            .where(
-              (t) =>
-                  !t.transactionDate.isBefore(budget.startDate) &&
-                  !t.transactionDate.isAfter(budget.endDate),
-            )
-            .fold(0, (sum, t) => sum + t.amount);
+
+        spent = txns.fold(0, (sum, t) => sum + t.amount);
       } catch (_) {}
 
       result.add(BudgetViewData.fromDomain(budget, spentAmount: spent));

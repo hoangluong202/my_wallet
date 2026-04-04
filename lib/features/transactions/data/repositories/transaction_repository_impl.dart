@@ -384,6 +384,21 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
+  Future<List<Transaction>> getTransactionsByCategoryIds(
+    List<String> categoryIds,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final joinedDataList = await _database.transactionDao
+          .getTransactionsByCategoryIds(categoryIds, startDate, endDate);
+      return _mapToDomainList(joinedDataList);
+    } catch (e) {
+      throw Exception('Failed to get transactions by category ids: $e');
+    }
+  }
+
+  @override
   Future<Map<int, Map<String, int>>> getDailyIncomeExpenseByMonth(
     int year,
     int month,
