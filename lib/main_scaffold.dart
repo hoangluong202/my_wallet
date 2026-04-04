@@ -3,10 +3,10 @@ import 'core/constants/navigation_items.dart';
 import 'core/widgets/bottom_navigation/custom_bottom_bar.dart';
 import 'core/widgets/custom_fab.dart';
 import 'features/auth/presentation/home/home_page.dart';
-import 'features/wallets/presentation/list/wallets_page.dart';
 import 'features/transactions/presentation/list/transactions_page.dart';
 import 'features/transactions/presentation/form/add_transaction_page.dart';
-import 'features/categories/presentation/list/categories_page.dart';
+import 'features/budget/presentation/list/budget_page.dart';
+import 'features/user/presentation/user_page.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -23,9 +23,9 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   List<Widget> get _pages => [
     const HomePage(),
-    const WalletsPage(),
     TransactionsPage(key: ValueKey('transactions_$_transactionsPageVersion')),
-    const CategoriesPage(),
+    const BudgetPage(),
+    const UserPage(),
   ];
 
   void _onTabSelected(int index) {
@@ -44,7 +44,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       if (mounted) {
         setState(() {
           _transactionsPageVersion++; // Increment to force rebuild
-          _selectedIndex = 2; // Transactions tab index
+          _selectedIndex = 1; // Transactions tab index
         });
       }
     }
