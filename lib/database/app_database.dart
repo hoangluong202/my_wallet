@@ -8,27 +8,30 @@ import 'tables/wallets_table.dart';
 import 'tables/users_table.dart';
 import 'tables/categories_table.dart';
 import 'tables/transactions_table.dart';
+import 'tables/budgets_table.dart';
 import 'daos/wallet_dao.dart';
 import 'daos/user_dao.dart';
 import 'daos/category_dao.dart';
 import 'daos/transaction_dao.dart';
+import 'daos/budget_dao.dart';
 
 export 'daos/user_dao.dart';
 export 'daos/wallet_dao.dart';
 export 'daos/category_dao.dart';
 export 'daos/transaction_dao.dart';
+export 'daos/budget_dao.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Wallets, Users, Categories, Transactions],
-  daos: [WalletDao, UserDao, CategoryDao, TransactionDao],
+  tables: [Wallets, Users, Categories, Transactions, Budgets],
+  daos: [WalletDao, UserDao, CategoryDao, TransactionDao, BudgetDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -46,18 +49,11 @@ class AppDatabase extends _$AppDatabase {
           // Note: SQLite doesn't support dropping constraints directly,
           // but the new schema without UNIQUE will be enforced on INSERT/UPDATE
         }
+        if (from < 10) {
+          await m.createTable(budgets);
+        }
       },
     );
-  }
-
-  // Clear all data
-  Future<void> clearAllData() async {
-    await transaction(() async {
-      await delete(transactions).go();
-      await delete(wallets).go();
-      await delete(users).go();
-      await delete(categories).go();
-    });
   }
 
   // Delete database file

@@ -17,6 +17,9 @@ import '../../features/transactions/data/repositories/transaction_repository.dar
 import '../../features/transactions/data/repositories/transaction_repository_impl.dart';
 import '../../features/categories/data/repositories/categories_repository.dart';
 import '../../features/categories/data/repositories/categories_repository_impl.dart';
+import '../../features/budget/data/repositories/budget_repository.dart';
+import '../../features/budget/data/repositories/budget_repository_impl.dart';
+import '../../features/budget/presentation/viewmodel/budget_viewmodel.dart';
 
 final getIt = GetIt.instance;
 
@@ -60,6 +63,10 @@ Future<void> setupDependencies() async {
     () => CategoriesRepositoryImpl(getIt<AppDatabase>()),
   );
 
+  getIt.registerLazySingleton<BudgetRepository>(
+    () => BudgetRepositoryImpl(getIt<AppDatabase>()),
+  );
+
   // ============================================
   // LAYER 3: PRESENTATION - ViewModels
   // ============================================
@@ -81,6 +88,14 @@ Future<void> setupDependencies() async {
 
   getIt.registerFactory<CategoriesViewModel>(
     () => CategoriesViewModel(getIt<CategoriesRepository>()),
+  );
+
+  getIt.registerFactory<BudgetViewModel>(
+    () => BudgetViewModel(
+      getIt<BudgetRepository>(),
+      getIt<CategoriesRepository>(),
+      getIt<TransactionRepository>(),
+    ),
   );
 
   getIt.registerFactory<TransferMoneyViewModel>(

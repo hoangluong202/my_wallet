@@ -63,7 +63,7 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       // Clear all local data (wallets, users, etc.)
-      await _database.clearAllData();
+      // await _database.clearAllData();
 
       // Sign out from Firebase
       await _authRepository.signOut();
