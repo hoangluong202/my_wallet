@@ -25,11 +25,9 @@ class CategoryTransactionsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        Text(
-          'Transactions This Month',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        _TransactionsHeaderWithTotal(
+          categoryId: category.id,
+          repository: transactionRepository,
         ),
         const SizedBox(height: 12),
         _TransactionList(
@@ -38,6 +36,77 @@ class CategoryTransactionsSection extends StatelessWidget {
           onTap: onTransactionTap,
         ),
       ],
+    );
+  }
+}
+
+class _TransactionsHeaderWithTotal extends StatelessWidget {
+  final String categoryId;
+  final TransactionRepository repository;
+
+  const _TransactionsHeaderWithTotal({
+    required this.categoryId,
+    required this.repository,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<dynamic>>(
+      stream: repository.watchTransactionsByCategory(categoryId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Row(
+            children: [
+              Text(
+                'Transactions This Month',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 60,
+                height: 16,
+                child: LinearProgressIndicator(),
+              ),
+            ],
+          );
+        }
+        if (snapshot.hasError) {
+          return Text(
+            'Transactions This Month',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          );
+        }
+        final transactions = _TransactionList._filterCurrentMonthStatic(
+          snapshot.data ?? [],
+        );
+        final int total = transactions.fold<int>(
+          0,
+          (sum, t) => sum + ((t.amount ?? 0) as int),
+        );
+        return Row(
+          children: [
+            Text(
+              'Transactions This Month',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Container()),
+            Text(
+              CurrencyFormatter.formatVNDWithSymbol(total),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -67,7 +136,7 @@ class _TransactionList extends StatelessWidget {
         if (snapshot.hasError) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Error: ${snapshot.error}'),
+            child: Text('Error: [${snapshot.error}'),
           );
         }
 
@@ -94,7 +163,7 @@ class _TransactionList extends StatelessWidget {
     );
   }
 
-  List<dynamic> _filterCurrentMonth(List<dynamic> transactions) {
+  static List<dynamic> _filterCurrentMonthStatic(List<dynamic> transactions) {
     final now = DateTime.now();
     return transactions
         .where(
@@ -103,6 +172,10 @@ class _TransactionList extends StatelessWidget {
               t.transactionDate.month == now.month,
         )
         .toList();
+  }
+
+  List<dynamic> _filterCurrentMonth(List<dynamic> transactions) {
+    return _filterCurrentMonthStatic(transactions);
   }
 }
 
