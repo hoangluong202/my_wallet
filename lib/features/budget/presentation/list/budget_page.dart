@@ -7,13 +7,51 @@ import '../detail/budget_detail_page.dart';
 import '../model/budget_view_data.dart';
 import '../viewmodel/budget_viewmodel.dart';
 
-class BudgetPage extends StatelessWidget {
+class BudgetPage extends StatefulWidget {
   const BudgetPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final viewModel = getIt<BudgetViewModel>();
+  State<BudgetPage> createState() => _BudgetPageState();
+}
 
+class _BudgetPageState extends State<BudgetPage> {
+  late final BudgetViewModel _viewModel;
+  DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<BudgetViewModel>();
+  }
+
+  void _prevMonth() => setState(() {
+    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+  });
+
+  void _nextMonth() => setState(() {
+    _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+  });
+
+  /// Budgets whose date range overlaps with [_selectedMonth].
+  List<BudgetViewData> _filterByMonth(List<BudgetViewData> all) {
+    final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+    final lastDay = DateTime(
+      _selectedMonth.year,
+      _selectedMonth.month + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+    return all
+        .where(
+          (b) => b.startDate.isBefore(lastDay) && b.endDate.isAfter(firstDay),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Column(
@@ -26,10 +64,10 @@ class BudgetPage extends StatelessWidget {
             ),
           ),
 
-          // List
+          // List + monthly summary
           Expanded(
             child: StreamBuilder<List<BudgetViewData>>(
-              stream: viewModel.watchAllBudgets(),
+              stream: _viewModel.watchAllBudgets(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -39,30 +77,327 @@ class BudgetPage extends StatelessWidget {
                   return _ErrorView(error: snapshot.error);
                 }
 
-                final budgets = snapshot.data ?? [];
+                final all = snapshot.data ?? [];
+                final budgets = _filterByMonth(all);
 
-                if (budgets.isEmpty) {
-                  return const _EmptyState();
-                }
+                return ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // ── Monthly summary card ──────────────────────────────
+                    _MonthlySummaryCard(
+                      budgets: budgets,
+                      selectedMonth: _selectedMonth,
+                      onPrev: _prevMonth,
+                      onNext: _nextMonth,
+                    ),
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                  itemCount: budgets.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return _BudgetCard(
-                      budget: budgets[index],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              BudgetDetailPage(budgetId: budgets[index].id),
-                        ),
-                      ),
-                    );
-                  },
+                    // ── Budget list ───────────────────────────────────────
+                    if (budgets.isEmpty)
+                      const _EmptyState()
+                    else
+                      ...List.generate(budgets.length, (i) {
+                        final budget = budgets[i];
+                        return Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            i == 0 ? 12 : 0,
+                            16,
+                            12,
+                          ),
+                          child: _BudgetCard(
+                            budget: budget,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    BudgetDetailPage(budgetId: budget.id),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 20),
+                  ],
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Monthly summary card ─────────────────────────────────────────────────────
+
+class _MonthlySummaryCard extends StatelessWidget {
+  const _MonthlySummaryCard({
+    required this.budgets,
+    required this.selectedMonth,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final List<BudgetViewData> budgets;
+  final DateTime selectedMonth;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final totalEstimated = budgets.fold<int>(
+      0,
+      (s, b) => s + b.estimatedAmount,
+    );
+    final totalSpent = budgets.fold<int>(0, (s, b) => s + b.spentAmount);
+    final remaining = totalEstimated - totalSpent;
+    final isOverAll = totalSpent > totalEstimated;
+    final overallProgress = totalEstimated > 0
+        ? (totalSpent / totalEstimated).clamp(0.0, 1.0)
+        : 0.0;
+    final overBudgetCount = budgets.where((b) => b.isOverBudget).length;
+    final monthLabel =
+        '${_monthNames[selectedMonth.month - 1]} ${selectedMonth.year}';
+
+    final gradientColors = isOverAll
+        ? [Colors.red.shade700, Colors.red.shade500]
+        : [Colors.green.shade700, Colors.green.shade500];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (isOverAll ? Colors.red : Colors.green).withOpacity(0.28),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Month navigator ───────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _NavButton(icon: Icons.chevron_left, onTap: onPrev),
+              Text(
+                monthLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              _NavButton(icon: Icons.chevron_right, onTap: onNext),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          // ── Budget count / over-budget badges ─────────────────────────
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _SummaryBadge(
+                label:
+                    '${budgets.length} budget${budgets.length != 1 ? 's' : ''}',
+                icon: Icons.pie_chart_outline,
+              ),
+              if (overBudgetCount > 0)
+                _SummaryBadge(
+                  label: '$overBudgetCount over budget',
+                  icon: Icons.warning_amber_rounded,
+                  color: Colors.orange.shade300.withOpacity(0.5),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Spent / Estimated ─────────────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Total Spent',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      CurrencyFormatter.formatVNDWithSymbol(totalSpent),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'of ${CurrencyFormatter.formatVNDWithSymbol(totalEstimated)}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.75),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    budgets.isEmpty
+                        ? '—'
+                        : isOverAll
+                        ? 'Over by ${CurrencyFormatter.formatVNDWithSymbol(-remaining)}'
+                        : '${CurrencyFormatter.formatVNDWithSymbol(remaining)} left',
+                    style: TextStyle(
+                      color: isOverAll ? Colors.orange.shade200 : Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // ── Overall progress bar (only when budgets exist) ────────────
+          if (budgets.isNotEmpty && totalEstimated > 0) ...[
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Overall spending',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  '${(overallProgress * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: overallProgress,
+                minHeight: 10,
+                backgroundColor: Colors.white.withOpacity(0.25),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ],
+
+          // ── No budgets hint ───────────────────────────────────────────
+          if (budgets.isEmpty) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'No budgets for this month',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+}
+
+class _SummaryBadge extends StatelessWidget {
+  const _SummaryBadge({required this.label, required this.icon, this.color});
+  final String label;
+  final IconData icon;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color ?? Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
