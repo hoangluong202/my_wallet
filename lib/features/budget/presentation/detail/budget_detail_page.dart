@@ -259,7 +259,29 @@ class _ProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Progress bar
+          // Money progress bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Spending',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${(budget.progress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: progressColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
@@ -267,6 +289,50 @@ class _ProgressCard extends StatelessWidget {
               minHeight: 14,
               backgroundColor: Colors.grey.shade200,
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Days progress bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Time',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                budget.isExpired
+                    ? 'Expired'
+                    : budget.isNotStarted
+                    ? '${budget.totalDays}d total'
+                    : '${budget.daysRemaining}d left',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: budget.isExpired
+                      ? Colors.orange.shade700
+                      : Colors.blue.shade600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: budget.dayProgress,
+              minHeight: 14,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                budget.isExpired
+                    ? Colors.orange.shade400
+                    : Colors.blue.shade400,
+              ),
             ),
           ),
           const SizedBox(height: 12),

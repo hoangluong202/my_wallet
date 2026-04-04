@@ -41,6 +41,29 @@ class BudgetViewData {
 
   int get remainingAmount => estimatedAmount - spentAmount;
 
+  int get totalDays => endDate.difference(startDate).inDays.clamp(1, 99999);
+
+  int get daysRemaining {
+    final today = DateTime.now();
+    if (today.isAfter(endDate)) return 0;
+    if (today.isBefore(startDate)) return totalDays;
+    return endDate
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+  }
+
+  bool get isExpired => DateTime.now().isAfter(endDate);
+
+  bool get isNotStarted => DateTime.now().isBefore(startDate);
+
+  double get dayProgress {
+    if (isNotStarted) return 0.0;
+    if (isExpired) return 1.0;
+    final today = DateTime.now();
+    final elapsed = today.difference(startDate).inDays;
+    return (elapsed / totalDays).clamp(0.0, 1.0);
+  }
+
   factory BudgetViewData.fromDomain(Budget budget, {int spentAmount = 0}) {
     IconData icon = Icons.pie_chart;
     Color color = Colors.green;
