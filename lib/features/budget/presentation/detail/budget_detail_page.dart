@@ -6,6 +6,7 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../form/edit_budget_page.dart';
 import '../model/budget_view_data.dart';
+import '../transactions/budget_transactions_page.dart';
 import '../viewmodel/budget_viewmodel.dart';
 
 class BudgetDetailPage extends StatefulWidget {
@@ -114,6 +115,28 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     const SizedBox(height: 12),
                     // Info card
                     _InfoCard(budget: budget),
+                    const SizedBox(height: 16),
+                    // View transactions button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                BudgetTransactionsPage(budget: budget),
+                          ),
+                        ),
+                        icon: const Icon(Icons.receipt_long_outlined),
+                        label: const Text('View Transactions'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

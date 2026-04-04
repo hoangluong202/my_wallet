@@ -3,6 +3,7 @@ import '../../../categories/data/repositories/categories_repository.dart';
 import '../../../categories/domain/category.dart';
 import '../../../categories/presentation/model/category_view_data.dart';
 import '../../../transactions/data/repositories/transaction_repository.dart';
+import '../../../transactions/presentation/model/transaction_view_data.dart';
 import '../../data/repositories/budget_repository.dart';
 import '../../domain/budget.dart';
 import '../form/budget_payload.dart';
@@ -51,6 +52,25 @@ class BudgetViewModel extends ChangeNotifier {
       if (budget == null) return null;
       final enriched = await _enrichBudgets([budget]);
       return enriched.isNotEmpty ? enriched.first : null;
+    });
+  }
+
+  /// Returns a live stream of transactions belonging to [budget]'s category
+  /// (and all sub-categories) within the budget's date range.
+  Stream<List<TransactionViewData>> watchBudgetTransactions(
+    BudgetViewData budget,
+  ) {
+    return Stream.fromFuture(
+      _resolveCategoryIds(budget.categoryId),
+    ).asyncExpand((categoryIds) {
+      return _transactionRepository
+          .watchTransactionsByDateRange(budget.startDate, budget.endDate)
+          .map(
+            (txns) => txns
+                .where((t) => categoryIds.contains(t.category.id))
+                .map(TransactionViewData.fromDomain)
+                .toList(),
+          );
     });
   }
 
