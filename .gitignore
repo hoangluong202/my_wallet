@@ -46,3 +46,5 @@ app.*.map.json
 
 *.g.dart
 md
+
+/android/app/src/main/res/
