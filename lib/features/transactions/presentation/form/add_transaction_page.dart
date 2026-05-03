@@ -7,10 +7,7 @@ import '../viewmodel/transactions_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../categories/domain/category.dart';
-import 'transaction_form_state.dart';
-import '../../../categories/presentation/model/category_view_data.dart';
-import '../../../wallets/presentation/model/wallet_view_data.dart';
-import 'transaction_payload.dart';
+import '../controllers/add_transaction_controller.dart';
 import '../widgets/transaction_type_selector.dart';
 import '../widgets/amount_section.dart';
 import '../widgets/wallet_section.dart';
@@ -19,6 +16,7 @@ import '../widgets/date_section.dart';
 import '../widgets/note_section.dart';
 import '../widgets/submit_button.dart';
 import '../widgets/form_card_section.dart';
+import '../constants/form_constants.dart';
 
 class AddTransactionPage extends StatefulWidget {
   const AddTransactionPage({super.key});
@@ -33,14 +31,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
-  late TransactionsViewModel _transactionViewModel;
-  late CategoriesViewModel _categoriesViewModel;
-  late WalletsViewModel _walletsViewModel;
-
-  late TransactionFormState _formState;
-
-  List<CategoryViewData> _allCategories = [];
-  List<WalletViewData> _allWallets = [];
+  late AddTransactionController _controller;
 
   @override
   void initState() {
@@ -49,38 +40,19 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     _amountController = TextEditingController();
     _noteController = TextEditingController();
 
-    _transactionViewModel = getIt<TransactionsViewModel>();
-    _categoriesViewModel = getIt<CategoriesViewModel>();
-    _walletsViewModel = getIt<WalletsViewModel>();
-
-    _formState = TransactionFormState.initial();
+    _controller = AddTransactionController(
+      transactionViewModel: getIt<TransactionsViewModel>(),
+      categoriesViewModel: getIt<CategoriesViewModel>(),
+      walletsViewModel: getIt<WalletsViewModel>(),
+    );
 
     _loadInitialData();
   }
 
   Future<void> _loadInitialData() async {
     try {
-      _allCategories = await _categoriesViewModel.categoriesStream.first;
-      _allWallets = await _walletsViewModel.walletsStream.first;
-
-      _allCategories = _allCategories.toList()
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-      _allWallets = _allWallets.toList()
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-      if (_allCategories.isNotEmpty && _allWallets.isNotEmpty) {
-        final firstCategory = _allCategories
-            .where((c) => c.type == _formState.selectedType)
-            .firstOrNull;
-
-        setState(() {
-          _formState = _formState.copyWith(
-            selectedCategoryId: firstCategory?.id,
-            selectedWalletId: _allWallets.first.id,
-          );
-        });
-      }
+      await _controller.loadInitialData();
+      setState(() {});
     } catch (e) {
       debugPrint('Error loading initial data: $e');
     }
@@ -90,13 +62,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  List<CategoryViewData> get _filteredCategories {
-    return _allCategories
-        .where((cat) => cat.type == _formState.selectedType)
-        .toList();
   }
 
   @override
@@ -108,7 +75,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         child: Column(
           children: [
             _buildHeader(),
-            Expanded(child: _buildForm()),
+            Expanded(
+              child: _controller.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildForm(),
+            ),
           ],
         ),
       ),
@@ -117,25 +88,28 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Widget _buildHeader() {
     return DetailHeader(
-      title: 'Add Transaction',
+      title: FormConstants.pageTitle,
       onBack: () => Navigator.pop(context),
     );
   }
 
   Widget _buildForm() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: FormConstants.formHorizontalPadding,
+        vertical: FormConstants.formVerticalPadding,
+      ),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildCategoryTypeSelector(),
-            const SizedBox(height: 16),
+            const SizedBox(height: FormConstants.sectionSpacing),
             _buildFormCard(),
             const SizedBox(height: 20),
             _buildSubmitButton(),
-            const SizedBox(height: 8),
+            const SizedBox(height: FormConstants.buttonBottomSpacing),
           ],
         ),
       ),
@@ -144,7 +118,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Widget _buildCategoryTypeSelector() {
     return TransactionTypeSelector(
-      selectedType: _formState.selectedType,
+      selectedType: _controller.formState.selectedType,
       onTypeChanged: _onTypeChanged,
     );
   }
@@ -153,12 +127,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(FormConstants.cardBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(FormConstants.cardShadowOpacity),
+            blurRadius: FormConstants.cardShadowBlurRadius,
+            offset: const Offset(0, FormConstants.cardElevation),
           ),
         ],
       ),
@@ -188,46 +162,44 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Widget _buildCategorySection() {
     return FormCardSection(
-      title: 'Category',
+      title: FormConstants.categoryLabel,
       icon: Icons.category_outlined,
       child: CategorySelector(
-        categories: _filteredCategories,
-        selectedId: _formState.selectedCategoryId,
-        onSelected: (id) {
-          setState(() {
-            _formState = _formState.copyWith(selectedCategoryId: id);
-          });
-        },
+        categories: _controller.filteredCategories,
+        selectedId: _controller.formState.selectedCategoryId,
+        onSelected: _onCategorySelected,
       ),
     );
   }
 
   Widget _buildAmountSection() {
     return FormCardSection(
-      title: 'Amount',
+      title: FormConstants.amountLabel,
       icon: Icons.payments_outlined,
       child: AmountSection(
         controller: _amountController,
         onChanged: (value) {
-          _formState = _formState.copyWith(amount: value);
+          _controller.updateAmount(value);
         },
       ),
     );
   }
 
   Widget _buildSubmitButton() {
-    return SubmitButton(onPressed: _submitForm);
+    return SubmitButton(
+      onPressed: _submitForm,
+      label: _controller.isSubmitting
+          ? FormConstants.savingButtonLabel
+          : FormConstants.saveButtonLabel,
+    );
   }
 
   Widget _buildWalletSection() {
-    final selectedWallet = _allWallets
-        .where((w) => w.id == _formState.selectedWalletId)
-        .firstOrNull;
     return FormCardSection(
-      title: 'Wallet',
+      title: FormConstants.walletLabel,
       icon: Icons.account_balance_wallet_outlined,
       child: WalletSection(
-        selectedWallet: selectedWallet,
+        selectedWallet: _controller.selectedWallet,
         onTap: _showWalletPicker,
       ),
     );
@@ -236,71 +208,73 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   void _showWalletPicker() {
     WalletPickerBottomSheet.show(
       context: context,
-      wallets: _allWallets,
-      selectedWalletId: _formState.selectedWalletId,
+      wallets: _controller.allWallets,
+      selectedWalletId: _controller.formState.selectedWalletId,
       onWalletSelected: _onWalletChanged,
     );
   }
 
   Widget _buildDateSection() {
     return FormCardSection(
-      title: 'Date',
+      title: FormConstants.dateLabel,
       icon: Icons.calendar_today_outlined,
       child: DateSection(
-        selectedDate: _formState.selectedDate,
-        onDateChanged: (date) {
-          setState(() {
-            _formState = _formState.copyWith(selectedDate: date);
-          });
-        },
+        selectedDate: _controller.formState.selectedDate,
+        onDateChanged: _onDateChanged,
       ),
     );
   }
 
   Widget _buildNoteSection() {
     return FormCardSection(
-      title: 'Note',
+      title: FormConstants.noteLabel,
       icon: Icons.notes_outlined,
       child: NoteSection(
         controller: _noteController,
-        onChanged: (value) {
-          _formState = _formState.copyWith(note: value);
-        },
+        onChanged: _controller.updateNote,
       ),
     );
   }
 
-  void _onTypeChanged(CategoryType type) {
-    final firstCategory = _allCategories
-        .where((c) => c.type == type)
-        .firstOrNull;
+  // Event handlers
+  void _onCategorySelected(String categoryId) {
     setState(() {
-      _formState = _formState.copyWith(
-        selectedType: type,
-        selectedCategoryId: firstCategory?.id,
-      );
+      _controller.updateSelectedCategory(categoryId);
+    });
+  }
+
+  void _onDateChanged(DateTime date) {
+    setState(() {
+      _controller.updateSelectedDate(date);
+    });
+  }
+
+  void _onTypeChanged(CategoryType type) {
+    setState(() {
+      _controller.updateTransactionType(type);
     });
   }
 
   void _onWalletChanged(String walletId) {
     setState(() {
-      _formState = _formState.copyWith(selectedWalletId: walletId);
+      _controller.updateSelectedWallet(walletId);
     });
   }
 
   Future<void> _submitForm() async {
+    // Prevent double submission
+    if (_controller.isSubmitting) return;
+
     if (!_formKey.currentState!.validate()) return;
-    if (!_formState.isValid) return;
+    if (!_controller.validateForm()) return;
 
     try {
-      final transaction = TransactionPayload.fromFormState(_formState);
-
-      await _transactionViewModel.addTransaction(transaction);
+      await _controller.submitTransaction();
 
       if (mounted) {
         SuccessNotification.show(
           context: context,
-          message: 'Transaction added successfully!',
+          message: FormConstants.successMessage,
         );
         Navigator.pop(context, true);
       }
@@ -308,9 +282,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       if (mounted) {
         ErrorNotification.show(
           context: context,
-          message: 'Failed to add transaction: $e',
+          message: '${FormConstants.errorMessagePrefix}: $e',
         );
       }
+    } finally {
+      if (mounted) setState(() {});
     }
   }
 }
