@@ -60,11 +60,12 @@ class BudgetViewModel extends ChangeNotifier {
   Stream<List<TransactionViewData>> watchBudgetTransactions(
     BudgetViewData budget,
   ) {
+    final budgetEndDate = _endOfDay(budget.endDate);
     return Stream.fromFuture(
       _resolveCategoryIds(budget.categoryId),
     ).asyncExpand((categoryIds) {
       return _transactionRepository
-          .watchTransactionsByDateRange(budget.startDate, budget.endDate)
+          .watchTransactionsByDateRange(budget.startDate, budgetEndDate)
           .map(
             (txns) => txns
                 .where((t) => categoryIds.contains(t.category.id))
@@ -87,6 +88,9 @@ class BudgetViewModel extends ChangeNotifier {
     return [categoryId, ...children];
   }
 
+  DateTime _endOfDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day, 23, 59, 59);
+
   Future<List<BudgetViewData>> _enrichBudgets(List<Budget> budgets) async {
     final List<BudgetViewData> result = [];
     for (final budget in budgets) {
@@ -96,10 +100,11 @@ class BudgetViewModel extends ChangeNotifier {
         final categoryIds = await _resolveCategoryIds(budget.categoryId);
 
         // Fetch transactions for all those category IDs within the date range
+        final budgetEndDate = _endOfDay(budget.endDate);
         final txns = await _transactionRepository.getTransactionsByCategoryIds(
           categoryIds,
           budget.startDate,
-          budget.endDate,
+          budgetEndDate,
         );
 
         spent = txns.fold(0, (sum, t) => sum + t.amount);
