@@ -9,7 +9,7 @@ abstract class CategoriesRepository {
   Stream<Category?> watchCategoryById(String id);
   Future<void> addCategory(Category category);
   Future<void> updateCategory(Category category);
-  Future<void> deleteCategory(String id);
+  Future<void> deleteCategory(String id, {String? transferToCategoryId});
 
   // NEW: Parent category methods
   Future<bool> hasChildCategory(String parentCategoryId);

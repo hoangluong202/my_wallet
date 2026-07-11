@@ -10,92 +10,120 @@ class CategoryIconData {
 
 class CategoryIcons {
   static const List<CategoryIconData> expenseIcons = [
-    // Ăn uống
+    // --- Ⅰ. GIAO LƯU & MỐI QUAN HỆ ---
     CategoryIconData(
-      icon: Icons.restaurant,
+      icon: Icons.people_outline, // Giao lưu & Bạn bè
+      color: Color(0xFF009688), // Teal
+    ),
+    CategoryIconData(
+      icon: Icons.card_giftcard, // Quà biếu
+      color: Color(0xFFE91E63), // Pink
+    ),
+    CategoryIconData(
+      icon: Icons.celebration, // Lì xì
       color: Color(0xFFFF5722), // Deep Orange
     ),
     CategoryIconData(
-      icon: Icons.fastfood,
-      color: Color(0xFFFF6F00), // Dark Orange
-    ),
-    CategoryIconData(
-      icon: Icons.local_cafe,
-      color: Color(0xFF795548), // Brown
-    ),
-    // Di chuyển
-    CategoryIconData(
-      icon: Icons.directions_car,
-      color: Color(0xFF3F51B5), // Indigo
-    ),
-    CategoryIconData(
-      icon: Icons.local_gas_station,
-      color: Color(0xFF607D8B), // Blue Grey
-    ),
-    CategoryIconData(
-      icon: Icons.directions_bus,
-      color: Color(0xFF2196F3), // Blue
-    ),
-    // Nhà ở & Sinh hoạt
-    CategoryIconData(
-      icon: Icons.home,
-      color: Color(0xFF4CAF50), // Green
-    ),
-    CategoryIconData(
-      icon: Icons.electrical_services,
-      color: Color(0xFFFFC107), // Amber
-    ),
-    CategoryIconData(
-      icon: Icons.water_drop,
-      color: Color(0xFF03A9F4), // Light Blue
-    ),
-    CategoryIconData(
-      icon: Icons.wifi,
-      color: Color(0xFF00BCD4), // Cyan
-    ),
-    // Mua sắm
-    CategoryIconData(
-      icon: Icons.shopping_cart,
-      color: Color(0xFFE91E63), // Pink
-    ),
-    CategoryIconData(
-      icon: Icons.checkroom,
-      color: Color(0xFF9C27B0), // Purple
-    ),
-    CategoryIconData(
-      icon: Icons.shopping_bag,
-      color: Color(0xFFFF9800), // Orange
-    ),
-    // Giải trí & Thư giãn
-    CategoryIconData(
-      icon: Icons.movie,
-      color: Color(0xFFE91E63), // Pink
-    ),
-    CategoryIconData(
-      icon: Icons.sports_soccer,
-      color: Color(0xFF4CAF50), // Green
-    ),
-    CategoryIconData(
-      icon: Icons.music_note,
-      color: Color(0xFF9C27B0), // Purple
-    ),
-    // Sức khỏe & Làm đẹp
-    CategoryIconData(
-      icon: Icons.medical_services,
+      icon:
+          Icons.volunteer_activism, // Biếu bố mẹ (Biểu tượng trái tim trên tay)
       color: Color(0xFFF44336), // Red
     ),
     CategoryIconData(
-      icon: Icons.face,
-      color: Color(0xFFE91E63), // Pink
+      icon: Icons.holiday_village, // Về quê
+      color: Color(0xFF4CAF50), // Green
     ),
-    // Giáo dục & Phát triển
     CategoryIconData(
-      icon: Icons.school,
+      icon: Icons.groups, // Quỹ công ty
+      color: Color(0xFF3F51B5), // Indigo
+    ),
+
+    // --- Ⅱ. PHÁT TRIỂN BẢN THÂN ---
+    CategoryIconData(
+      icon: Icons.psychology, // Học tập & Kỹ năng
+      color: Color(0xFF9C27B0), // Purple
+    ),
+    CategoryIconData(
+      icon: Icons.fitness_center, // Phòng gym
+      color: Color(0xFF607D8B), // Blue Grey
+    ),
+    CategoryIconData(
+      icon: Icons
+          .sports_tennis, // Cầu lông (Icon vợt tennis/cầu lông gần giống nhau)
+      color: Color(0xFF8BC34A), // Light Green
+    ),
+    CategoryIconData(
+      icon: Icons.smart_toy, // Copilot (Icon AI / Robot)
+      color: Color(0xFF00BCD4), // Cyan
+    ),
+
+    // --- Ⅲ. CHI PHÍ THIẾT YẾU ---
+    CategoryIconData(
+      icon: Icons.assignment_turned_in, // Khoản chi thiết yếu (Danh mục tổng)
+      color: Color(0xFF4CAF50), // Green
+    ),
+    CategoryIconData(
+      icon: Icons.signal_cellular_alt, // Internet & Data
+      color: Color(0xFF03A9F4), // Light Blue
+    ),
+    CategoryIconData(
+      icon: Icons.medical_services, // Y tế & Sức khỏe
+      color: Color(0xFFF44336), // Red
+    ),
+    CategoryIconData(
+      icon: Icons.home, // Tiền nhà & Điện nước
+      color: Color(0xFF3F51B5), // Indigo
+    ),
+    CategoryIconData(
+      icon: Icons.local_gas_station, // Xăng xe
+      color: Color(0xFF607D8B), // Blue Grey
+    ),
+    CategoryIconData(
+      icon: Icons.shopping_cart, // Đi chợ / Siêu thị
+      color: Color(0xFFFF9800), // Orange
+    ),
+    CategoryIconData(
+      icon: Icons.restaurant, // Ăn ngoài
+      color: Color(0xFFFF5722), // Deep Orange
+    ),
+    CategoryIconData(
+      icon: Icons.directions_car, // Xe công nghệ (GrabCar, Xanh SM...)
       color: Color(0xFF2196F3), // Blue
     ),
+
+    // --- Ⅳ. SINH HOẠT CÁ NHÂN ---
     CategoryIconData(
-      icon: Icons.menu_book,
-      color: Color(0xFF8BC34A), // Light Green
+      icon: Icons.person, // Chi tiêu cá nhân (Danh mục tổng)
+      color: Color(0xFF009688), // Teal
+    ),
+    CategoryIconData(
+      icon: Icons.clean_hands, // Đồ dùng sinh hoạt (Dầu gội, xà bông...)
+      color: Color(0xFF00BCD4), // Cyan
+    ),
+    CategoryIconData(
+      icon: Icons.checkroom, // Mua sắm (Quần áo...)
+      color: Color(0xFF9C27B0), // Purple
+    ),
+    CategoryIconData(
+      icon: Icons.content_cut, // Chăm sóc ngoại hình (Cắt tóc...)
+      color: Color(0xFFE91E63), // Pink
+    ),
+
+    // --- Ⅴ. VUI CHƠI & GIẢI TRÍ ---
+    CategoryIconData(
+      icon: Icons.theater_comedy, // Giải trí & Vui chơi (Danh mục tổng)
+      color: Color(0xFFE91E63), // Pink
+    ),
+    CategoryIconData(
+      icon: Icons.games, // Bida (Icon các nút bấm/trò chơi tròn trịa)
+      color: Color(0xFF795548), // Brown
+    ),
+    CategoryIconData(
+      icon: Icons.local_cafe, // Cà phê & Hẹn hò
+      color: Color(0xFF795548), // Brown
+    ),
+    CategoryIconData(
+      icon: Icons.sports_soccer, // Bóng đá
+      color: Color(0xFF4CAF50), // Green
     ),
   ];
 

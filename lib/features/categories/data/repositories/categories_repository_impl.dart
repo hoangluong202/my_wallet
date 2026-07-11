@@ -66,33 +66,49 @@ class CategoriesRepositoryImpl implements CategoriesRepository {
   }
 
   @override
-  Future<void> deleteCategory(String id) async {
-    // Check if the category itself is being used in transactions
-    var transactionCount = await _database.transactionDao
-        .countTransactionsByCategory(id);
-
-    if (transactionCount > 0) {
-      throw Exception(
-        'Cannot delete category. It is being used in $transactionCount transaction${transactionCount > 1 ? 's' : ''}.',
-      );
-    }
-
-    // Get all categories to find children
+  Future<void> deleteCategory(String id, {String? transferToCategoryId}) async {
     final allCategories = await getCategories();
-
-    // Check if any child categories exist
     final children = allCategories
         .where((c) => c.parentCategoryId == id)
         .toList();
 
-    // If has children, don't allow deletion
     if (children.isNotEmpty) {
       throw Exception(
         'Cannot delete category. It has ${children.length} sub-categor${children.length > 1 ? 'ies' : 'y'}. Please delete them first.',
       );
     }
 
-    // If no transactions use this category or its children, delete it
+    final transactionCount = await _database.transactionDao
+        .countTransactionsByCategory(id);
+
+    if (transactionCount > 0) {
+      if (transferToCategoryId == null || transferToCategoryId == id) {
+        throw Exception(
+          'Please choose another category to transfer ${transactionCount} transaction${transactionCount > 1 ? 's' : ''} before deleting this category.',
+        );
+      }
+
+      final sourceCategory = await getCategoryById(id);
+      final targetCategory = await getCategoryById(transferToCategoryId);
+
+      if (sourceCategory == null || targetCategory == null) {
+        throw Exception('Selected category could not be found.');
+      }
+
+      if (sourceCategory.type != targetCategory.type) {
+        throw Exception('The destination category must be of the same type.');
+      }
+
+      await _database.transaction(() async {
+        await _database.transactionDao.updateTransactionsCategory(
+          id,
+          transferToCategoryId,
+        );
+        await _database.categoryDao.deleteCategory(id);
+      });
+      return;
+    }
+
     await _database.categoryDao.deleteCategory(id);
   }
 

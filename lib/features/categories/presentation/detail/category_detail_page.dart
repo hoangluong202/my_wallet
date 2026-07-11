@@ -126,30 +126,151 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     BuildContext context,
     CategoryViewData category,
   ) async {
-    final confirmed = await context.showConfirmDialog(
-      title: 'Delete Category?',
-      content:
-          'Are you sure you want to delete "${category.name}"?\n\n'
-          'Note: You can only delete a category if there are no transactions '
-          'using it. This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      isDangerous: true,
+    final transactions = await _transactionRepository.getTransactionsByCategory(
+      category.id,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    // Không có transaction -> xác nhận xóa
+    if (transactions.isEmpty) {
+      final confirmed = await context.showConfirmDialog(
+        title: 'Delete Category?',
+        content:
+            'Are you sure you want to delete "${category.name}"?\n\n'
+            'This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        isDangerous: true,
+      );
 
-    await _deleteCategory(context, category);
+      if (confirmed != true || !context.mounted) return;
+
+      await _deleteCategory(context, category);
+      return;
+    }
+
+    // Có transaction -> chọn category để chuyển
+    final targetCategoryId = await _showTransferSelectionDialog(
+      context,
+      category,
+      transactions.length,
+    );
+
+    if (targetCategoryId == null || !context.mounted) return;
+
+    await _deleteCategory(
+      context,
+      category,
+      transferToCategoryId: targetCategoryId,
+    );
+  }
+
+  Future<String?> _showTransferSelectionDialog(
+    BuildContext context,
+    CategoryViewData category,
+    int transactionCount,
+  ) async {
+    String? selectedCategoryId;
+
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Move transactions before deleting?'),
+              content: SizedBox(
+                width: 360,
+                child: StreamBuilder<List<CategoryViewData>>(
+                  stream: _viewModel.categoriesStream,
+                  builder: (context, snapshot) {
+                    final categories = snapshot.data ?? <CategoryViewData>[];
+
+                    final options = categories
+                        .where(
+                          (item) =>
+                              item.id != category.id &&
+                              item.type == category.type,
+                        )
+                        .toList();
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '"${category.name}" has $transactionCount '
+                          'transaction${transactionCount > 1 ? 's' : ''}.\n\n'
+                          'Select a category to transfer them before deleting.',
+                        ),
+                        const SizedBox(height: 16),
+
+                        if (options.isEmpty)
+                          const Text(
+                            'No other categories of the same type are available.\n'
+                            'Please create another category first.',
+                          )
+                        else
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 300),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (context, index) {
+                                final item = options[index];
+
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: RadioListTile<String>(
+                                    value: item.id,
+                                    groupValue: selectedCategoryId,
+                                    title: Text(item.name),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedCategoryId = value;
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: selectedCategoryId == null
+                      ? null
+                      : () => Navigator.pop(dialogContext, selectedCategoryId),
+                  child: const Text('Move & Delete'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _deleteCategory(
     BuildContext context,
-    CategoryViewData category,
-  ) async {
+    CategoryViewData category, {
+    String? transferToCategoryId,
+  }) async {
     _showLoadingDialog(context);
 
     try {
-      await _viewModel.deleteCategory(category.id);
+      await _viewModel.deleteCategory(
+        category.id,
+        transferToCategoryId: transferToCategoryId,
+      );
 
       if (!context.mounted) return;
       Navigator.pop(context); // close loading

@@ -87,11 +87,14 @@ class CategoriesViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteCategory(String id) async {
+  Future<void> deleteCategory(String id, {String? transferToCategoryId}) async {
     _setLoading(true);
     _clearError();
     try {
-      await _repository.deleteCategory(id);
+      await _repository.deleteCategory(
+        id,
+        transferToCategoryId: transferToCategoryId,
+      );
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
