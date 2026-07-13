@@ -1115,12 +1115,17 @@ class _HomePageState extends State<HomePage> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                category['name'] as String,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade800,
-                                  fontWeight: FontWeight.w600,
+                              Expanded(
+                                child: Text(
+                                  category['name'] as String,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow
+                                      .ellipsis, // Hiện dấu ... nếu tên quá dài
+                                  maxLines: 1, // Ép trên một dòng
                                 ),
                               ),
                               Text(

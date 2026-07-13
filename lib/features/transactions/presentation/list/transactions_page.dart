@@ -1,110 +1,145 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/di/injector.dart';
 import 'transactions_header.dart';
 import 'transactions_tab_content.dart';
 import '../model/transaction_view_data.dart';
 import '../viewmodel/transactions_viewmodel.dart';
 
-class TransactionsPage extends StatelessWidget {
+class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
 
   @override
+  State<TransactionsPage> createState() => _TransactionsPageState();
+}
+
+class _TransactionsPageState extends State<TransactionsPage> {
+  late final TransactionsViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<TransactionsViewModel>();
+  }
+
+  List<DateTime> _getPastMonthsAscending(
+    List<TransactionViewData> allTransactions,
+  ) {
+    final now = DateTime.now();
+    final thisMonthStart = DateTime(now.year, now.month, 1);
+
+    final pastMonthsSet = allTransactions
+        .map(
+          (tx) =>
+              DateTime(tx.transactionDate.year, tx.transactionDate.month, 1),
+        )
+        .where((date) => date.isBefore(thisMonthStart))
+        .toSet()
+        .toList();
+
+    pastMonthsSet.sort((a, b) => a.compareTo(b));
+
+    if (pastMonthsSet.isEmpty) {
+      pastMonthsSet.add(DateTime(now.year, now.month - 1, 1));
+    }
+
+    return pastMonthsSet;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final viewModel = getIt<TransactionsViewModel>();
+    return Scaffold(
+      body: StreamBuilder<List<TransactionViewData>>(
+        stream: _viewModel.watchAllTransactions(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    return DefaultTabController(
-      length: 3,
-      initialIndex: 1,
-      child: Scaffold(
-        body: Column(
-          children: [
-            const TransactionsHeader(),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final allTransactions = snapshot.data ?? [];
+          final now = DateTime.now();
+          final thisMonthStart = DateTime(now.year, now.month, 1);
+          final nextMonthStart = DateTime(now.year, now.month + 1, 1);
+
+          final pastMonths = _getPastMonthsAscending(allTransactions);
+
+          final List<String> tabTitles = [];
+          final List<List<TransactionViewData>> tabData = [];
+
+          // Past Months
+          for (var monthDate in pastMonths) {
+            tabTitles.add(DateFormat('MM/yyyy').format(monthDate));
+            final filteredPast = allTransactions.where((tx) {
+              return tx.transactionDate.year == monthDate.year &&
+                  tx.transactionDate.month == monthDate.month;
+            }).toList();
+            tabData.add(filteredPast);
+          }
+
+          // This Month
+          tabTitles.add('This Month');
+          final thisMonthIndex = tabTitles.length - 1;
+          final filteredThisMonth = allTransactions.where((tx) {
+            final date = tx.transactionDate;
+            return (date.isAtSameMomentAs(thisMonthStart) ||
+                    date.isAfter(thisMonthStart)) &&
+                date.isBefore(nextMonthStart);
+          }).toList();
+          tabData.add(filteredThisMonth);
+
+          // Future
+          tabTitles.add('Future');
+          final filteredFuture = allTransactions.where((tx) {
+            return tx.transactionDate.isAtSameMomentAs(nextMonthStart) ||
+                tx.transactionDate.isAfter(nextMonthStart);
+          }).toList();
+          tabData.add(filteredFuture);
+
+          return DefaultTabController(
+            // Dùng một ObjectKey dựa trên độ dài titles để tránh lỗi rebuild sai index
+            key: ObjectKey(tabTitles.length),
+            length: tabTitles.length,
+            initialIndex: thisMonthIndex,
+            child: Column(
+              children: [
+                const TransactionsHeader(),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                    ),
+                  ),
+                  child: TabBar(
+                    isScrollable: tabTitles.length > 3,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Colors.grey.shade500,
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    tabs: tabTitles.map((title) => Tab(text: title)).toList(),
+                  ),
                 ),
-              ),
-              child: TabBar(
-                labelColor: Theme.of(context).colorScheme.primary,
-                unselectedLabelColor: Colors.grey.shade500,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                indicatorWeight: 3,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                Expanded(
+                  child: TabBarView(
+                    children: List.generate(tabTitles.length, (index) {
+                      // Fix: set isFuture chính xác cho tab Future ở vị trí cuối cùng
+                      final isFutureTab = index == tabTitles.length - 1;
+                      return TransactionsTabContent(
+                        key: ValueKey('${tabTitles[index]}_$index'),
+                        transactions: tabData[index],
+                        isFuture: isFutureTab,
+                        // Ẩn summary card nếu là tab Future theo logic của bạn
+                        showSummary: !isFutureTab,
+                      );
+                    }),
+                  ),
                 ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                tabs: const [
-                  Tab(text: 'Past'),
-                  Tab(text: 'Today'),
-                  Tab(text: 'Future'),
-                ],
-              ),
+              ],
             ),
-
-            Expanded(
-              child: StreamBuilder<List<TransactionViewData>>(
-                stream: viewModel.watchAllTransactions(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Error: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final transactions = snapshot.data ?? [];
-
-                  return TabBarView(
-                    children: [
-                      TransactionsTabContent(
-                        tabType: TabType.past,
-                        transactions: transactions,
-                      ),
-                      TransactionsTabContent(
-                        tabType: TabType.today,
-                        transactions: transactions,
-                      ),
-                      TransactionsTabContent(
-                        tabType: TabType.future,
-                        transactions: transactions,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

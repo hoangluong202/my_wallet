@@ -1,157 +1,64 @@
 import 'package:flutter/material.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../model/transaction_view_data.dart';
 import '../detail/transaction_details_page.dart';
-import 'transaction_summary_item.dart';
 import 'transaction_item_card.dart';
 import '../../../categories/domain/category.dart';
+import 'transaction_summary_card.dart';
 
-enum TabType { past, today, future }
-
-class TransactionsTabContent extends StatelessWidget {
-  final TabType tabType;
+class _GroupedDateData {
+  final DateTime date;
   final List<TransactionViewData> transactions;
+  final int totalIncreased;
+  final int totalDecreased;
+  final int netDifference;
+
+  _GroupedDateData({
+    required this.date,
+    required this.transactions,
+    required this.totalIncreased,
+    required this.totalDecreased,
+    required this.netDifference,
+  });
+}
+
+class TransactionsTabContent extends StatefulWidget {
+  final List<TransactionViewData> transactions;
+  final bool isFuture;
+  final bool showSummary;
 
   const TransactionsTabContent({
     super.key,
-    required this.tabType,
     required this.transactions,
+    this.isFuture = false,
+    this.showSummary = true,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final filteredList = _filterAndGroupTransactions(transactions, tabType);
+  State<TransactionsTabContent> createState() => _TransactionsTabContentState();
+}
 
-    if (filteredList.isEmpty) {
-      return _buildEmptyState(context);
-    }
+class _TransactionsTabContentState extends State<TransactionsTabContent>
+    with AutomaticKeepAliveClientMixin {
+  List<_GroupedDateData> _processedData = [];
+  int _totalIncome = 0;
+  int _totalExpense = 0;
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      itemCount: filteredList.length,
-      itemBuilder: (context, index) {
-        final entry = filteredList.entries.elementAt(index);
-        final dateGroup = entry.key;
-        final transactions = entry.value;
+  @override
+  bool get wantKeepAlive => true;
 
-        int totalIncreased = 0;
-        int totalDecreased = 0;
-
-        for (final transaction in transactions) {
-          if (transaction.category.type == CategoryType.income) {
-            totalIncreased += transaction.amount;
-          } else if (transaction.category.type == CategoryType.debt) {
-            totalIncreased += transaction.amount;
-          } else if (transaction.category.type == CategoryType.expense) {
-            totalDecreased += transaction.amount;
-          } else if (transaction.category.type == CategoryType.loan) {
-            totalDecreased += transaction.amount;
-          }
-        }
-
-        final netDifference = totalIncreased - totalDecreased;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDateGroupHeader(
-              context,
-              dateGroup,
-              totalIncreased,
-              totalDecreased,
-              netDifference,
-            ),
-            const SizedBox(height: 12),
-
-            // Transaction Items
-            ...transactions.map((transaction) {
-              return TransactionItemCard(
-                transaction: transaction,
-                onTap: () => _onTransactionTap(context, transaction),
-              );
-            }).toList(),
-
-            const SizedBox(height: 20),
-          ],
-        );
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    _groupAndCalculateData();
   }
 
-  Widget _buildDateGroupHeader(
-    BuildContext context,
-    DateTime dateGroup,
-    int totalIncreased,
-    int totalDecreased,
-    int netDifference,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _getDateLabel(dateGroup),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey.shade900,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: netDifference >= 0
-                      ? Colors.green.shade50
-                      : Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${netDifference >= 0 ? '+' : ''}${CurrencyFormatter.formatVNDWithSymbol(netDifference)}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: netDifference >= 0
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TransactionSummaryItem(
-                icon: Icons.trending_up,
-                label: 'Increased',
-                amount: totalIncreased,
-                color: Colors.green,
-              ),
-              Container(width: 1, height: 40, color: Colors.grey.shade300),
-              TransactionSummaryItem(
-                icon: Icons.trending_down,
-                label: 'Decreased',
-                amount: totalDecreased,
-                color: Colors.red,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  @override
+  void didUpdateWidget(covariant TransactionsTabContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transactions != widget.transactions ||
+        oldWidget.isFuture != widget.isFuture) {
+      _groupAndCalculateData();
+    }
   }
 
   void _onTransactionTap(
@@ -167,81 +74,127 @@ class TransactionsTabContent extends StatelessWidget {
     );
   }
 
-  Map<DateTime, List<TransactionViewData>> _filterAndGroupTransactions(
-    List<TransactionViewData> list,
-    TabType type,
-  ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  void _groupAndCalculateData() {
+    final sortedList = List<TransactionViewData>.from(widget.transactions);
 
-    final filtered = list.where((tx) {
-      final txDate = DateTime(
-        tx.transactionDate.year,
-        tx.transactionDate.month,
-        tx.transactionDate.day,
-      );
-
-      if (type == TabType.past) return txDate.isBefore(today);
-      if (type == TabType.today) return txDate.isAtSameMomentAs(today);
-      return txDate.isAfter(today);
-    }).toList();
-
-    filtered.sort((a, b) {
-      if (type == TabType.future) {
+    sortedList.sort((a, b) {
+      if (widget.isFuture) {
         return a.transactionDate.compareTo(b.transactionDate);
       }
       return b.transactionDate.compareTo(a.transactionDate);
     });
 
-    final Map<DateTime, List<TransactionViewData>> grouped = {};
-    for (var tx in filtered) {
+    final Map<DateTime, List<TransactionViewData>> groupedMap = {};
+    int income = 0;
+    int expense = 0;
+
+    for (var tx in sortedList) {
       final dateKey = DateTime(
         tx.transactionDate.year,
         tx.transactionDate.month,
         tx.transactionDate.day,
       );
 
-      if (grouped[dateKey] == null) {
-        grouped[dateKey] = [];
+      groupedMap.putIfAbsent(dateKey, () => []).add(tx);
+
+      switch (tx.category.type) {
+        case CategoryType.income:
+        case CategoryType.debt:
+          income += tx.amount;
+          break;
+        case CategoryType.expense:
+        case CategoryType.loan:
+          expense += tx.amount;
+          break;
       }
-      grouped[dateKey]!.add(tx);
     }
 
-    return grouped;
-  }
+    final List<_GroupedDateData> tempData = [];
 
-  String _getDateLabel(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
+    for (var entry in groupedMap.entries) {
+      int totalIncreased = 0;
+      int totalDecreased = 0;
 
-    if (dateOnly == today) {
-      return 'Today';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday';
-    } else {
-      // Format as "Nov 10, 2025"
-      const months = [
-        '',
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      return '${months[date.month]} ${date.day}, ${date.year}';
+      for (final tx in entry.value) {
+        switch (tx.category.type) {
+          case CategoryType.income:
+          case CategoryType.debt:
+            totalIncreased += tx.amount;
+            break;
+          case CategoryType.expense:
+          case CategoryType.loan:
+            totalDecreased += tx.amount;
+            break;
+        }
+      }
+
+      tempData.add(
+        _GroupedDateData(
+          date: entry.key,
+          transactions: entry.value,
+          totalIncreased: totalIncreased,
+          totalDecreased: totalDecreased,
+          netDifference: totalIncreased - totalDecreased,
+        ),
+      );
     }
+
+    setState(() {
+      _processedData = tempData;
+      _totalIncome = income;
+      _totalExpense = expense;
+    });
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    if (_processedData.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    final hasSummary = widget.showSummary;
+    final itemCount = _processedData.length + (hasSummary ? 1 : 0);
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        // Sử dụng Widget Custom mới tại đây
+        if (hasSummary && index == 0) {
+          return TransactionsSummaryCard(
+            totalIncome: _totalIncome,
+            totalExpense: _totalExpense,
+          );
+        }
+
+        final dataIndex = hasSummary ? index - 1 : index;
+        final group = _processedData[dataIndex];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: group.transactions.length,
+              itemBuilder: (context, txIndex) {
+                final transaction = group.transactions[txIndex];
+                return TransactionItemCard(
+                  transaction: transaction,
+                  onTap: () => _onTransactionTap(context, transaction),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

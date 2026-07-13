@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../constants/transaction_type.dart';
 import '../model/transaction_view_data.dart';
+import 'package:intl/intl.dart';
 
 class TransactionItemCard extends StatelessWidget {
   final TransactionViewData transaction;
@@ -16,6 +17,9 @@ class TransactionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = TransactionTypeConstants.getStyle(transaction.category.type);
+    final updatedTime = DateFormat(
+      'HH:mm dd/MM/yyyy',
+    ).format(transaction.updatedAt);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -93,22 +97,12 @@ class TransactionItemCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: style.bgColor,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      style.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: style.amountColor,
-                      ),
+                  Text(
+                    updatedTime,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
