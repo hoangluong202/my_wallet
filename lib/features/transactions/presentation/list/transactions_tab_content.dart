@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:my_wallet/core/utils/currency_formatter.dart';
 import '../model/transaction_view_data.dart';
 import '../detail/transaction_details_page.dart';
 import 'transaction_item_card.dart';
 import '../../../categories/domain/category.dart';
 import 'transaction_summary_card.dart';
+import 'package:intl/intl.dart';
 
 class _GroupedDateData {
   final DateTime date;
@@ -171,10 +173,42 @@ class _TransactionsTabContentState extends State<TransactionsTabContent>
 
         final dataIndex = hasSummary ? index - 1 : index;
         final group = _processedData[dataIndex];
+        final dateString = DateFormat('dd/MM/yyyy').format(group.date);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    dateString,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  if (group.netDifference != 0)
+                    Text(
+                      group.netDifference > 0
+                          ? '+${CurrencyFormatter.formatVNDWithSymbol(group.netDifference)}'
+                          : CurrencyFormatter.formatVNDWithSymbol(group.netDifference),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: group.netDifference > 0
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -187,7 +221,7 @@ class _TransactionsTabContentState extends State<TransactionsTabContent>
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
         );
       },

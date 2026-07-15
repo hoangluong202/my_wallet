@@ -13,106 +13,93 @@ class TransactionsSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balance = totalIncome - totalExpense;
-    final isPositive = balance >= 0;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          mainAxisSize:
-              MainAxisSize.min, // Đảm bảo Column thu gọn theo nội dung
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryItem(
-                      context: context,
-                      title: "Thu nhập",
-                      amount: totalIncome,
-                      color: Colors.green.shade600,
-                      icon: Icons.arrow_downward_rounded,
-                      iconBg: Colors.green.shade50,
-                    ),
-                  ),
-
-                  Container(height: 36, width: 1, color: Colors.grey.shade200),
-
-                  Expanded(
-                    child: _buildSummaryItem(
-                      context: context,
-                      title: "Chi tiêu",
-                      amount: totalExpense,
-                      color: Colors.red.shade600,
-                      icon: Icons.arrow_upward_rounded,
-                      iconBg: Colors.red.shade50,
-                    ),
-                  ),
-                ],
-              ),
+      child: Row(
+        children: [
+          // Cột Thu nhập
+          Expanded(
+            child: _buildSummaryItem(
+              title: "Thu nhập",
+              amount: totalIncome,
+              color: Colors.green.shade600,
+              icon: Icons.arrow_downward_rounded,
             ),
-          ],
-        ),
+          ),
+
+          // Vạch chia giữa 2 cột thanh mảnh
+          Container(
+            height: 40,
+            width: 1,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+
+          // Cột Chi tiêu
+          Expanded(
+            child: _buildSummaryItem(
+              title: "Chi tiêu",
+              amount: totalExpense,
+              color: Colors.red.shade600,
+              icon: Icons.arrow_upward_rounded,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryItem({
-    required BuildContext context,
+Widget _buildSummaryItem({
     required String title,
     required int amount,
     required Color color,
     required IconData icon,
-    required Color iconBg,
   }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-          child: Icon(icon, size: 16, color: color),
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: color.withOpacity(0.9), // Icon rõ ràng
+            ),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                color: color.withOpacity(0.75),
+                fontSize: 12,
+                fontWeight: FontWeight.w600, // Tăng độ đậm nét chữ lên một chút
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
+        const SizedBox(height: 6),
 
-        // Vì Row này nằm trong Expanded bên trên, nên bọc Expanded ở đây là hoàn toàn hợp lệ và chuẩn xác
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-              ),
-              const SizedBox(height: 2),
-              // SỬA TẠI ĐÂY: Xóa Flexible bên trong Column này đi
-              Text(
-                CurrencyFormatter.formatVNDWithSymbol(amount),
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ],
+        Text(
+          CurrencyFormatter.formatVNDWithSymbol(amount),
+          style: TextStyle(
+            color: color, // Màu đậm 100%
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ],
     );
