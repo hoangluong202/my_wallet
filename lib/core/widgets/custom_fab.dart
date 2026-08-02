@@ -7,26 +7,25 @@ class CustomFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return FloatingActionButton(
       onPressed: onPressed,
-      elevation: 6,
-      highlightElevation: 8,
-      shape: const CircleBorder(),
-      backgroundColor: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            ],
-          ),
+      tooltip: 'Add transaction',
+      elevation: 4,
+      focusElevation: 6,
+      hoverElevation: 6,
+      highlightElevation: 2,
+      backgroundColor: colors.primary,
+      foregroundColor: colors.onPrimary,
+      splashColor: colors.onPrimary.withValues(alpha: 0.16),
+      shape: CircleBorder(
+        side: BorderSide(
+          color: colors.surface,
+          width: 3,
         ),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
+      child: const Icon(Icons.add_rounded, size: 28),
     );
   }
 }

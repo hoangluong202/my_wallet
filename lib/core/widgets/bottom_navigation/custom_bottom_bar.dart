@@ -16,53 +16,65 @@ class CustomBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark
+        ? const Color(0xFF171B22)
+        : const Color(0xFFF8FAFC);
+    final backgroundColor = Color.alphaBlend(
+      theme.colorScheme.primary.withValues(alpha: isDark ? 0.08 : 0.025),
+      baseColor,
+    );
+    final borderColor = theme.colorScheme.outlineVariant.withValues(
+      alpha: isDark ? 0.35 : 0.55,
+    );
+
     return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
+      color: backgroundColor,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+      shape: AutomaticNotchedShape(
+        RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          side: BorderSide(color: borderColor),
+        ),
+        const StadiumBorder(),
+      ),
+      notchMargin: 7,
+      clipBehavior: Clip.antiAlias,
       padding: EdgeInsets.zero,
       elevation: 8,
       child: SizedBox(
         height: 65,
         child: Row(
           children: [
-            // Home
             Expanded(
-              flex: 1,
+              flex: 9,
               child: BottomNavItem(
                 item: items[0],
                 selected: selectedIndex == 0,
                 onTap: () => onTabSelected(0),
               ),
             ),
-            // Wallets - pushed to left with spacer
             Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: BottomNavItem(
-                  item: items[1],
-                  selected: selectedIndex == 1,
-                  onTap: () => onTabSelected(1),
-                ),
+              flex: 11,
+              child: BottomNavItem(
+                item: items[1],
+                selected: selectedIndex == 1,
+                onTap: () => onTabSelected(1),
               ),
             ),
-            // Spacer for FAB
-            const SizedBox(width: 60),
-            // Transactions - pushed to right with spacer
+            const SizedBox(width: 56),
             Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0),
-                child: BottomNavItem(
-                  item: items[2],
-                  selected: selectedIndex == 2,
-                  onTap: () => onTabSelected(2),
-                ),
+              flex: 10,
+              child: BottomNavItem(
+                item: items[2],
+                selected: selectedIndex == 2,
+                onTap: () => onTabSelected(2),
               ),
             ),
-            // Category
             Expanded(
-              flex: 1,
+              flex: 10,
               child: BottomNavItem(
                 item: items[3],
                 selected: selectedIndex == 3,
