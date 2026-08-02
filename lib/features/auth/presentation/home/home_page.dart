@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/di/injector.dart';
-import '../../../../core/router/app_router.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/user_viewmodel.dart';
 import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 import '../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
-import '../../../../core/widgets/notification_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,9 +12,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final UserViewModel _userViewModel;
   late final WalletsViewModel _walletsViewModel;
-  late final AuthViewModel _authViewModel;
   late final TransactionsViewModel _transactionsViewModel;
 
   // Selected month for charts
@@ -32,46 +26,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _userViewModel = getIt<UserViewModel>();
     _walletsViewModel = getIt<WalletsViewModel>();
-    _authViewModel = getIt<AuthViewModel>();
     _transactionsViewModel = getIt<TransactionsViewModel>();
-  }
-
-  Future<void> _syncData(BuildContext context) async {
-    try {
-      final authViewModel = getIt<AuthViewModel>();
-      final currentUser = authViewModel.currentUser;
-
-      if (currentUser == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No user logged in'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      if (context.mounted) {
-        SuccessNotification.show(
-          context: context,
-          message: 'Sync completed: Local ↔ Cloud',
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sync failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -81,7 +37,6 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildUserHeader(context),
             const SizedBox(height: 16),
             _buildBalanceCards(context),
             const SizedBox(height: 20),
@@ -93,151 +48,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  Widget _buildUserHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.7),
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: ListenableBuilder(
-            listenable: _authViewModel,
-            builder: (context, _) {
-              final userName =
-                  _authViewModel.currentUser?.displayName ?? 'User';
-              final initials = _getInitials(userName);
-
-              return Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        initials,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back,',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.white70, fontSize: 13),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          userName,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ListenableBuilder(
-                    listenable: _walletsViewModel,
-                    builder: (context, _) {
-                      return IconButton(
-                        onPressed: () => _syncData(context),
-                        icon: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Icon(
-                            Icons.sync,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'signout') {
-                        final authViewModel = getIt.get<AuthViewModel>();
-
-                        // Clear ViewModels state
-                        _userViewModel.clear();
-
-                        // Sign out (this will also clear all local data)
-                        await authViewModel.signOut();
-
-                        if (context.mounted) {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRouter.login,
-                          );
-                        }
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      const PopupMenuItem<String>(
-                        height: 10,
-                        value: 'signout',
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 0,
-                          vertical: 0,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.logout),
-                            SizedBox(width: 4),
-                            Text('Sign Out'),
-                          ],
-                        ),
-                      ),
-                    ],
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
-                    iconSize: 20,
-                    tooltip: 'Menu',
-                    padding: EdgeInsets.zero,
-                    offset: const Offset(0, 60),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
-      return parts[0][0].toUpperCase();
-    }
-    return 'U';
   }
 
   Widget _buildBalanceCards(BuildContext context) {
