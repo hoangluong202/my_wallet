@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/di/injector.dart';
-import 'transactions_header.dart';
 import 'transactions_tab_content.dart';
 import '../model/transaction_view_data.dart';
 import '../viewmodel/transactions_viewmodel.dart';
@@ -106,7 +105,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
             initialIndex: thisMonthIndex,
             child: Column(
               children: [
-                const TransactionsHeader(),
                 Container(
                   decoration: BoxDecoration(
                     border: Border(
