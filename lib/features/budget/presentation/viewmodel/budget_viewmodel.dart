@@ -60,12 +60,13 @@ class BudgetViewModel extends ChangeNotifier {
   Stream<List<TransactionViewData>> watchBudgetTransactions(
     BudgetViewData budget,
   ) {
+    final budgetStartDate = _startOfDay(budget.startDate);
     final budgetEndDate = _endOfDay(budget.endDate);
     return Stream.fromFuture(
       _resolveCategoryIds(budget.categoryId),
     ).asyncExpand((categoryIds) {
       return _transactionRepository
-          .watchTransactionsByDateRange(budget.startDate, budgetEndDate)
+          .watchTransactionsByDateRange(budgetStartDate, budgetEndDate)
           .map(
             (txns) => txns
                 .where((t) => categoryIds.contains(t.category.id))
@@ -88,8 +89,11 @@ class BudgetViewModel extends ChangeNotifier {
     return [categoryId, ...children];
   }
 
+  DateTime _startOfDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
   DateTime _endOfDay(DateTime date) =>
-      DateTime(date.year, date.month, date.day, 23, 59, 59);
+      DateTime(date.year, date.month, date.day, 23, 59, 59, 999, 999);
 
   Future<List<BudgetViewData>> _enrichBudgets(List<Budget> budgets) async {
     final List<BudgetViewData> result = [];
@@ -100,10 +104,11 @@ class BudgetViewModel extends ChangeNotifier {
         final categoryIds = await _resolveCategoryIds(budget.categoryId);
 
         // Fetch transactions for all those category IDs within the date range
+        final budgetStartDate = _startOfDay(budget.startDate);
         final budgetEndDate = _endOfDay(budget.endDate);
         final txns = await _transactionRepository.getTransactionsByCategoryIds(
           categoryIds,
-          budget.startDate,
+          budgetStartDate,
           budgetEndDate,
         );
 
@@ -125,8 +130,8 @@ class BudgetViewModel extends ChangeNotifier {
         id: payload.id,
         categoryId: payload.categoryId,
         estimatedAmount: payload.estimatedAmount,
-        startDate: payload.startDate,
-        endDate: payload.endDate,
+        startDate: _startOfDay(payload.startDate),
+        endDate: _startOfDay(payload.endDate),
         createdAt: payload.createdAt,
         updatedAt: payload.updatedAt,
       );
@@ -148,8 +153,8 @@ class BudgetViewModel extends ChangeNotifier {
         id: payload.id,
         categoryId: payload.categoryId,
         estimatedAmount: payload.estimatedAmount,
-        startDate: payload.startDate,
-        endDate: payload.endDate,
+        startDate: _startOfDay(payload.startDate),
+        endDate: _startOfDay(payload.endDate),
         createdAt: payload.createdAt,
         updatedAt: payload.updatedAt,
       );

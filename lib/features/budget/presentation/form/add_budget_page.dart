@@ -39,8 +39,10 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   late final TextEditingController _amountController;
 
   String? _selectedCategoryId;
-  DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now().add(const Duration(days: 30));
+  DateTime _startDate = DateUtils.dateOnly(DateTime.now());
+  DateTime _endDate = DateUtils.dateOnly(
+    DateTime.now().add(const Duration(days: 30)),
+  );
 
   @override
   void initState() {
@@ -52,8 +54,12 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
           : '',
     );
     _selectedCategoryId = widget.initialCategoryId;
-    if (widget.initialStartDate != null) _startDate = widget.initialStartDate!;
-    if (widget.initialEndDate != null) _endDate = widget.initialEndDate!;
+    if (widget.initialStartDate != null) {
+      _startDate = DateUtils.dateOnly(widget.initialStartDate!);
+    }
+    if (widget.initialEndDate != null) {
+      _endDate = DateUtils.dateOnly(widget.initialEndDate!);
+    }
   }
 
   @override
