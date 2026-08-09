@@ -295,7 +295,7 @@ class _ProgressCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${(budget.progress * 100).toStringAsFixed(0)}%',
+                '${budget.spendingPercentage.toStringAsFixed(0)}%',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -474,7 +474,7 @@ class _InfoCard extends StatelessWidget {
           _InfoRow(
             icon: Icons.percent,
             label: 'Progress',
-            value: '${(budget.progress * 100).toStringAsFixed(1)}%',
+            value: '${budget.spendingPercentage.toStringAsFixed(1)}%',
           ),
           const Divider(height: 20),
           _InfoRow(

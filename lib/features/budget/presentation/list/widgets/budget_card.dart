@@ -127,7 +127,7 @@ class BudgetCard extends StatelessWidget {
                   SizedBox(
                     width: 72,
                     child: Text(
-                      '${(budget.progress * 100).toStringAsFixed(0)}%',
+                      '${budget.spendingPercentage.toStringAsFixed(0)}%',
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

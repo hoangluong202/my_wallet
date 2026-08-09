@@ -37,6 +37,9 @@ class BudgetViewData {
       ? (spentAmount / estimatedAmount).clamp(0.0, 1.0)
       : 0.0;
 
+  double get spendingPercentage =>
+      estimatedAmount > 0 ? spentAmount / estimatedAmount * 100 : 0.0;
+
   bool get isOverBudget => spentAmount > estimatedAmount;
 
   int get remainingAmount => estimatedAmount - spentAmount;
