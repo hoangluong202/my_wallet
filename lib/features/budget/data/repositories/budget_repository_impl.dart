@@ -69,6 +69,15 @@ class BudgetRepositoryImpl implements BudgetRepository {
   }
 
   @override
+  Future<void> addBudgets(List<Budget> budgets) async {
+    await _database.transaction(() async {
+      for (final budget in budgets) {
+        await _database.budgetDao.insertBudget(BudgetModel.toCompanion(budget));
+      }
+    });
+  }
+
+  @override
   Future<void> updateBudget(Budget budget) async {
     final companion = BudgetModel.toCompanion(budget);
     await _database.budgetDao.updateBudget(companion);

@@ -6,6 +6,7 @@ abstract class BudgetRepository {
   Future<Budget?> getBudgetById(String id);
   Stream<Budget?> watchBudgetById(String id);
   Future<void> addBudget(Budget budget);
+  Future<void> addBudgets(List<Budget> budgets);
   Future<void> updateBudget(Budget budget);
   Future<void> deleteBudget(String id);
 }

@@ -145,6 +145,33 @@ class BudgetViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> addBudgets(List<BudgetPayload> payloads) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final budgets = payloads
+          .map(
+            (payload) => Budget(
+              id: payload.id,
+              categoryId: payload.categoryId,
+              estimatedAmount: payload.estimatedAmount,
+              startDate: _startOfDay(payload.startDate),
+              endDate: _startOfDay(payload.endDate),
+              createdAt: payload.createdAt,
+              updatedAt: payload.updatedAt,
+            ),
+          )
+          .toList();
+      await _budgetRepository.addBudgets(budgets);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _setError(e.toString().replaceFirst('Exception: ', ''));
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<bool> updateBudget(BudgetPayload payload) async {
     _setLoading(true);
     _clearError();
