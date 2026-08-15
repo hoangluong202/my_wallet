@@ -161,13 +161,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildCategorySection() {
-    return FormCardSection(
-      title: FormConstants.categoryLabel,
-      icon: Icons.category_outlined,
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: CategorySelector(
         categories: _controller.filteredCategories,
         selectedId: _controller.formState.selectedCategoryId,
         onSelected: _onCategorySelected,
+        showLabel: true,
       ),
     );
   }

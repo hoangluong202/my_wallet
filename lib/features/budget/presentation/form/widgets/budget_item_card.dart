@@ -212,18 +212,6 @@ class _ExpenseCategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parents = categories
-        .where((category) => category.parentCategoryId == null)
-        .toList();
-    final knownParentIds = parents.map((category) => category.id).toSet();
-    final orphans = categories
-        .where(
-          (category) =>
-              category.parentCategoryId != null &&
-              !knownParentIds.contains(category.parentCategoryId),
-        )
-        .toList();
-
     return Container(
       key: const ValueKey('expense-category-picker'),
       padding: const EdgeInsets.all(8),
@@ -232,106 +220,15 @@ class _ExpenseCategoryPicker extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: categories.isEmpty
-          ? Text(
-              'No expense categories available',
-              style: TextStyle(color: Colors.grey.shade600),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'EXPENSE CATEGORIES',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                for (final parent in parents) ...[
-                  _CategoryOption(
-                    category: parent,
-                    selected: selectedCategoryId == parent.id,
-                    onTap: () => onSelected(parent),
-                  ),
-                  for (final child in categories.where(
-                    (category) => category.parentCategoryId == parent.id,
-                  ))
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24),
-                      child: _CategoryOption(
-                        category: child,
-                        selected: selectedCategoryId == child.id,
-                        onTap: () => onSelected(child),
-                        isChild: true,
-                      ),
-                    ),
-                ],
-                for (final category in orphans)
-                  _CategoryOption(
-                    category: category,
-                    selected: selectedCategoryId == category.id,
-                    onTap: () => onSelected(category),
-                  ),
-              ],
-            ),
+      child: HierarchicalCategoryPicker(
+        categories: categories,
+        selectedCategoryId: selectedCategoryId,
+        emptyMessage: 'No expense categories available',
+        showTrigger: false,
+        onSelected: onSelected,
+      ),
     );
   }
-}
-
-class _CategoryOption extends StatelessWidget {
-  const _CategoryOption({
-    required this.category,
-    required this.selected,
-    required this.onTap,
-    this.isChild = false,
-  });
-
-  final CategoryViewData category;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isChild;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: selected
-        ? category.color.withValues(alpha: 0.12)
-        : Colors.transparent,
-    borderRadius: BorderRadius.circular(10),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-        child: Row(
-          children: [
-            if (isChild) ...[
-              Icon(
-                Icons.subdirectory_arrow_right,
-                size: 15,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(width: 5),
-            ],
-            Icon(category.icon, size: 18, color: category.color),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                category.name,
-                style: TextStyle(
-                  fontSize: isChild ? 13 : 14,
-                  fontWeight: isChild ? FontWeight.w400 : FontWeight.w600,
-                ),
-              ),
-            ),
-            if (selected) Icon(Icons.check, size: 18, color: category.color),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 InputDecoration _inputDecoration(String label) {

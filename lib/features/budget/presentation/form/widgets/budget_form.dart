@@ -5,6 +5,7 @@ import '../../../../../core/utils/date_formatter.dart';
 import '../../../../../core/utils/thousand_separator_input_formatter.dart';
 import '../../../../categories/domain/category.dart';
 import '../../../../categories/presentation/model/category_view_data.dart';
+import '../../../../categories/presentation/widgets/hierarchical_category_picker.dart';
 import '../../viewmodel/budget_viewmodel.dart';
 
 part 'budget_form_item.dart';
