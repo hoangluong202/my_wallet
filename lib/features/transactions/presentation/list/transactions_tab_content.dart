@@ -6,6 +6,7 @@ import 'transaction_item_card.dart';
 import '../../../categories/domain/category.dart';
 import 'transaction_summary_card.dart';
 import 'package:intl/intl.dart';
+import '../../../wallets/presentation/model/wallet_view_data.dart';
 
 class _GroupedDateData {
   final DateTime date;
@@ -27,12 +28,14 @@ class TransactionsTabContent extends StatefulWidget {
   final List<TransactionViewData> transactions;
   final bool isFuture;
   final bool showSummary;
+  final Stream<List<WalletViewData>> walletsStream;
 
   const TransactionsTabContent({
     super.key,
     required this.transactions,
     this.isFuture = false,
     this.showSummary = true,
+    required this.walletsStream,
   });
 
   @override
@@ -165,9 +168,13 @@ class _TransactionsTabContentState extends State<TransactionsTabContent>
       itemBuilder: (context, index) {
         // Sử dụng Widget Custom mới tại đây
         if (hasSummary && index == 0) {
-          return TransactionsSummaryCard(
-            totalIncome: _totalIncome,
-            totalExpense: _totalExpense,
+          return StreamBuilder<List<WalletViewData>>(
+            stream: widget.walletsStream,
+            builder: (context, snapshot) => TransactionsSummaryCard(
+              totalIncome: _totalIncome,
+              totalExpense: _totalExpense,
+              wallets: snapshot.data ?? const [],
+            ),
           );
         }
 
@@ -197,7 +204,9 @@ class _TransactionsTabContentState extends State<TransactionsTabContent>
                     Text(
                       group.netDifference > 0
                           ? '+${CurrencyFormatter.formatVNDWithSymbol(group.netDifference)}'
-                          : CurrencyFormatter.formatVNDWithSymbol(group.netDifference),
+                          : CurrencyFormatter.formatVNDWithSymbol(
+                              group.netDifference,
+                            ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,

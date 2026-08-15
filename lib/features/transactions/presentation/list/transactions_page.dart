@@ -4,6 +4,7 @@ import '../../../../core/di/injector.dart';
 import 'transactions_tab_content.dart';
 import '../model/transaction_view_data.dart';
 import '../viewmodel/transactions_viewmodel.dart';
+import '../../../wallets/presentation/list/wallets_viewmodel.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -14,11 +15,13 @@ class TransactionsPage extends StatefulWidget {
 
 class _TransactionsPageState extends State<TransactionsPage> {
   late final TransactionsViewModel _viewModel;
+  late final WalletsViewModel _walletsViewModel;
 
   @override
   void initState() {
     super.initState();
     _viewModel = getIt<TransactionsViewModel>();
+    _walletsViewModel = getIt<WalletsViewModel>();
   }
 
   List<DateTime> _getPastMonthsAscending(
@@ -127,6 +130,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       return TransactionsTabContent(
                         key: ValueKey('${tabTitles[index]}_$index'),
                         transactions: tabData[index],
+                        walletsStream: _walletsViewModel.walletsStream,
                         isFuture: isFutureTab,
                         // Ẩn summary card nếu là tab Future theo logic của bạn
                         showSummary: !isFutureTab,
