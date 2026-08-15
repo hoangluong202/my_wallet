@@ -1,97 +1,225 @@
 import 'package:flutter/material.dart';
 import '../../../wallets/presentation/model/wallet_view_data.dart';
-import '../../../../core/utils/currency_formatter.dart';
+import 'form_section_label.dart';
 
-class WalletSection extends StatelessWidget {
-  final WalletViewData? selectedWallet;
-  final VoidCallback onTap;
+class WalletSection extends StatefulWidget {
+  final List<WalletViewData> wallets;
+  final String? selectedWalletId;
+  final ValueChanged<String> onSelected;
+  final bool showLabel;
 
   const WalletSection({
     super.key,
-    required this.selectedWallet,
-    required this.onTap,
+    required this.wallets,
+    required this.selectedWalletId,
+    required this.onSelected,
+    this.showLabel = false,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return selectedWallet == null
-        ? _buildWalletPlaceholder()
-        : _buildSelectedWallet();
-  }
+  State<WalletSection> createState() => _WalletSectionState();
+}
 
-  Widget _buildWalletPlaceholder() {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
+class _WalletSectionState extends State<WalletSection> {
+  bool _isOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedWallet = widget.wallets
+        .where((wallet) => wallet.id == widget.selectedWalletId)
+        .firstOrNull;
+
+    if (widget.wallets.isEmpty) {
+      return Text(
+        'No wallets available',
+        style: TextStyle(color: Colors.grey.shade600),
+      );
+    }
+
+    return TapRegion(
+      onTapOutside: (_) {
+        if (_isOpen) setState(() => _isOpen = false);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a wallet',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500,
+          Row(
+            children: [
+              if (widget.showLabel) ...[
+                const FormSectionLabel(
+                  title: 'Wallet',
+                  icon: Icons.account_balance_wallet_outlined,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: _WalletSelectorButton(
+                  wallet: selectedWallet,
+                  isOpen: _isOpen,
+                  onTap: () => setState(() => _isOpen = !_isOpen),
+                ),
               ),
-            ),
+            ],
           ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            child: _isOpen
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: widget.wallets
+                          .map(
+                            (wallet) => _WalletButton(
+                              wallet: wallet,
+                              selected: wallet.id == widget.selectedWalletId,
+                              onTap: () {
+                                widget.onSelected(wallet.id);
+                                setState(() => _isOpen = false);
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSelectedWallet() {
-    final wallet = selectedWallet!;
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
+class _WalletSelectorButton extends StatelessWidget {
+  const _WalletSelectorButton({
+    required this.wallet,
+    required this.isOpen,
+    required this.onTap,
+  });
+
+  final WalletViewData? wallet;
+  final bool isOpen;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: wallet?.color.withValues(alpha: 0.08) ?? Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: wallet.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isOpen
+                    ? (wallet?.color ?? Theme.of(context).colorScheme.primary)
+                    : Colors.grey.shade300,
+              ),
             ),
-            child: Icon(wallet.icon, color: wallet.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  wallet.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                Icon(
+                  wallet?.icon ?? Icons.account_balance_wallet_outlined,
+                  size: 19,
+                  color: wallet?.color ?? Colors.grey.shade500,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    wallet?.name ?? 'Select a wallet',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: wallet == null
+                          ? FontWeight.w500
+                          : FontWeight.w600,
+                      color: wallet?.color ?? Colors.grey.shade600,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  CurrencyFormatter.formatVND(wallet.balance),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: wallet.balance >= 0
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
+                const SizedBox(width: 6),
+                AnimatedRotation(
+                  turns: isOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 18,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WalletButton extends StatelessWidget {
+  const _WalletButton({
+    required this.wallet,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final WalletViewData wallet;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected
+          ? wallet.color.withValues(alpha: 0.12)
+          : Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? wallet.color : Colors.grey.shade300,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(wallet.icon, color: wallet.color, size: 18),
+              const SizedBox(width: 7),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 140),
+                child: Text(
+                  wallet.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected ? wallet.color : Colors.black87,
+                  ),
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 6),
+                Icon(Icons.check_circle, color: wallet.color, size: 16),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

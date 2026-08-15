@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../categories/presentation/model/category_view_data.dart';
 import '../../../categories/presentation/widgets/hierarchical_category_picker.dart';
+import '../widgets/form_section_label.dart';
 
 class CategorySelector extends StatelessWidget {
   const CategorySelector({
@@ -24,25 +25,9 @@ class CategorySelector extends StatelessWidget {
       selectedCategoryId: selectedId,
       onSelected: (category) => onSelected(category.id),
       leading: showLabel
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.category_outlined,
-                  size: 18,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Category',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
+          ? const FormSectionLabel(
+              title: 'Category',
+              icon: Icons.category_outlined,
             )
           : null,
     );

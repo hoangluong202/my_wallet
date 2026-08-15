@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import '../../../../core/widgets/header/detail_header.dart';
 import '../../../../core/widgets/notification_widget.dart';
 import '../../../../core/di/injector.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/thousand_separator_input_formatter.dart';
 import '../viewmodel/transactions_viewmodel.dart';
 import '../../../categories/presentation/list/categories_viewmodel.dart';
@@ -17,6 +16,7 @@ import '../../../categories/presentation/constants/category_icons.dart';
 import '../../../categories/presentation/helpers/label.dart';
 import 'transaction_payload.dart';
 import 'category_selector.dart';
+import '../widgets/wallet_section.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final TransactionViewData transaction;
@@ -310,9 +310,8 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildWalletSection() {
-    return _buildCardSection(
-      title: 'Wallet',
-      icon: Icons.account_balance_wallet_outlined,
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: StreamBuilder<List<WalletViewData>>(
         stream: _walletsViewModel.walletsStream,
         builder: (context, snapshot) {
@@ -341,13 +340,16 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
             });
           }
 
-          return _formState.selectedWalletId == null
-              ? _buildWalletPlaceholder()
-              : _buildSelectedWallet(
-                  wallets.firstWhere(
-                    (w) => w.id == _formState.selectedWalletId,
-                  ),
-                );
+          final selectedWallet = wallets
+              .where((wallet) => wallet.id == _formState.selectedWalletId)
+              .firstOrNull;
+
+          return WalletSection(
+            wallets: wallets,
+            selectedWalletId: selectedWallet?.id,
+            onSelected: _onWalletChanged,
+            showLabel: true,
+          );
         },
       ),
     );
@@ -357,82 +359,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     setState(() {
       _formState = _formState.copyWith(selectedWalletId: walletId);
     });
-  }
-
-  Widget _buildWalletPlaceholder() {
-    return GestureDetector(
-      onTap: _showWalletPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.add, color: Colors.grey.shade500, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a wallet',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSelectedWallet(WalletViewData wallet) {
-    return GestureDetector(
-      onTap: _showWalletPicker,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: wallet.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(wallet.icon, color: wallet.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  wallet.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  CurrencyFormatter.formatVND(wallet.balance),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: wallet.balance >= 0
-                        ? Colors.green.shade700
-                        : Colors.red.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
   }
 
   Widget _buildDateSection() {
@@ -490,61 +416,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         _formState = _formState.copyWith(selectedDate: picked);
       });
     }
-  }
-
-  void _showWalletPicker() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StreamBuilder<List<WalletViewData>>(
-        stream: _walletsViewModel.walletsStream,
-        builder: (context, snapshot) {
-          final wallets = snapshot.data ?? [];
-
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Title
-                Text(
-                  'Select Wallet',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-
-                // List
-                Expanded(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: wallets.length,
-                    itemBuilder: (context, index) {
-                      final wallet = wallets[index];
-                      return _buildWalletPickerItem(wallet);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildNoteSection() {
@@ -639,74 +510,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         );
       }
     }
-  }
-
-  Widget _buildWalletPickerItem(WalletViewData wallet) {
-    final isSelected = _formState.selectedWalletId == wallet.id;
-
-    return GestureDetector(
-      onTap: () {
-        _onWalletChanged(wallet.id);
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? wallet.color : wallet.color.withOpacity(0.2),
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected
-              ? wallet.color.withOpacity(0.05)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            // Icon
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: wallet.color.withOpacity(0.2),
-              child: Icon(wallet.icon, color: wallet.color, size: 22),
-            ),
-            const SizedBox(width: 12),
-
-            // Name & Balance
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    wallet.name,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? wallet.color : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    CurrencyFormatter.formatVND(wallet.balance),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: wallet.balance >= 0
-                          ? Colors.green.shade600
-                          : Colors.red.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Selected indicator
-            if (isSelected)
-              Icon(Icons.check_circle, color: wallet.color, size: 24),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildCardSection({

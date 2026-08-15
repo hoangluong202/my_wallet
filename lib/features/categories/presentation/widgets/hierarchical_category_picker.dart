@@ -131,25 +131,19 @@ class _HierarchicalCategoryPickerState
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
-                  child: SizedBox(
-                    height: 36,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: children.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final category = children[index];
-                        return _CategoryButton(
-                          category: category,
-                          selected: widget.selectedCategoryId == category.id,
-                          onTap: () {
-                            widget.onSelected(category);
-                            setState(() => _isOpen = false);
-                          },
-                        );
-                      },
-                    ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: children.map((category) {
+                      return _CategoryButton(
+                        category: category,
+                        selected: widget.selectedCategoryId == category.id,
+                        onTap: () {
+                          widget.onSelected(category);
+                          setState(() => _isOpen = false);
+                        },
+                      );
+                    }).toList(),
                   ),
                 ),
         ),

@@ -11,7 +11,6 @@ import '../controllers/add_transaction_controller.dart';
 import '../widgets/transaction_type_selector.dart';
 import '../widgets/amount_section.dart';
 import '../widgets/wallet_section.dart';
-import '../widgets/wallet_picker_bottom_sheet.dart';
 import '../widgets/date_section.dart';
 import '../widgets/note_section.dart';
 import '../widgets/submit_button.dart';
@@ -195,22 +194,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildWalletSection() {
-    return FormCardSection(
-      title: FormConstants.walletLabel,
-      icon: Icons.account_balance_wallet_outlined,
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: WalletSection(
-        selectedWallet: _controller.selectedWallet,
-        onTap: _showWalletPicker,
+        wallets: _controller.allWallets,
+        selectedWalletId: _controller.formState.selectedWalletId,
+        onSelected: _onWalletChanged,
+        showLabel: true,
       ),
-    );
-  }
-
-  void _showWalletPicker() {
-    WalletPickerBottomSheet.show(
-      context: context,
-      wallets: _controller.allWallets,
-      selectedWalletId: _controller.formState.selectedWalletId,
-      onWalletSelected: _onWalletChanged,
     );
   }
 
