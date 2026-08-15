@@ -17,6 +17,7 @@ import '../../../categories/presentation/helpers/label.dart';
 import 'transaction_payload.dart';
 import 'category_selector.dart';
 import '../widgets/wallet_section.dart';
+import '../widgets/date_section.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final TransactionViewData transaction;
@@ -276,6 +277,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       icon: Icons.payments_outlined,
       child: TextFormField(
         controller: _amountController,
+        autofocus: false,
         keyboardType: TextInputType.number,
         inputFormatters: [ThousandSeparatorInputFormatter()],
         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -302,6 +304,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           }
           return null;
         },
+        onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         onChanged: (value) {
           _formState = _formState.copyWith(amount: value);
         },
@@ -362,60 +365,18 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   Widget _buildDateSection() {
-    return _buildCardSection(
-      title: 'Date',
-      icon: Icons.calendar_today_outlined,
-      child: GestureDetector(
-        onTap: _showDatePicker,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.calendar_month,
-                color: Colors.blue.shade700,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              DateFormat('dd/MM/yyyy').format(_formState.selectedDate),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey.shade400,
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: DateSection(
+        selectedDate: _formState.selectedDate,
+        onDateChanged: (date) {
+          setState(() {
+            _formState = _formState.copyWith(selectedDate: date);
+          });
+        },
+        showLabel: true,
       ),
     );
-  }
-
-  Future<void> _showDatePicker() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _formState.selectedDate,
-      firstDate: DateTime(now.year - 10),
-      lastDate: DateTime(now.year + 10),
-    );
-
-    if (picked != null) {
-      setState(() {
-        _formState = _formState.copyWith(selectedDate: picked);
-      });
-    }
   }
 
   Widget _buildNoteSection() {

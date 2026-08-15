@@ -11,6 +11,7 @@ class AmountSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      autofocus: false,
       keyboardType: TextInputType.number,
       inputFormatters: [ThousandSeparatorInputFormatter()],
       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -38,6 +39,7 @@ class AmountSection extends StatelessWidget {
         }
         return null;
       },
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       onChanged: onChanged,
     );
   }

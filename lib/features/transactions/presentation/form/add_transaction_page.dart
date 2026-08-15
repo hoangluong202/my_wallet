@@ -206,12 +206,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   Widget _buildDateSection() {
-    return FormCardSection(
-      title: FormConstants.dateLabel,
-      icon: Icons.calendar_today_outlined,
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: DateSection(
         selectedDate: _controller.formState.selectedDate,
         onDateChanged: _onDateChanged,
+        showLabel: true,
       ),
     );
   }
