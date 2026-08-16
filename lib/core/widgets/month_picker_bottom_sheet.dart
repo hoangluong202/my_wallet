@@ -8,6 +8,8 @@ Future<DateTime?> showMonthPickerBottomSheet({
 }) {
   final first = firstMonth ?? DateTime(2000);
   final last = lastMonth ?? DateTime(2100, 12);
+  final now = DateTime.now();
+  final currentMonth = DateTime(now.year, now.month);
   var displayedYear = initialMonth.year;
 
   return showModalBottomSheet<DateTime>(
@@ -31,6 +33,9 @@ Future<DateTime?> showMonthPickerBottomSheet({
           'Nov',
           'Dec',
         ];
+        final canSelectCurrentMonth =
+            !currentMonth.isBefore(DateTime(first.year, first.month)) &&
+            !currentMonth.isAfter(DateTime(last.year, last.month));
 
         return SafeArea(
           top: false,
@@ -118,6 +123,17 @@ Future<DateTime?> showMonthPickerBottomSheet({
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: canSelectCurrentMonth
+                        ? () => Navigator.pop(context, currentMonth)
+                        : null,
+                    icon: const Icon(Icons.today_outlined, size: 18),
+                    label: const Text('Current month'),
+                  ),
                 ),
               ],
             ),

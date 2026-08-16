@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../../core/widgets/month_picker_bottom_sheet.dart';
 import '../../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
 import 'home_card_skeleton.dart';
 
@@ -298,12 +299,22 @@ class CategoryExpensePieChart extends StatelessWidget {
                   height: 28,
                 ),
               ),
-              Text(
-                '${_getMonthName(selectedMonth.month)} ${selectedMonth.year}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
+              InkWell(
+                onTap: () => _pickMonth(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    '${_getMonthName(selectedMonth.month)} ${selectedMonth.year}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
                 ),
               ),
               IconButton(
@@ -327,6 +338,14 @@ class CategoryExpensePieChart extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _pickMonth(BuildContext context) async {
+    final picked = await showMonthPickerBottomSheet(
+      context: context,
+      initialMonth: selectedMonth,
+    );
+    if (picked != null) onMonthChanged(picked);
   }
 
   String _getMonthName(int month) {
