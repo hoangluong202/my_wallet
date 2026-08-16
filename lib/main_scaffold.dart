@@ -17,16 +17,19 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
-
-  // Use timestamp to force rebuild TransactionsPage when needed
   int _transactionsPageVersion = 0;
+  late final List<Widget> _pages;
 
-  List<Widget> get _pages => [
-    const HomePage(),
-    TransactionsPage(key: ValueKey('transactions_$_transactionsPageVersion')),
-    const BudgetPage(),
-    const UserPage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomePage(),
+      TransactionsPage(key: ValueKey('transactions_$_transactionsPageVersion')),
+      const BudgetPage(),
+      const UserPage(),
+    ];
+  }
 
   void _onTabSelected(int index) {
     setState(() {
@@ -43,8 +46,11 @@ class _MainScaffoldState extends State<MainScaffold> {
     if (mounted && result == true) {
       if (mounted) {
         setState(() {
-          _transactionsPageVersion++; // Increment to force rebuild
-          _selectedIndex = 1; // Transactions tab index
+          _transactionsPageVersion++;
+          _pages[1] = TransactionsPage(
+            key: ValueKey('transactions_$_transactionsPageVersion'),
+          );
+          _selectedIndex = 1;
         });
       }
     }
@@ -54,7 +60,9 @@ class _MainScaffoldState extends State<MainScaffold> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: SafeArea(child: _pages[_selectedIndex]),
+      body: SafeArea(
+        child: IndexedStack(index: _selectedIndex, children: _pages),
+      ),
       floatingActionButton: CustomFab(onPressed: _onFabPressed),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomBottomBar(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_wallet/features/auth/presentation/home/widgets/monthly_spending_comparison_card.dart';
+import 'package:my_wallet/features/auth/presentation/home/widgets/home_card_skeleton.dart';
 import 'package:my_wallet/features/budget/presentation/model/budget_view_data.dart';
 import 'package:my_wallet/features/categories/domain/category.dart';
 import 'package:my_wallet/features/transactions/presentation/model/transaction_view_data.dart';
@@ -27,14 +28,14 @@ void main() {
       ),
     );
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(HomeCardSkeleton), findsOneWidget);
     expect(find.textContaining('% used'), findsNothing);
     expect(find.textContaining('remaining'), findsNothing);
 
     transactions.add(const []);
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(HomeCardSkeleton), findsOneWidget);
     expect(find.textContaining('% used'), findsNothing);
     expect(find.textContaining('remaining'), findsNothing);
 
@@ -57,7 +58,7 @@ void main() {
     ]);
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(HomeCardSkeleton), findsNothing);
     expect(find.text('0% used'), findsOneWidget);
     expect(find.text('1.000.000 đ remaining'), findsOneWidget);
   });

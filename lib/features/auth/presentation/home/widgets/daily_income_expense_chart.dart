@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../categories/domain/category.dart';
 import '../../../../transactions/presentation/model/transaction_view_data.dart';
 import '../../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
+import 'home_card_skeleton.dart';
 
 class DailyIncomeExpenseChart extends StatelessWidget {
   const DailyIncomeExpenseChart({
@@ -25,7 +26,7 @@ class DailyIncomeExpenseChart extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -35,9 +36,8 @@ class DailyIncomeExpenseChart extends StatelessWidget {
           stream: transactionsViewModel.watchAllTransactions(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const SizedBox(
-                height: 400,
-                child: Center(child: CircularProgressIndicator()),
+              return const HomeCardSkeleton(
+                type: HomeCardSkeletonType.barChart,
               );
             }
 

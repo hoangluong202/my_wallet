@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
+import 'home_card_skeleton.dart';
 
 class CategoryExpensePieChart extends StatelessWidget {
   const CategoryExpensePieChart({
@@ -40,9 +41,8 @@ class CategoryExpensePieChart extends StatelessWidget {
           ),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const SizedBox(
-                height: 400,
-                child: Center(child: CircularProgressIndicator()),
+              return const HomeCardSkeleton(
+                type: HomeCardSkeletonType.category,
               );
             }
 

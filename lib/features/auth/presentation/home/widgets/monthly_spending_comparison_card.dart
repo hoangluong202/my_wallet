@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../categories/domain/category.dart';
 import '../../../../transactions/presentation/model/transaction_view_data.dart';
 import '../../../../budget/presentation/model/budget_view_data.dart';
+import 'home_card_skeleton.dart';
 
 class MonthlySpendingComparisonCard extends StatelessWidget {
   const MonthlySpendingComparisonCard({
@@ -317,15 +318,6 @@ class _CardLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 92,
-      child: Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-    );
+    return const HomeCardSkeleton(type: HomeCardSkeletonType.spending);
   }
 }
