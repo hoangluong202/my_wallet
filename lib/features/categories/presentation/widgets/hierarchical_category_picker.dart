@@ -11,6 +11,10 @@ class HierarchicalCategoryPicker extends StatefulWidget {
     this.emptyMessage = 'No categories available',
     this.showTrigger = true,
     this.leading,
+    this.emptySelectionLabel = 'Select a category',
+    this.clearSelectionLabel,
+    this.onCleared,
+    this.showChildren = true,
   });
 
   final List<CategoryViewData> categories;
@@ -19,6 +23,10 @@ class HierarchicalCategoryPicker extends StatefulWidget {
   final String emptyMessage;
   final bool showTrigger;
   final Widget? leading;
+  final String emptySelectionLabel;
+  final String? clearSelectionLabel;
+  final VoidCallback? onCleared;
+  final bool showChildren;
 
   @override
   State<HierarchicalCategoryPicker> createState() =>
@@ -54,9 +62,20 @@ class _HierarchicalCategoryPickerState
     return null;
   }
 
+  void _toggleOpen() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _isOpen = !_isOpen);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.categories.isEmpty) {
+    final visibleCategories = widget.showChildren
+        ? widget.categories
+        : widget.categories
+              .where((category) => category.parentCategoryId == null)
+              .toList();
+
+    if (visibleCategories.isEmpty && widget.clearSelectionLabel == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
@@ -66,22 +85,26 @@ class _HierarchicalCategoryPickerState
       );
     }
 
-    final parents = widget.categories
+    final parents = visibleCategories
         .where((category) => category.parentCategoryId == null)
         .toList();
     final parentIds = parents.map((category) => category.id).toSet();
     final rootOptions = [
       ...parents,
-      ...widget.categories.where(
+      ...visibleCategories.where(
         (category) =>
             category.parentCategoryId != null &&
             !parentIds.contains(category.parentCategoryId),
       ),
     ];
-    final children = widget.categories
-        .where((category) => category.parentCategoryId == _expandedParentId)
-        .toList();
-    final selectedCategory = widget.categories
+    final children = _expandedParentId == null
+        ? <CategoryViewData>[]
+        : visibleCategories
+              .where(
+                (category) => category.parentCategoryId == _expandedParentId,
+              )
+              .toList();
+    final selectedCategory = visibleCategories
         .where((category) => category.id == widget.selectedCategoryId)
         .firstOrNull;
 
@@ -91,26 +114,40 @@ class _HierarchicalCategoryPickerState
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: rootOptions.map((category) {
-            final hasChildren = widget.categories.any(
-              (child) => child.parentCategoryId == category.id,
-            );
-            final isActive = _expandedParentId == category.id;
-            final isSelected = widget.selectedCategoryId == category.id;
-            return _CategoryButton(
-              category: category,
-              selected: isSelected,
-              active: isActive,
-              hasChildren: hasChildren,
-              onTap: () {
-                setState(() {
-                  _expandedParentId = hasChildren ? category.id : null;
-                  if (!hasChildren) _isOpen = false;
-                });
-                if (!hasChildren) widget.onSelected(category);
-              },
-            );
-          }).toList(),
+          children: [
+            if (widget.clearSelectionLabel != null)
+              _ClearCategoryButton(
+                label: widget.clearSelectionLabel!,
+                selected: widget.selectedCategoryId == null,
+                onTap: () {
+                  widget.onCleared?.call();
+                  setState(() {
+                    _expandedParentId = null;
+                    _isOpen = false;
+                  });
+                },
+              ),
+            ...rootOptions.map((category) {
+              final hasChildren = visibleCategories.any(
+                (child) => child.parentCategoryId == category.id,
+              );
+              final isActive = _expandedParentId == category.id;
+              final isSelected = widget.selectedCategoryId == category.id;
+              return _CategoryButton(
+                category: category,
+                selected: isSelected,
+                active: isActive,
+                hasChildren: hasChildren,
+                onTap: () {
+                  setState(() {
+                    _expandedParentId = hasChildren ? category.id : null;
+                    if (!hasChildren) _isOpen = false;
+                  });
+                  if (!hasChildren) widget.onSelected(category);
+                },
+              );
+            }),
+          ],
         ),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 160),
@@ -162,8 +199,9 @@ class _HierarchicalCategoryPickerState
           if (widget.leading == null)
             _CategorySelectorButton(
               category: selectedCategory,
+              emptyLabel: widget.emptySelectionLabel,
               isOpen: _isOpen,
-              onTap: () => setState(() => _isOpen = !_isOpen),
+              onTap: _toggleOpen,
             )
           else
             Row(
@@ -173,8 +211,9 @@ class _HierarchicalCategoryPickerState
                 Expanded(
                   child: _CategorySelectorButton(
                     category: selectedCategory,
+                    emptyLabel: widget.emptySelectionLabel,
                     isOpen: _isOpen,
-                    onTap: () => setState(() => _isOpen = !_isOpen),
+                    onTap: _toggleOpen,
                   ),
                 ),
               ],
@@ -198,11 +237,13 @@ class _HierarchicalCategoryPickerState
 class _CategorySelectorButton extends StatelessWidget {
   const _CategorySelectorButton({
     required this.category,
+    required this.emptyLabel,
     required this.isOpen,
     required this.onTap,
   });
 
   final CategoryViewData? category;
+  final String emptyLabel;
   final bool isOpen;
   final VoidCallback onTap;
 
@@ -238,7 +279,7 @@ class _CategorySelectorButton extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    category?.name ?? 'Select a category',
+                    category?.name ?? emptyLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -328,6 +369,65 @@ class _CategoryButton extends StatelessWidget {
               ] else if (selected) ...[
                 const SizedBox(width: 5),
                 Icon(Icons.check, size: 15, color: category.color),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClearCategoryButton extends StatelessWidget {
+  const _ClearCategoryButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? colors.primary.withValues(alpha: 0.1)
+          : Colors.grey.shade50,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? colors.primary : Colors.grey.shade300,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.account_tree_outlined,
+                size: 17,
+                color: colors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? colors.primary : Colors.grey.shade800,
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 5),
+                Icon(Icons.check, size: 15, color: colors.primary),
               ],
             ],
           ),
