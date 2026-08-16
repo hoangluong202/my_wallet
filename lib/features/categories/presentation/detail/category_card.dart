@@ -5,8 +5,16 @@ import '../model/category_view_data.dart';
 class CategoryCard extends StatelessWidget {
   final CategoryViewData category;
   final VoidCallback onTap;
+  final bool embedded;
+  final bool compact;
 
-  const CategoryCard({super.key, required this.category, required this.onTap});
+  const CategoryCard({
+    super.key,
+    required this.category,
+    required this.onTap,
+    this.embedded = false,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,23 +22,25 @@ class CategoryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(compact ? 8 : 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: embedded ? null : Border.all(color: Colors.grey.shade200),
+          boxShadow: embedded
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
         child: Row(
           children: [
             _buildCategoryIcon(),
-            const SizedBox(width: 12),
+            SizedBox(width: compact ? 8 : 12),
             Expanded(child: _buildCategoryInfo(context)),
             const SizedBox(width: 8),
             _buildRightArrow(),
@@ -42,13 +52,17 @@ class CategoryCard extends StatelessWidget {
 
   Widget _buildCategoryIcon() {
     return Container(
-      width: 44,
-      height: 44,
+      width: compact ? 36 : 44,
+      height: compact ? 36 : 44,
       decoration: BoxDecoration(
-        color: category.color.withOpacity(0.1),
+        color: category.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(category.icon, color: category.color, size: 22),
+      child: Icon(
+        category.icon,
+        color: category.color,
+        size: compact ? 19 : 22,
+      ),
     );
   }
 
@@ -90,7 +104,7 @@ class CategoryCard extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: compact ? 1 : 4),
         Text(
           _getCategoryTypeLabel(category.type),
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
