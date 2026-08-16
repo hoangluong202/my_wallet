@@ -204,7 +204,10 @@ class _TransactionsHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${DateFormatter.formatDate(budget.startDate)} → ${DateFormatter.formatDate(budget.endDate)}',
+                      DateFormatter.formatDateRange(
+                        budget.startDate,
+                        budget.endDate,
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade700,

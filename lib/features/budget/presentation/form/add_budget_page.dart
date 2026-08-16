@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/notification_widget.dart';
+import '../../../../core/widgets/month_picker_bottom_sheet.dart';
 import '../viewmodel/budget_viewmodel.dart';
 import 'budget_payload.dart';
 import 'widgets/budget_form.dart';
@@ -80,12 +81,9 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
   );
 
   Future<void> _pickMonth() async {
-    final picked = await showDatePicker(
+    final picked = await showMonthPickerBottomSheet(
       context: context,
-      initialDate: _startDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      helpText: 'Select budget month',
+      initialMonth: _startDate,
     );
     if (picked != null) setState(() => _setMonth(picked));
   }

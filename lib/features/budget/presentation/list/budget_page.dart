@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/di/injector.dart';
+import '../../../../core/widgets/month_picker_bottom_sheet.dart';
 import '../form/add_budget_page.dart';
 import '../detail/budget_detail_page.dart';
 import '../model/budget_view_data.dart';
@@ -35,6 +36,16 @@ class _BudgetPageState extends State<BudgetPage> {
     _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
   });
 
+  Future<void> _pickMonth() async {
+    final picked = await showMonthPickerBottomSheet(
+      context: context,
+      initialMonth: _selectedMonth,
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedMonth = picked);
+    }
+  }
+
   /// Budgets whose date range overlaps with [_selectedMonth].
   List<BudgetViewData> _filterByMonth(List<BudgetViewData> all) {
     final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
@@ -66,6 +77,7 @@ class _BudgetPageState extends State<BudgetPage> {
             selectedMonth: _selectedMonth,
             onPrev: _prevMonth,
             onNext: _nextMonth,
+            onMonthTap: _pickMonth,
             onAdd: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddBudgetPage()),

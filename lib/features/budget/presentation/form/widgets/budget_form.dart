@@ -113,7 +113,12 @@ class BudgetForm extends StatelessWidget {
               showAddButton: !isEditMode,
               onAdd: onAddItem,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            const SizedBox(height: 20),
             _SubmitButton(
               viewModel: viewModel,
               isEditMode: isEditMode,

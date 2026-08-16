@@ -25,6 +25,7 @@ class _BudgetItemCard extends StatelessWidget {
     enabled: canRemove,
     onDelete: onRemove,
     child: _FormCard(
+      outlined: false,
       padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

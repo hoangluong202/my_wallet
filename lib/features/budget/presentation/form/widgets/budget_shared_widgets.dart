@@ -4,25 +4,31 @@ class _FormCard extends StatelessWidget {
   const _FormCard({
     required this.child,
     this.padding = const EdgeInsets.all(16),
+    this.outlined = true,
   });
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final bool outlined;
 
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
     padding: padding,
     decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
+      color: outlined
+          ? Theme.of(context).colorScheme.surface
+          : Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade200),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ],
+      border: outlined ? Border.all(color: Colors.grey.shade200) : null,
+      boxShadow: outlined
+          ? [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ]
+          : null,
     ),
     child: child,
   );
