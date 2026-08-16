@@ -44,4 +44,23 @@ class TransactionsViewModel {
   Stream<Map<String, int>> watchCategoryExpensesByMonth(int year, int month) {
     return _transactionRepository.watchCategoryExpensesByMonth(year, month);
   }
+
+  Stream<List<TransactionViewData>> watchCategoryTransactionsByMonth(
+    String categoryName,
+    int year,
+    int month,
+  ) {
+    final start = DateTime(year, month);
+    final end = DateTime(year, month + 1);
+    return watchAllTransactions().map(
+      (transactions) => transactions
+          .where(
+            (transaction) =>
+                transaction.category.name == categoryName &&
+                !transaction.transactionDate.isBefore(start) &&
+                transaction.transactionDate.isBefore(end),
+          )
+          .toList(),
+    );
+  }
 }
