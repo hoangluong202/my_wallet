@@ -15,7 +15,7 @@ class WalletIconSection extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: wallet.color.withOpacity(0.15),
+              color: wallet.color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(wallet.icon, size: 28, color: wallet.color),

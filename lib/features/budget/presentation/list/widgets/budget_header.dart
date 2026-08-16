@@ -44,50 +44,99 @@ class BudgetHeader extends StatelessWidget {
         color: colors.surface,
         child: Row(
           children: [
+            Expanded(
+              child: InkWell(
+                onTap: onMonthTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: colors.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.calendar_month_rounded,
+                          size: 19,
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Budget period',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: colors.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 1),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    monthLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          color: colors.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.expand_more_rounded,
+                                  size: 18,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
             Container(
-              height: 40,
               decoration: BoxDecoration(
                 color: colors.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.outlineVariant),
               ),
-              clipBehavior: Clip.antiAlias,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MonthNavButton(icon: Icons.chevron_left, onTap: onPrev),
-                  _Divider(color: colors.outlineVariant),
-                  InkWell(
-                    onTap: onMonthTap,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_month_outlined,
-                            size: 16,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 7),
-                          Text(
-                            monthLabel,
-                            maxLines: 1,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  color: colors.onSurface,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _MonthNavButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Previous month',
+                    onTap: onPrev,
                   ),
-                  _Divider(color: colors.outlineVariant),
-                  _MonthNavButton(icon: Icons.chevron_right, onTap: onNext),
+                  _MonthNavButton(
+                    icon: Icons.chevron_right_rounded,
+                    tooltip: 'Next month',
+                    onTap: onNext,
+                  ),
                 ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             IconButton(
               onPressed: onAdd,
               icon: const Icon(Icons.add_rounded),
@@ -111,9 +160,14 @@ class BudgetHeader extends StatelessWidget {
 }
 
 class _MonthNavButton extends StatelessWidget {
-  const _MonthNavButton({required this.icon, required this.onTap});
+  const _MonthNavButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
 
   @override
@@ -121,21 +175,12 @@ class _MonthNavButton extends StatelessWidget {
     return IconButton(
       onPressed: onTap,
       icon: Icon(icon),
+      tooltip: tooltip,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       iconSize: 21,
       padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints.tightFor(width: 38, height: 40),
+      constraints: const BoxConstraints.tightFor(width: 34, height: 40),
     );
   }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 20, color: color);
 }

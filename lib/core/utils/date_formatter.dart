@@ -45,6 +45,12 @@ class DateFormatter {
     return '${formatDate(start)} – ${formatDate(end)}';
   }
 
+  static String formatDateTime(DateTime date) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${twoDigits(date.hour)}:${twoDigits(date.minute)} '
+        '${twoDigits(date.day)}/${twoDigits(date.month)}/${date.year}';
+  }
+
   static String formatDuration(DateTime lastUpdated) {
     final duration = DateTime.now().difference(lastUpdated);
 

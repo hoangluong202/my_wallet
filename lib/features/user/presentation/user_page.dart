@@ -8,81 +8,30 @@ class UserPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.person_outline,
-                    color: Colors.purple.shade700,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Account',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Manage wallets & categories',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          const _SectionLabel(label: 'MANAGE'),
+          const SizedBox(height: 8),
+          _MenuTile(
+            icon: Icons.account_balance_wallet,
+            iconColor: Colors.blue,
+            title: 'Wallets',
+            subtitle: 'Manage your accounts & balances',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WalletsPage()),
             ),
           ),
-
-          // Menu list
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              children: [
-                _SectionLabel(label: 'MANAGE'),
-                const SizedBox(height: 8),
-                _MenuTile(
-                  icon: Icons.account_balance_wallet,
-                  iconColor: Colors.blue,
-                  title: 'Wallets',
-                  subtitle: 'Manage your accounts & balances',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const WalletsPage()),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                _MenuTile(
-                  icon: Icons.category,
-                  iconColor: Colors.orange,
-                  title: 'Categories',
-                  subtitle: 'Organise income & expense types',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CategoriesPage()),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 10),
+          _MenuTile(
+            icon: Icons.category,
+            iconColor: Colors.orange,
+            title: 'Categories',
+            subtitle: 'Organise income & expense types',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CategoriesPage()),
             ),
           ),
         ],
@@ -140,7 +89,7 @@ class _MenuTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: iconColor, size: 22),

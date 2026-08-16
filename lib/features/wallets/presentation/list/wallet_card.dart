@@ -11,34 +11,41 @@ class WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade200, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              _buildIcon(),
-              const SizedBox(width: 14),
-              Expanded(child: _buildWalletInfo()),
-              const SizedBox(width: 12),
-              _buildBalance(),
-              const SizedBox(width: 8),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 20),
-            ],
+            child: Row(
+              children: [
+                _buildIcon(),
+                const SizedBox(width: 11),
+                Expanded(child: _buildWalletInfo()),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 112,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _buildBalance(),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 18,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -48,11 +55,11 @@ class WalletCard extends StatelessWidget {
   Widget _buildIcon() {
     return Container(
       decoration: BoxDecoration(
-        color: wallet.color.withOpacity(0.1),
+        color: wallet.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      padding: EdgeInsets.all(10),
-      child: Icon(wallet.icon, color: wallet.color, size: 26),
+      padding: const EdgeInsets.all(9),
+      child: Icon(wallet.icon, color: wallet.color, size: 22),
     );
   }
 
@@ -72,7 +79,7 @@ class WalletCard extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Last updated ${DateFormatter.formatDuration(wallet.updatedAt)}',
+          DateFormatter.formatDateTime(wallet.updatedAt),
           style: TextStyle(
             fontSize: 13,
             color: Colors.grey.shade600,
@@ -86,12 +93,16 @@ class WalletCard extends StatelessWidget {
   }
 
   Widget _buildBalance() {
-    return Text(
-      CurrencyFormatter.formatVNDWithSymbol(wallet.balance),
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: wallet.balance < 0 ? Colors.red : Colors.green.shade700,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Text(
+        CurrencyFormatter.formatVNDWithSymbol(wallet.balance),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: wallet.balance < 0 ? Colors.red : Colors.green.shade700,
+        ),
       ),
     );
   }
