@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../../core/widgets/month_picker_bottom_sheet.dart';
 import '../../../../transactions/presentation/list/transaction_collection_page.dart';
 import '../../../../transactions/presentation/viewmodel/transactions_viewmodel.dart';
+import 'category_expense_list_item.dart';
 import 'home_card_skeleton.dart';
 
 class CategoryExpensePieChart extends StatelessWidget {
@@ -148,83 +149,21 @@ class CategoryExpensePieChart extends StatelessWidget {
                 ...List.generate(categoriesWithColors.length, (index) {
                   final category = categoriesWithColors[index];
                   final amount = category['amount'] as int;
-                  final percentage = (amount / total * 100).toStringAsFixed(1);
+                  final percentage = amount / total * 100;
                   return Padding(
                     padding: EdgeInsets.only(
                       bottom: index == categoriesWithColors.length - 1 ? 0 : 8,
                     ),
-                    child: Material(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
-                        onTap: () => _openCategoryTransactions(
-                          context,
-                          category['name'] as String,
-                          category['color'] as Color,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 16,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: category['color'] as Color,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        category['name'] as String,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey.shade800,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                    Text(
-                                      '$percentage%',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _formatVND(amount),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 18,
-                                color: Colors.grey.shade400,
-                              ),
-                            ],
-                          ),
-                        ),
+                    child: CategoryExpenseListItem(
+                      rank: index + 1,
+                      name: category['name'] as String,
+                      amountLabel: _formatVND(amount),
+                      percentage: percentage,
+                      color: category['color'] as Color,
+                      onTap: () => _openCategoryTransactions(
+                        context,
+                        category['name'] as String,
+                        category['color'] as Color,
                       ),
                     ),
                   );
