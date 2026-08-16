@@ -29,9 +29,7 @@ class CategoryModel {
       type: Value(entity.type.toString().split('.').last),
       iconCode: Value(entity.iconCode),
       description: Value(entity.description),
-      parentCategoryId: entity.parentCategoryId != null
-          ? Value(entity.parentCategoryId)
-          : const Value.absent(),
+      parentCategoryId: Value(entity.parentCategoryId),
       createdAt: Value(entity.createdAt),
       updatedAt: Value(entity.updatedAt),
     );
