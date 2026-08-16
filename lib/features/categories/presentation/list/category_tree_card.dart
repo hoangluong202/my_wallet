@@ -7,17 +7,25 @@ class CategoryTreeCard extends StatelessWidget {
     super.key,
     required this.parent,
     required this.children,
-    required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final CategoryViewData parent;
   final List<CategoryViewData> children;
-  final ValueChanged<CategoryViewData> onTap;
+  final ValueChanged<CategoryViewData> onEdit;
+  final Future<void> Function(CategoryViewData) onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+    final childBackgroundColor = Color.alphaBlend(
+      parent.color.withValues(alpha: 0.025),
+      surfaceColor,
+    );
+
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: surfaceColor,
       borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
       child: DecoratedBox(
@@ -30,12 +38,14 @@ class CategoryTreeCard extends StatelessWidget {
           children: [
             _CategoryRow(
               category: parent,
+              backgroundColor: surfaceColor,
               childCount: children.length,
-              onTap: () => onTap(parent),
+              onEdit: () => onEdit(parent),
+              onDelete: () => onDelete(parent),
             ),
             if (children.isNotEmpty)
               Container(
-                color: parent.color.withValues(alpha: 0.025),
+                color: childBackgroundColor,
                 padding: const EdgeInsets.only(left: 16),
                 child: Column(
                   children: children.indexed.map((entry) {
@@ -45,9 +55,11 @@ class CategoryTreeCard extends StatelessWidget {
                         Divider(height: 1, color: Colors.grey.shade200),
                         _CategoryRow(
                           category: category,
+                          backgroundColor: childBackgroundColor,
                           isChild: true,
                           showGuide: index < children.length - 1,
-                          onTap: () => onTap(category),
+                          onEdit: () => onEdit(category),
+                          onDelete: () => onDelete(category),
                         ),
                       ],
                     );
@@ -64,22 +76,29 @@ class CategoryTreeCard extends StatelessWidget {
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
     required this.category,
-    required this.onTap,
+    required this.backgroundColor,
+    required this.onEdit,
+    required this.onDelete,
     this.childCount = 0,
     this.isChild = false,
     this.showGuide = false,
   });
 
   final CategoryViewData category;
-  final VoidCallback onTap;
+  final Color backgroundColor;
+  final VoidCallback onEdit;
+  final Future<void> Function() onDelete;
   final int childCount;
   final bool isChild;
   final bool showGuide;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
+    return _SwipeDeleteAction(
+      key: ValueKey(category.id),
+      backgroundColor: backgroundColor,
+      onEdit: onEdit,
+      onDelete: onDelete,
       child: Padding(
         padding: EdgeInsets.fromLTRB(isChild ? 4 : 12, 9, 10, 9),
         child: Row(
@@ -126,12 +145,7 @@ class _CategoryRow extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(width: 6),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 19,
-              color: Colors.grey.shade400,
-            ),
+            const SizedBox(width: 8),
           ],
         ),
       ),
@@ -147,6 +161,168 @@ class _CategoryRow extends StatelessWidget {
           showGuide ? Icons.subdirectory_arrow_right : Icons.turn_right_rounded,
           size: 15,
           color: Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeDeleteAction extends StatefulWidget {
+  const _SwipeDeleteAction({
+    super.key,
+    required this.child,
+    required this.backgroundColor,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Widget child;
+  final Color backgroundColor;
+  final VoidCallback onEdit;
+  final Future<void> Function() onDelete;
+
+  @override
+  State<_SwipeDeleteAction> createState() => _SwipeDeleteActionState();
+}
+
+class _SwipeDeleteActionState extends State<_SwipeDeleteAction> {
+  static const _actionWidth = 144.0;
+  double _offset = 0;
+  bool _dragging = false;
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragging = true;
+      _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0);
+    });
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    final shouldOpen =
+        _offset.abs() > _actionWidth / 2 || details.primaryVelocity! < -300;
+    setState(() {
+      _dragging = false;
+      _offset = shouldOpen ? -_actionWidth : 0;
+    });
+  }
+
+  void _close() {
+    if (_offset == 0) return;
+    setState(() {
+      _dragging = false;
+      _offset = 0;
+    });
+  }
+
+  Future<void> _delete() async {
+    _close();
+    await widget.onDelete();
+  }
+
+  void _edit() {
+    _close();
+    widget.onEdit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: _actionWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.symmetric(
+                      horizontal: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _SwipeActionButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Edit',
+                          color: Colors.blue.shade600,
+                          onTap: _edit,
+                        ),
+                      ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: Colors.white.withValues(alpha: 0.35),
+                      ),
+                      Expanded(
+                        child: _SwipeActionButton(
+                          icon: Icons.delete_outline,
+                          label: 'Delete',
+                          color: Colors.red.shade500,
+                          onTap: _delete,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          AnimatedContainer(
+            duration: _dragging
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            margin: EdgeInsets.only(right: -_offset),
+            color: widget.backgroundColor,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _close,
+              onHorizontalDragUpdate: _handleDragUpdate,
+              onHorizontalDragEnd: _handleDragEnd,
+              child: widget.child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwipeActionButton extends StatelessWidget {
+  const _SwipeActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

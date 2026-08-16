@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/category.dart';
 import 'categories_viewmodel.dart';
-import '../detail/category_detail_page.dart';
 import './category_empty_state.dart';
 import '../model/category_view_data.dart';
 import 'category_tree_card.dart';
@@ -9,8 +8,16 @@ import 'category_tree_card.dart';
 class CategoryList extends StatelessWidget {
   final CategoryType type;
   final CategoriesViewModel viewModel;
+  final ValueChanged<CategoryViewData> onEdit;
+  final Future<void> Function(CategoryViewData) onDelete;
 
-  const CategoryList({super.key, required this.type, required this.viewModel});
+  const CategoryList({
+    super.key,
+    required this.type,
+    required this.viewModel,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,18 +80,10 @@ class CategoryList extends StatelessWidget {
         return CategoryTreeCard(
           parent: parentCategory,
           children: childCategories,
-          onTap: (category) => _onCategoryTap(context, category),
+          onEdit: onEdit,
+          onDelete: onDelete,
         );
       },
-    );
-  }
-
-  void _onCategoryTap(BuildContext context, CategoryViewData category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryDetailPage(id: category.id),
-      ),
     );
   }
 }

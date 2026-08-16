@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../detail/transaction_details_page.dart';
 import '../model/transaction_view_data.dart';
-import 'transaction_item_card.dart';
+import 'transaction_date_groups.dart';
 
 class TransactionCollectionPage extends StatelessWidget {
   const TransactionCollectionPage({
@@ -64,12 +63,20 @@ class TransactionCollectionPage extends StatelessWidget {
                       endDate: endDate,
                     );
                   }
-                  final grouped = _groupByDate(transactions);
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                     children: [
-                      for (final entry in grouped.entries)
-                        _DateGroup(date: entry.key, transactions: entry.value),
+                      TransactionDateGroups(
+                        transactions: transactions,
+                        onTransactionTap: (transaction) => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TransactionDetailsPage(
+                              transactionId: transaction.id,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -79,19 +86,6 @@ class TransactionCollectionPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Map<DateTime, List<TransactionViewData>> _groupByDate(
-    List<TransactionViewData> transactions,
-  ) {
-    final sorted = [...transactions]
-      ..sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
-    final grouped = <DateTime, List<TransactionViewData>>{};
-    for (final transaction in sorted) {
-      final date = DateUtils.dateOnly(transaction.transactionDate);
-      grouped.putIfAbsent(date, () => []).add(transaction);
-    }
-    return grouped;
   }
 }
 
@@ -219,43 +213,6 @@ class _InfoChip extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _DateGroup extends StatelessWidget {
-  const _DateGroup({required this.date, required this.transactions});
-  final DateTime date;
-  final List<TransactionViewData> transactions;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = transactions.fold<int>(0, (sum, item) => sum + item.amount);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8, top: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(DateFormatter.formatDate(date)),
-              Text(CurrencyFormatter.formatVNDWithSymbol(total)),
-            ],
-          ),
-        ),
-        for (final item in transactions)
-          TransactionItemCard(
-            transaction: item,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TransactionDetailsPage(transactionId: item.id),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
 }
 
 class _EmptyState extends StatelessWidget {
