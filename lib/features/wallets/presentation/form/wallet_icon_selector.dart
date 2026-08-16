@@ -17,27 +17,13 @@ class WalletIconSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildIconPreview(),
-        const SizedBox(height: 16),
-        _buildIconList(),
-      ],
-    );
-  }
-
-  Widget _buildIconPreview() {
-    return Center(
-      child: CircleAvatar(
-        radius: 32,
-        backgroundColor: selectedIconColor.withValues(alpha: 0.2),
-        child: Icon(selectedIcon, size: 40, color: selectedIconColor),
-      ),
+      children: [_buildIconList()],
     );
   }
 
   Widget _buildIconList() {
     return SizedBox(
-      height: 70,
+      height: 52,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: WalletIcons.icons.length,
@@ -48,7 +34,10 @@ class WalletIconSelector extends StatelessWidget {
               iconData.color == selectedIconColor;
 
           return _IconOption(
-            iconData: WalletIconData(icon: iconData.icon, color: iconData.color),
+            iconData: WalletIconData(
+              icon: iconData.icon,
+              color: iconData.color,
+            ),
             isSelected: isSelected,
             onTap: () => onIconSelected(iconData.icon, iconData.color),
           );
@@ -74,7 +63,7 @@ class _IconOption extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+        margin: const EdgeInsets.only(right: 10),
         decoration: BoxDecoration(
           border: isSelected
               ? Border.all(color: iconData.color, width: 2)
@@ -82,7 +71,7 @@ class _IconOption extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: CircleAvatar(
-          radius: 24,
+          radius: 22,
           backgroundColor: iconData.color.withValues(alpha: 0.2),
           child: Icon(iconData.icon, size: 22, color: iconData.color),
         ),

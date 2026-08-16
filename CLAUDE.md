@@ -1,3 +1,4 @@
 - Widget MUST be < 200 lines
 - Business logic MUST NOT be inside UI widget
 - Form state MUST be handled in ViewModel
+- Mobile UI must be simple, compact, and minimize unnecessary whitespace.

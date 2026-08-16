@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:my_wallet/core/widgets/action_buttons.dart';
 import 'package:my_wallet/features/wallets/presentation/form/transfer_money_page.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/widgets/header/detail_header.dart';
-import '../list/wallet_icon_section.dart';
 import 'wallet_info_card.dart';
 import '../model/wallet_view_data.dart';
 import '../list/wallets_viewmodel.dart';
@@ -127,13 +125,40 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
                 ),
                 _buildContent(context, wallet),
                 const Expanded(child: SizedBox.expand()),
-
-                ActionButtons(
-                  onTransfer: () => _navigateToTransfer(context, wallet),
-                ),
+                _buildTransferButton(context, wallet),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransferButton(BuildContext context, WalletViewData wallet) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: FilledButton.icon(
+            onPressed: () => _navigateToTransfer(context, wallet),
+            style: FilledButton.styleFrom(
+              backgroundColor: wallet.color,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            icon: const Icon(Icons.swap_horiz_rounded, size: 22),
+            label: const Text('Transfer money'),
+          ),
         ),
       ),
     );
@@ -145,11 +170,7 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            WalletIconSection(wallet: wallet),
-            const SizedBox(height: 12),
-            WalletInfoCard(wallet: wallet),
-          ],
+          children: [WalletInfoCard(wallet: wallet)],
         ),
       ),
     );

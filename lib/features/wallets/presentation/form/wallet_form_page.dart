@@ -82,7 +82,7 @@ class _WalletFormPageState extends State<WalletFormPage> {
 
   Widget _buildForm() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Form(
         key: _formKey,
         child: ListenableBuilder(
@@ -91,16 +91,103 @@ class _WalletFormPageState extends State<WalletFormPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildIconSelectorCard(),
-                const SizedBox(height: 16),
-                _buildFormCard(),
+                _buildWalletPreview(),
                 const SizedBox(height: 20),
+                _buildIconSelectorCard(),
+                const SizedBox(height: 12),
+                _buildFormCard(),
+                const SizedBox(height: 24),
                 _buildSubmitButton(),
-                const SizedBox(height: 8),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildWalletPreview() {
+    final color = _viewModel.selectedIconColor;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.65)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.2),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+            ),
+            child: Icon(_viewModel.selectedIcon, color: Colors.white, size: 25),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _viewModel.nameController,
+              builder: (context, value, _) {
+                final name = value.text.trim();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.isEditMode ? 'Wallet preview' : 'New wallet',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      name.isEmpty ? 'Wallet name' : name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'VND',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -110,38 +197,25 @@ class _WalletFormPageState extends State<WalletFormPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 10, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.palette_outlined,
-                size: 18,
-                color: Colors.grey.shade600,
-              ),
-              const SizedBox(width: 8),
               Text(
-                'Wallet Icon & Color',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                  letterSpacing: 0.3,
+                'Choose a style',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           WalletIconSelector(
             selectedIcon: _viewModel.selectedIcon,
             selectedIconColor: _viewModel.selectedIconColor,
@@ -157,107 +231,117 @@ class _WalletFormPageState extends State<WalletFormPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Wallet Name Section
-          _buildCardSection(
-            title: 'Wallet Name',
-            icon: Icons.account_balance_wallet_outlined,
-            child: TextFormField(
-              controller: _viewModel.nameController,
-              decoration: InputDecoration(
-                hintText: 'e.g., Savings, Momo, Main Account',
-                hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade400),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-              validator: _viewModel.validateName,
+          const Text(
+            'Wallet information',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
           ),
-          Divider(height: 1, color: Colors.grey.shade200),
-
-          // Balance Section
-          _buildCardSection(
+          const SizedBox(height: 16),
+          _buildField(
+            label: 'Wallet name',
+            icon: Icons.account_balance_wallet_outlined,
+            controller: _viewModel.nameController,
+            hintText: 'e.g. Savings, Momo, Main Account',
+            validator: _viewModel.validateName,
+          ),
+          const SizedBox(height: 14),
+          _buildField(
             title: widget.isEditMode ? 'Current Balance' : 'Initial Balance',
             icon: Icons.payments_outlined,
-            child: TextFormField(
-              controller: _viewModel.balanceController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: _viewModel.formatBalance,
-              decoration: InputDecoration(
-                hintText: '1.000.000',
-                hintStyle: TextStyle(fontSize: 20, color: Colors.grey.shade300),
-                suffixIcon: Padding(
-                  padding: const EdgeInsets.only(right: 12.0, top: 12),
-                  child: Text(
-                    'đ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-                suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              validator: _viewModel.validateBalance,
-            ),
+            controller: _viewModel.balanceController,
+            hintText: '1.000.000',
+            suffixText: '₫',
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: _viewModel.formatBalance,
+            validator: _viewModel.validateBalance,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCardSection({
-    required String title,
+  Widget _buildField({
+    String? title,
+    String? label,
     required IconData icon,
-    required Widget child,
+    required TextEditingController controller,
+    required String hintText,
+    String? suffixText,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    ValueChanged<String>? onChanged,
+    String? Function(String?)? validator,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade600,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label ?? title!,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
           ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
+        ),
+        const SizedBox(height: 7),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          onChanged: onChanged,
+          validator: validator,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Colors.grey.shade400,
+            ),
+            prefixIcon: Icon(icon, size: 20),
+            suffixText: suffixText,
+            suffixStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: _viewModel.selectedIconColor,
+                width: 1.5,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -267,21 +351,24 @@ class _WalletFormPageState extends State<WalletFormPage> {
       height: 56,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade700],
+          colors: [
+            _viewModel.selectedIconColor.withValues(alpha: 0.9),
+            _viewModel.selectedIconColor.withValues(alpha: 0.72),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: _viewModel.selectedIconColor.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ElevatedButton(
-        onPressed: _submitForm,
+        onPressed: _viewModel.isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -289,15 +376,23 @@ class _WalletFormPageState extends State<WalletFormPage> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          widget.isEditMode ? 'Update Wallet' : 'Create Wallet',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ),
-        ),
+        child: _viewModel.isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                widget.isEditMode ? 'Update Wallet' : 'Create Wallet',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }
