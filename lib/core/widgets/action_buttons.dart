@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class ActionButtons extends StatelessWidget {
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
   final VoidCallback? onHistory;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
   final VoidCallback? onTransfer;
 
   const ActionButtons({
     super.key,
-    required this.onEdit,
+    this.onEdit,
     this.onHistory,
-    required this.onDelete,
+    this.onDelete,
     this.onTransfer,
   });
 
@@ -23,12 +23,13 @@ class ActionButtons extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildActionButton(
-              icon: Icons.edit,
-              label: 'Edit',
-              onPressed: onEdit,
-              color: Colors.blue,
-            ),
+            if (onEdit != null)
+              _buildActionButton(
+                icon: Icons.edit,
+                label: 'Edit',
+                onPressed: onEdit!,
+                color: Colors.blue,
+              ),
             if (onHistory != null)
               _buildActionButton(
                 icon: Icons.history,
@@ -44,12 +45,13 @@ class ActionButtons extends StatelessWidget {
                 color: Colors.purple,
                 onPressed: onTransfer!,
               ),
-            _buildActionButton(
-              icon: Icons.delete_outline,
-              label: 'Delete',
-              onPressed: onDelete,
-              color: Colors.red,
-            ),
+            if (onDelete != null)
+              _buildActionButton(
+                icon: Icons.delete_outline,
+                label: 'Delete',
+                onPressed: onDelete!,
+                color: Colors.red,
+              ),
           ],
         ),
       ),

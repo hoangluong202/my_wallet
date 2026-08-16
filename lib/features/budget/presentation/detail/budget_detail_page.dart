@@ -4,6 +4,7 @@ import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/notification_widget.dart';
+import '../../../../core/widgets/header/detail_header.dart';
 import '../form/edit_budget_page.dart';
 import '../model/budget_view_data.dart';
 import '../transactions/budget_transactions_page.dart';
@@ -93,8 +94,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         child: Column(
           children: [
             // Header
-            _DetailHeader(
-              budget: budget,
+            DetailHeader(
+              title: 'Budget Detail',
+              onBack: () => Navigator.pop(context),
               onEdit: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -143,52 +145,6 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ─── Header ──────────────────────────────────────────────────────────────────
-
-class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({
-    required this.budget,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final BudgetViewData budget;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pop(context),
-          ),
-          Expanded(
-            child: Text(
-              'Budget Detail',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: onEdit,
-            tooltip: 'Edit',
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-            onPressed: onDelete,
-            tooltip: 'Delete',
-          ),
-        ],
       ),
     );
   }

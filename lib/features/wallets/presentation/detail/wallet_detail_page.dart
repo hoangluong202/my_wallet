@@ -122,13 +122,13 @@ class _WalletDetailPageState extends State<WalletDetailPage> {
                 DetailHeader(
                   title: 'Wallet Details',
                   onBack: () => Navigator.pop(context),
+                  onEdit: () => _navigateToEdit(context, wallet),
+                  onDelete: () => _showDeleteConfirmation(context, wallet),
                 ),
                 _buildContent(context, wallet),
                 const Expanded(child: SizedBox.expand()),
 
                 ActionButtons(
-                  onEdit: () => _navigateToEdit(context, wallet),
-                  onDelete: () => _showDeleteConfirmation(context, wallet),
                   onTransfer: () => _navigateToTransfer(context, wallet),
                 ),
               ],
