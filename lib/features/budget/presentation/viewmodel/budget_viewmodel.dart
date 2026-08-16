@@ -47,6 +47,16 @@ class BudgetViewModel extends ChangeNotifier {
     return _budgetRepository.watchAllBudgets().asyncMap(_enrichBudgets);
   }
 
+  /// A lightweight budget stream for screens that only need budget limits.
+  ///
+  /// Unlike [watchAllBudgets], this does not query transactions to calculate
+  /// spending for every budget.
+  Stream<List<BudgetViewData>> watchBudgetDefinitions() {
+    return _budgetRepository.watchAllBudgets().map(
+      (budgets) => budgets.map(BudgetViewData.fromDomain).toList(),
+    );
+  }
+
   Stream<BudgetViewData?> watchBudgetById(String id) {
     return _budgetRepository.watchBudgetById(id).asyncMap((budget) async {
       if (budget == null) return null;
@@ -96,28 +106,48 @@ class BudgetViewModel extends ChangeNotifier {
       DateTime(date.year, date.month, date.day, 23, 59, 59, 999, 999);
 
   Future<List<BudgetViewData>> _enrichBudgets(List<Budget> budgets) async {
-    final List<BudgetViewData> result = [];
-    for (final budget in budgets) {
-      int spent = 0;
-      try {
-        // Collect the budget's category AND all its sub-categories
-        final categoryIds = await _resolveCategoryIds(budget.categoryId);
+    if (budgets.isEmpty) return const [];
 
-        // Fetch transactions for all those category IDs within the date range
-        final budgetStartDate = _startOfDay(budget.startDate);
-        final budgetEndDate = _endOfDay(budget.endDate);
-        final txns = await _transactionRepository.getTransactionsByCategoryIds(
-          categoryIds,
-          budgetStartDate,
-          budgetEndDate,
-        );
+    try {
+      final categories = await _categoriesRepository.getCategories();
+      final childIdsByParent = <String, List<String>>{};
+      for (final category in categories) {
+        final parentId = category.parentCategoryId;
+        if (parentId != null) {
+          childIdsByParent.putIfAbsent(parentId, () => []).add(category.id);
+        }
+      }
 
-        spent = txns.fold(0, (sum, t) => sum + t.amount);
-      } catch (_) {}
+      final firstStart = budgets
+          .map((budget) => _startOfDay(budget.startDate))
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final lastEnd = budgets
+          .map((budget) => _endOfDay(budget.endDate))
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      final transactions = await _transactionRepository
+          .getTransactionsByDateRange(firstStart, lastEnd);
 
-      result.add(BudgetViewData.fromDomain(budget, spentAmount: spent));
+      return budgets.map((budget) {
+        final categoryIds = {
+          budget.categoryId,
+          ...?childIdsByParent[budget.categoryId],
+        };
+        final start = _startOfDay(budget.startDate);
+        final end = _endOfDay(budget.endDate);
+        final spent = transactions
+            .where(
+              (transaction) =>
+                  categoryIds.contains(transaction.category.id) &&
+                  !transaction.transactionDate.isBefore(start) &&
+                  !transaction.transactionDate.isAfter(end),
+            )
+            .fold<int>(0, (sum, transaction) => sum + transaction.amount);
+
+        return BudgetViewData.fromDomain(budget, spentAmount: spent);
+      }).toList();
+    } catch (_) {
+      return budgets.map(BudgetViewData.fromDomain).toList();
     }
-    return result;
   }
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────

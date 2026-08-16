@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             MonthlySpendingComparisonCard(
               transactionsStream: _transactionsViewModel.watchAllTransactions(),
-              budgetsStream: getIt<BudgetViewModel>().watchAllBudgets(),
+              budgetsStream: getIt<BudgetViewModel>().watchBudgetDefinitions(),
             ),
             const SizedBox(height: 12),
             _buildIncomeExpenseChart(context),

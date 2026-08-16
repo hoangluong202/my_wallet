@@ -28,7 +28,11 @@ class MonthlySpendingComparisonCard extends StatelessWidget {
         child: StreamBuilder<List<TransactionViewData>>(
           stream: transactionsStream,
           builder: (context, snapshot) {
-            final comparison = _calculateComparison(snapshot.data ?? const []);
+            if (!snapshot.hasData) {
+              return const _CardLoadingState();
+            }
+
+            final comparison = _calculateComparison(snapshot.data!);
             final difference = comparison.current - comparison.previous;
             final isHigher = difference > 0;
             final isEqual = difference == 0;
@@ -47,8 +51,12 @@ class MonthlySpendingComparisonCard extends StatelessWidget {
             return StreamBuilder<List<BudgetViewData>>(
               stream: budgetsStream,
               builder: (context, budgetSnapshot) {
+                if (!budgetSnapshot.hasData) {
+                  return const _CardLoadingState();
+                }
+
                 final monthlyBudget = _calculateMonthlyBudget(
-                  budgetSnapshot.data ?? const [],
+                  budgetSnapshot.data!,
                 );
                 final hasBudget = monthlyBudget > 0;
                 final remaining = monthlyBudget - comparison.current;
@@ -301,5 +309,23 @@ class MonthlySpendingComparisonCard extends StatelessWidget {
       (match) => '.',
     );
     return '$formatted đ';
+  }
+}
+
+class _CardLoadingState extends StatelessWidget {
+  const _CardLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 92,
+      child: Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
   }
 }
